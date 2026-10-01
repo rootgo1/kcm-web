@@ -7,7 +7,11 @@
 - `src/dev/retellCall.ts`, `src/dev/RetellTestPage.tsx`, `src/dev/liveAudioReporter.ts`는 credentials:omit으로 브라우저에 남은 인증정보를 전달하지 않습니다. 화면·위험 분석·Retell SDK·Monitor·SSE 상태 관리와 예약·상담 기능은 변경하지 않습니다.
 - `server/tests/deployment.test.mjs`의 기존 로그인 요구 테스트를 익명 접근·인증창 헤더 부재·공개 모의 통화/Monitor 등록/고성 수신/종료/SSE 검증으로 교체했습니다. API Key가 config·통화 응답·SSE·로그로 노출되지 않는 검증과 CORS/Host/경로 탐색 방어를 유지합니다.
 - `npm.cmd run check`: **전체286개 테스트 통과**, 프런트 및 백엔드 전체 타입 검사·Vite 빌드 성공. 기존 SDK 청크 크기 경고와 MockTimers 경고는 실패가 아닙니다. 실제 음성 연결은 자동 테스트 성공과 구분합니다.
-- 현재 Render 무료 서비스는 https://kcm-team-test.onrender.com, 기존 배포55ca141의 Live 상태를 확인했습니다. 공개 접근 버전의 GitHub 반영·재배포·실제 HTTP/브라우저 확인은 아래 후속 검증 기록 전까지 미완료입니다.
+- GitHub main의 공개 접근 코드 커밋 **3b2890a**를 Render에 재배포했습니다. 배포 ID dep-dav072ojo6nc73et0ee0, **Deploy succeeded / Live**를 확인했습니다. 기존 자동 코드 배포가 꺼져 있어 환경변수 저장·재빌드 배포를 사용했습니다. Render의 폐기된 로그인 변수 두 개도 삭제됐고 환경설정에는 NODE_ENV/NODE_VERSION/RETELL_AGENT_ID/RETELL_API_KEY만 남아 있습니다. 비밀 값 표시·복사·로그 출력은 하지 않았습니다.
+- 실제 인증정보 없는 HTTP 확인: `/`, `/health`, `/retell/config`, 빌드 JS/CSS, `/api/live-calls/events` 모두 **200**, 브라우저 인증창 헤더 없음. SSE는 text/event-stream과 snapshot 수신, 비밀 필드 부재를 확인했습니다. config는 agent_id/configured만 반환하고 configured:true입니다. `/.env`, `/server/deployment.mjs`는404로 보호됩니다.
+- 새 IAB 브라우저에서 `https://kcm-team-test.onrender.com/#/home` 및 `#/retell-test`를 직접 열어 로그인창 없이 화면 표시를 확인했습니다. 홈/예약·상담관리/고객관리/상담지원/상품관리/스마트 재고/마케팅/매장관리8개 메뉴 이동과 각 제목을 확인했습니다. 홈 카드1/3/1/1, 고객 화면 백엔드 설정 확인 및 통화 시작 버튼 활성화, 양쪽 브라우저 오류0건입니다. 기존 직원/사용자 탭·샘플 기록은 초기화하지 않았습니다.
+- 독립 미리보기 갱신 성공. 직접 실행한 검증은 위 배포 HTTP/브라우저 확인이며 독립HTML 직접 실행과 실제 Retell 음성 통화/마이크/새 실제 Monitor 연결은 이번에 재수행하지 않았습니다. Web Call·Monitor·SSE·위험 분석·고성 상태 머신·예약/지원 코드와 의존성의 git diff가 없음을 확인했고 기존 자동 회귀 검증을 유지했습니다.
+- 로컬 검증 캡처: docs/render-public-home.png, docs/render-public-retell.png, docs/render-public-live.png. 임시 HTTP 검사 스크립트/로그는 정리했습니다. 신규 DB/n8n 인증/영구 저장/점수 정책은 추가하지 않았습니다.
 
 ## Render 배포 구성 / 2026-10-01
 
