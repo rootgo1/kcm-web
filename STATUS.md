@@ -12,7 +12,7 @@
 - `npm.cmd run preview:standalone` 갱신 성공. 생성 HTML 직접 실행, 이번 배포 후 실제 음성·다른 기기·장시간 통화·무료 서비스 재기동은 미검증입니다. 기존 위험 점수/텍스트 분석/고성350ms·해제300ms/예약·상담·지원 UI 로직은 변경하지 않습니다.
 - 접근은 개인 계정 체계가 아닌 팀 공용 비밀번호입니다. 실제 키와 비밀번호는 사용자가 Render에 직접 입력합니다. 무료 호스팅이어도 Retell 통화 비용은 별도이며 서버 재시작 시 메모리 통화 기록은 사라집니다.
 - 저장소: https://github.com/rootgo1/kcm-web, **Private**, main의 초기 배포 커밋 `faeeb39`. 선별한94개 파일 업로드를 확인했고 `.env`·로그·node_modules·dist·.test-dist·로컬 캡처는 제외했습니다. Git 생성 시 샌드박스 소유자 차이로 차단돼 새 `.git` 폴더만 사용자 소유자로 맞췄으며 전역 Git 신뢰 설정은 변경하지 않았습니다.
-- Render 연결 화면에서 **Only select repositories → rootgo1/kcm-web 한 곳**을 준비했습니다. 저장소 접근 권한 승인, 비밀 환경변수 입력, 서비스 생성 및 실제 배포 주소 확인이 남아 있습니다. 아직 외부 서비스 배포 성공으로 기록하지 않습니다.
+- Render 연결은 **Only select repositories → rootgo1/kcm-web 한 곳**으로 사용자 승인·이메일 인증 후 완료했습니다. Blueprint가 render.yaml을 정상 읽었고 이름 kcm-team-test/main 설정을 준비했습니다. 사용자의 RETELL_API_KEY·16자 이상 KCM_ACCESS_PASSWORD 입력과 Deploy Blueprint 제출이 남아 있습니다. 서비스 생성/실제 배포 주소/HTTPS 통화는 아직 미확인입니다.
 - 격리8789 시험 프로세스/임시 실행 파일/로그는 정리했습니다. 기존5173·8787 서버 실행을 유지했고 작업 전134개 파일 해시 대비 삭제된 파일은 없습니다. package-lock·업무/위험 분석·고성 상태 머신 파일 해시를 보존했습니다.
 
 
