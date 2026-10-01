@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: kcm-team-test
+    name: kcm
     runtime: node
     plan: free
     region: singapore
