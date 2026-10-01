@@ -44,7 +44,7 @@ export default function RetellTestPage() {
         // Loaded only on this dev route, never on the employee dashboard.
         const [{ RetellClient }, response] = await Promise.all([
           import('retell-client-js-sdk'),
-          fetch('/retell/config', { signal: abort.signal, cache: 'no-store', credentials: 'same-origin' }),
+          fetch('/retell/config', { signal: abort.signal, cache: 'no-store', credentials: 'omit' }),
         ]);
         if (!response.ok) throw new Error('BACKEND_UNAVAILABLE');
         const config: { agent_id?: unknown; configured?: unknown } = await response.json();

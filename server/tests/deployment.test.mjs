@@ -10,8 +10,7 @@ import { createBackend } from '../app.mjs';
 import { createLiveCallStore } from '../live-calls.mjs';
 
 const env = { NODE_ENV: 'production', RENDER_EXTERNAL_URL: 'https://kcm-test.onrender.com',
-  KCM_ACCESS_USER: 'kcm', KCM_ACCESS_PASSWORD: 'synthetic-test-password-only', RETELL_API_KEY: 'synthetic-api-key', RETELL_AGENT_ID: 'agent_test' };
-const auth = 'Basic ' + Buffer.from(env.KCM_ACCESS_USER + ':' + env.KCM_ACCESS_PASSWORD).toString('base64');
+  RETELL_API_KEY: 'synthetic-api-key', RETELL_AGENT_ID: 'agent_test' };
 
 async function fixture(t) {
   const directory = await mkdtemp(join(tmpdir(), 'kcm-render-test-'));
@@ -32,7 +31,7 @@ async function fixture(t) {
     for (const name of Object.keys(files)) await unlink(join(directory, name));
     await rmdir(join(directory, 'assets')); await rmdir(directory);
   });
-  const headers = { Host: 'kcm-test.onrender.com', Origin: env.RENDER_EXTERNAL_URL, Authorization: auth };
+  const headers = { Host: 'kcm-test.onrender.com', Origin: env.RENDER_EXTERNAL_URL };
   const call = (path, overrides = {}, method = 'GET', body) => new Promise((resolve, reject) => {
     const req = request({ hostname: '127.0.0.1', port, path, method, headers: { ...headers, ...overrides } }, res => {
       let data = ''; res.setEncoding('utf8');
@@ -44,29 +43,31 @@ async function fixture(t) {
   return { call, port, headers, calls, upstream, logs };
 }
 
-test('deployment: local mode stays local; public mode requires HTTPS, secrets and team access', () => {
+test('deployment: local mode stays local; public mode requires HTTPS and server Retell configuration only', () => {
   assert.equal(deploymentConfig({}), null);
   assert.equal(deploymentConfig({ NODE_ENV: 'development', ...{ RETELL_API_KEY: 'not-read' } }), null);
   assert.equal(deploymentConfig(env).origin, env.RENDER_EXTERNAL_URL);
   assert.equal(deploymentConfig({ ...env, KCM_PUBLIC_ORIGIN: 'https://team.example.test/' }).origin, 'https://team.example.test');
   for (const patch of [{ RENDER_EXTERNAL_URL: '' }, { RENDER_EXTERNAL_URL: 'http://example.test' },
     { RENDER_EXTERNAL_URL: 'https://user:password@example.test' }, { RENDER_EXTERNAL_URL: 'https://example.test/path' },
-    { KCM_ACCESS_USER: '' }, { KCM_ACCESS_PASSWORD: 'short' }, { KCM_ACCESS_PASSWORD: ' '.repeat(20) },
     { RETELL_API_KEY: '' }, { RETELL_AGENT_ID: '' }]) assert.throws(() => deploymentConfig({ ...env, ...patch }));
   assert.throws(() => deploymentConfig({ RENDER: 'true' }));
 });
 
-test('deployment: only health is anonymous; UI, configuration, SSE and call creation require credentials', async t => {
+test('deployment: entry, assets and public configuration need no credentials or login challenge', async t => {
   const b = await fixture(t);
-  const health = await b.call('/health', { Authorization: '', Host: 'internal-health-check' });
+  const health = await b.call('/health', { Host: 'internal-health-check' });
   assert.equal(health.status, 200); assert.deepEqual(JSON.parse(health.body), { ok: true });
-  for (const path of ['/', '/retell/config', '/api/live-calls/events', '/assets/app.js']) {
-    const response = await b.call(path, { Authorization: '' });
-    assert.equal(response.status, 401); assert.match(response.headers['www-authenticate'], /^Basic/);
+  for (const path of ['/', '/index.html', '/retell/config', '/assets/app.js', '/favicon.svg', '/health']) {
+    const response = await b.call(path);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers['www-authenticate'], undefined);
+    assert.doesNotMatch(response.body, /synthetic-api-key|access_token/);
   }
-  assert.equal((await b.call('/', { Authorization: 'Basic ' + Buffer.from('kcm:wrong').toString('base64') })).status, 401);
-  assert.equal((await b.call('/retell/v3/create-web-call', { Authorization: '' }, 'POST')).status, 401);
-  assert.equal((await b.call('/api/live-calls/call_deployed/audio-signals', { Authorization: '' }, 'POST')).status, 401);
+  assert.deepEqual(JSON.parse((await b.call('/retell/config')).body), { agent_id: env.RETELL_AGENT_ID, configured: true });
+  // Unknown API paths remain 404, without a browser login challenge.
+  const missing = await b.call('/api/unknown');
+  assert.equal(missing.status, 404); assert.equal(missing.headers['www-authenticate'], undefined);
   assert.equal(b.upstream.length, 0); assert.deepEqual(b.calls.snapshot(), []);
 });
 
@@ -90,26 +91,30 @@ test('deployment: exact public host/origin checks reject spoofed proxy headers a
     assert.equal((await b.call('/retell/config', headers)).status, 403);
   }
   assert.equal((await b.call('/retell/config', { Origin: '' })).status, 200);
-  // A team member may open a shared link from another website; authentication still applies.
+  // Shared links still allow top-level navigation from another website.
   const navigation = { Origin: '', 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'document' };
   assert.equal((await b.call('/', navigation)).status, 200);
-  assert.equal((await b.call('/', { ...navigation, Authorization: '' })).status, 401);
   assert.equal((await b.call('/retell/v3/create-web-call', { Origin: '' }, 'POST')).status, 403);
 });
 
-test('deployment: authenticated create uses server API key only and retains audio/SSE flow', async t => {
+test('deployment: public create uses server API key only and retains Monitor registration, audio and SSE', async t => {
   const b = await fixture(t);
   const response = await b.call('/retell/v3/create-web-call', { 'Content-Type': 'application/json' }, 'POST', JSON.stringify({ agent_id: env.RETELL_AGENT_ID }));
   assert.equal(response.status, 200); assert.equal(JSON.parse(response.body).call_id, 'call_deployed');
+  assert.equal(response.headers['www-authenticate'], undefined);
+  assert.doesNotMatch(response.body, /synthetic-api-key/);
+  assert.equal(b.calls.snapshot()[0].call_id, 'call_deployed');
   assert.equal(b.upstream[0].init.headers.Authorization, 'Bearer ' + env.RETELL_API_KEY);
-  assert.doesNotMatch(JSON.stringify(b.logs), /synthetic|Basic|Bearer|password/);
+  assert.doesNotMatch(JSON.stringify(b.logs), /synthetic|Bearer/);
   const audio = await b.call('/api/live-calls/call_deployed/audio-signals', { 'Content-Type': 'application/json' }, 'POST',
     JSON.stringify({ sequence: 1, shouting_count: 2, is_shouting: false, available: true, coverage_complete: true, closed: true }));
   assert.equal(audio.status, 200);
+  assert.equal(audio.headers['www-authenticate'], undefined);
   b.calls.ended('call_deployed'); assert.equal(b.calls.snapshot()[0].final_result.risk_score, 5);
   const snapshot = await new Promise((resolve, reject) => {
     const req = request({ hostname: '127.0.0.1', port: b.port, path: '/api/live-calls/events', headers: b.headers }, res => {
       assert.equal(res.statusCode, 200); assert.match(res.headers['content-type'], /text\/event-stream/);
+      assert.equal(res.headers['www-authenticate'], undefined);
       let data = ''; res.setEncoding('utf8'); res.on('data', chunk => {
         data += chunk;
         if (data.includes('"calls"')) { resolve(data); res.destroy(); req.destroy(); }
@@ -117,5 +122,5 @@ test('deployment: authenticated create uses server API key only and retains audi
     }); req.on('error', reject); req.end();
   });
   assert.match(snapshot, /"risk_score":5/);
-  assert.doesNotMatch(snapshot, /synthetic|access_token|password/);
+  assert.doesNotMatch(snapshot, /synthetic|access_token/);
 });

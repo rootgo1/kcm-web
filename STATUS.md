@@ -1,19 +1,20 @@
 # KCM 작업 상태 — v0.3 / 2026-10-01
 
-## 최신 변경 — Render 무료 팀 테스트 배포 준비 / 2026-10-01
+## 최신 변경 — 배포 서비스의 공용 로그인 제거 / 2026-10-01
 
-- 사용자 요청: Render 무료 배포 및 새 GitHub 저장소 구성. `rootgo1/kcm-web` 비공개 저장소를 생성했습니다. 배포 서비스 생성과 실제 HTTPS 통화 검증은 아래 후속 기록 전까지 미완료입니다.
-- `server/deployment.mjs` 추가: 배포 환경 검증, 팀 공용 HTTP Basic 접근 제한, Vite `dist/` 정적 파일 제공. `.env`·소스·상위 경로는 제공하지 않습니다. `/health`만 인증 없이 `{ok:true}`로 응답합니다.
-- `server/index.mjs`, `server/app.mjs`: Render에서는 지정 PORT/0.0.0.0으로 실행하고 HTTPS 공개 주소의 Host/Origin을 검사합니다. 로컬 5173/8787 구성은 유지합니다. 외부 페이지의 공유 링크로 들어오는 화면 이동은 허용하되 인증을 유지합니다.
-- `src/dev/retellCall.ts`, `src/dev/RetellTestPage.tsx`, `src/dev/liveAudioReporter.ts`: 같은 서버로 보내는 요청의 credentials를 same-origin으로 바꿔 팀 인증을 전달합니다. Retell API Key는 서버의 별도 Bearer 요청에서만 사용합니다.
-- `render.yaml`, `package.json`의 start script, `.env.example`, `docs/RENDER_DEPLOYMENT.md`, `README.md`, `server/README.md`에 무료 단일 서비스 실행과 환경변수 설정을 추가했습니다. 신규 패키지/DB는 없으며 package-lock.json을 유지합니다.
-- 검증: `npm.cmd run check` **286개 테스트 통과(기존281+배포5)**, 프런트/백엔드 전체 타입 검사·Vite 빌드 통과. 기존 Retell SDK 청크 크기/MockTimers 경고는 동일합니다. 인증 없는 화면/API/SSE 차단, 비밀·소스 파일 미제공, Host/Origin/공유 링크 처리, 인증 후 모의 Retell 생성·고성 snapshot·종료 결과·SSE를 실제 HTTP handler로 확인했습니다.
-- 브라우저: 별도 8789 격리 서버의 실제 dist 빌드에 합성 인증정보로 접속해 홈·기본 카드1/3/1/1, SSE 모의 발화 표시, 고객 테스트 페이지의 backend configured/시작 버튼 활성화를 확인했습니다. 실제 .env/Retell/사용자 서버·저장 데이터는 사용하거나 초기화하지 않았습니다. 배포 모드의 인증 요청 전달 확인이며 실제 음성 통화 성공과 구분합니다.
-- `npm.cmd run preview:standalone` 갱신 성공. 생성 HTML 직접 실행, 이번 배포 후 실제 음성·다른 기기·장시간 통화·무료 서비스 재기동은 미검증입니다. 기존 위험 점수/텍스트 분석/고성350ms·해제300ms/예약·상담·지원 UI 로직은 변경하지 않습니다.
-- 접근은 개인 계정 체계가 아닌 팀 공용 비밀번호입니다. 실제 키와 비밀번호는 사용자가 Render에 직접 입력합니다. 무료 호스팅이어도 Retell 통화 비용은 별도이며 서버 재시작 시 메모리 통화 기록은 사라집니다.
-- 저장소: https://github.com/rootgo1/kcm-web, **Private**, main의 초기 배포 커밋 `faeeb39`. 선별한94개 파일 업로드를 확인했고 `.env`·로그·node_modules·dist·.test-dist·로컬 캡처는 제외했습니다. Git 생성 시 샌드박스 소유자 차이로 차단돼 새 `.git` 폴더만 사용자 소유자로 맞췄으며 전역 Git 신뢰 설정은 변경하지 않았습니다.
-- Render 연결은 **Only select repositories → rootgo1/kcm-web 한 곳**으로 사용자 승인·이메일 인증 후 완료했습니다. Blueprint가 render.yaml을 정상 읽었고 이름 kcm-team-test/main 설정을 준비했습니다. 사용자의 RETELL_API_KEY·16자 이상 KCM_ACCESS_PASSWORD 입력과 Deploy Blueprint 제출이 남아 있습니다. 서비스 생성/실제 배포 주소/HTTPS 통화는 아직 미확인입니다.
-- 격리8789 시험 프로세스/임시 실행 파일/로그는 정리했습니다. 기존5173·8787 서버 실행을 유지했고 작업 전134개 파일 해시 대비 삭제된 파일은 없습니다. package-lock·업무/위험 분석·고성 상태 머신 파일 해시를 보존했습니다.
+- 사용자 요청에 따라 전역 Basic Auth 검사·파싱·비교·로그인용401·브라우저 인증창 헤더와 전용 계정/비밀번호 환경변수 필수 검증을 제거했습니다. 로그인용 환경변수는 render.yaml, .env.example, 테스트와 안내에서 제거했습니다. 실제 로컬 .env는 읽거나 수정하지 않았습니다.
+- `server/deployment.mjs`, `server/app.mjs`: 공개 화면·정적 파일·Retell 프록시·SSE를 인증 없이 제공합니다. HTTPS·Host/Origin·CORS·본문 검증·소스/비밀 파일 미제공은 유지합니다. 서버의 RETELL_API_KEY와 Retell 인증 실패 처리는 별개이며 그대로입니다.
+- `src/dev/retellCall.ts`, `src/dev/RetellTestPage.tsx`, `src/dev/liveAudioReporter.ts`는 credentials:omit으로 브라우저에 남은 인증정보를 전달하지 않습니다. 화면·위험 분석·Retell SDK·Monitor·SSE 상태 관리와 예약·상담 기능은 변경하지 않습니다.
+- `server/tests/deployment.test.mjs`의 기존 로그인 요구 테스트를 익명 접근·인증창 헤더 부재·공개 모의 통화/Monitor 등록/고성 수신/종료/SSE 검증으로 교체했습니다. API Key가 config·통화 응답·SSE·로그로 노출되지 않는 검증과 CORS/Host/경로 탐색 방어를 유지합니다.
+- `npm.cmd run check`: **전체286개 테스트 통과**, 프런트 및 백엔드 전체 타입 검사·Vite 빌드 성공. 기존 SDK 청크 크기 경고와 MockTimers 경고는 실패가 아닙니다. 실제 음성 연결은 자동 테스트 성공과 구분합니다.
+- 현재 Render 무료 서비스는 https://kcm-team-test.onrender.com, 기존 배포55ca141의 Live 상태를 확인했습니다. 공개 접근 버전의 GitHub 반영·재배포·실제 HTTP/브라우저 확인은 아래 후속 검증 기록 전까지 미완료입니다.
+
+## Render 배포 구성 / 2026-10-01
+
+- https://github.com/rootgo1/kcm-web 비공개 저장소의 main과 Render kcm-team-test 무료 단일 서비스가 연결돼 있습니다. 저장소 루트에서 빌드하며 Node 서버가 dist와 API/SSE를 같은 HTTPS 주소에서 제공합니다. Render PORT/0.0.0.0과 로컬5173/8787 실행 방식은 유지합니다.
+- Render에 필요한 비밀 값은 서버 전용 Retell 키입니다. 서버 재시작 시 메모리 실시간 기록은 사라지며 기존 데모·예약 저장 정책은 유지합니다. 무료 호스팅과 Retell 통화 비용은 별개입니다.
+- 초기 배포 커밋 faeeb39에는 선별한94개 파일을 업로드했습니다. 실제.env·로그·의존성/빌드 폴더·로컬 통화 캡처를 제외했고, 연결 권한은 KCM 저장소 한 곳으로 제한했습니다. Git 생성 시 새.git 폴더만 사용자 소유자로 맞췄고 전역 신뢰 설정은 변경하지 않았습니다.
+- 최초 배포 준비 당시286개 테스트·타입 검사·빌드와 격리8789의 홈/모의SSE/고객 화면을 확인했습니다. 당시 임시 접근 제한은 위 최신 요청으로 제거하며 이전 로그인 설정 안내를 현재 문서에서 정리했습니다. 준비 단계의 실제 음성·독립HTML 직접 실행·다른 기기/장시간 통화 검증은 수행하지 않았습니다.
 
 
 ## 최신 변경 — 고성 지속시간 조정 / 2026-10-01

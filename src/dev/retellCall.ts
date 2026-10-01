@@ -9,7 +9,7 @@ export const retellProxyFetch: typeof fetch = (input, init) => {
   }
   const headers = new Headers(init?.headers);
   headers.delete('Authorization'); // SDK placeholder is not a credential and need not be transmitted.
-  return fetch(`/retell${url.pathname}`, { ...init, headers, credentials: 'same-origin', cache: 'no-store' });
+  return fetch(`/retell${url.pathname}`, { ...init, headers, credentials: 'omit', cache: 'no-store' });
 };
 
 export interface CallView {

@@ -79,7 +79,7 @@ test('Retell: REST proxy strips placeholder authorization and blocks unrelated o
     assert.equal(input, '/retell/v3/create-web-call');
     assert.equal(new Headers(init?.headers).has('Authorization'), false);
     assert.equal(init?.cache, 'no-store');
-    assert.equal(init?.credentials, 'same-origin');
+    assert.equal(init?.credentials, 'omit');
     return new Response('{}');
   };
   try {

@@ -1,4 +1,3 @@
-import { createHash, timingSafeEqual } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
 
@@ -12,26 +11,11 @@ export function deploymentConfig(/** @type {NodeJS.ProcessEnv} */ env = process.
     if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash || url.pathname !== '/') throw new Error();
     origin = url.origin;
   } catch { throw new Error('배포용 HTTPS 주소 설정이 필요합니다.'); }
-  const username = env.KCM_ACCESS_USER?.trim() ?? '';
-  const password = env.KCM_ACCESS_PASSWORD ?? '';
-  if (!/^[A-Za-z0-9_-]{1,64}$/.test(username) || password.trim().length < 16 || /[\r\n]/.test(password)) {
-    throw new Error('배포용 접근 계정과 16자 이상의 공용 비밀번호가 필요합니다.');
-  }
   if (!env.RETELL_API_KEY?.trim() || !env.RETELL_AGENT_ID?.trim()) throw new Error('배포용 Retell 환경변수가 필요합니다.');
-  return { origin, username, password, staticDir: resolve('dist') };
+  return { origin, staticDir: resolve('dist') };
 }
 
 /** @typedef {NonNullable<ReturnType<typeof deploymentConfig>>} Deployment */
-/** @param {Deployment} config */
-export function teamAccess(config) {
-  const digest = (/** @type {string} */ value) => createHash('sha256').update(value).digest();
-  const expected = digest(config.username + ':' + config.password);
-  return (/** @type {string | undefined} */ authorization) => {
-    if (!authorization?.startsWith('Basic ') || authorization.length > 4096) return false;
-    const supplied = Buffer.from(authorization.slice(6), 'base64').toString('utf8');
-    return timingSafeEqual(expected, digest(supplied));
-  };
-}
 
 const mime = /** @type {Record<string,string>} */ ({
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',

@@ -6,7 +6,7 @@ export interface AudioReportView { callId: string; count: number; shouting: bool
 export function createLiveAudioReporter(notify: (view: AudioReportView) => void,
   send: (id: string, value: AudioSignalUpdate) => Promise<void> = async (id, value) => {
     const response = await fetch('/api/live-calls/' + encodeURIComponent(id) + '/audio-signals', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'omit',
       cache: 'no-store', keepalive: true, body: JSON.stringify(value), signal: AbortSignal.timeout(5000),
     });
     if (!response.ok) throw new Error('AUDIO_SIGNALS_SEND_FAILED');

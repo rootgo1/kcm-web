@@ -2965,7 +2965,7 @@ exports.createLiveAudioReporter = createLiveAudioReporter;
 const shouting_js_1 = require("./shouting.js");
 function createLiveAudioReporter(notify, send = async (id, value) => {
     const response = await fetch('/api/live-calls/' + encodeURIComponent(id) + '/audio-signals', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'omit',
         cache: 'no-store', keepalive: true, body: JSON.stringify(value), signal: AbortSignal.timeout(5000),
     });
     if (!response.ok)
@@ -3064,7 +3064,7 @@ const retellProxyFetch = (input, init) => {
     }
     const headers = new Headers(init?.headers);
     headers.delete('Authorization'); // SDK placeholder is not a credential and need not be transmitted.
-    return fetch(`/retell${url.pathname}`, { ...init, headers, credentials: 'same-origin', cache: 'no-store' });
+    return fetch(`/retell${url.pathname}`, { ...init, headers, credentials: 'omit', cache: 'no-store' });
 };
 exports.retellProxyFetch = retellProxyFetch;
 function callErrorMessage(error) {
@@ -3233,7 +3233,7 @@ function RetellTestPage() {
                 // Loaded only on this dev route, never on the employee dashboard.
                 const [{ RetellClient }, response] = await Promise.all([
                     Promise.resolve().then(() => __importStar(require('retell-client-js-sdk'))),
-                    fetch('/retell/config', { signal: abort.signal, cache: 'no-store', credentials: 'same-origin' }),
+                    fetch('/retell/config', { signal: abort.signal, cache: 'no-store', credentials: 'omit' }),
                 ]);
                 if (!response.ok)
                     throw new Error('BACKEND_UNAVAILABLE');

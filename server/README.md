@@ -2,7 +2,7 @@
 
 ## Render 배포 모드
 
-`NODE_ENV=production` 또는 Render 실행 환경에서는 `dist/` 화면과 기존 API/SSE를 한 서버에서 제공합니다. HTTPS 주소와 팀 공용 인증을 요구하고 Render의 `PORT`로 `0.0.0.0`에 바인딩합니다. 실행은 `npm start`이며 설정·무료 요금제·사용자가 입력할 비밀 값은 [Render 안내](../docs/RENDER_DEPLOYMENT.md)에 정리했습니다. 로컬 두 서버 실행 방식은 그대로입니다.
+`NODE_ENV=production` 또는 Render 실행 환경에서는 `dist/` 화면과 기존 API/SSE를 로그인 없이 한 서버에서 제공합니다. HTTPS 주소 검증과 서버 Retell 인증은 유지하고 Render의 `PORT`로 `0.0.0.0`에 바인딩합니다. 실행은 `npm start`이며 설정·무료 요금제·사용자가 입력할 Retell 키는 [Render 안내](../docs/RENDER_DEPLOYMENT.md)에 정리했습니다. 로컬 두 서버 실행 방식은 그대로입니다.
 
 ## 현재 정책: 5개 신호와 통화별 독립 위험도
 

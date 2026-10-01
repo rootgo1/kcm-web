@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { createLiveCallStore } from './live-calls.mjs';
 import { createLiveEvents } from './live-events.mjs';
-import { teamAccess, serveBuild } from './deployment.mjs';
+import { serveBuild } from './deployment.mjs';
 
 const localOrigins = new Set(['http://127.0.0.1:5173', 'http://localhost:5173']);
 const api = 'https://api.retellai.com';
@@ -29,7 +29,6 @@ async function readBody(request) {
 export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log = console.log, liveCalls = createLiveCallStore(), deployment = null }) {
   const allowedOrigins = deployment ? new Set([deployment.origin]) : localOrigins;
   const publicHost = deployment ? new URL(deployment.origin).host : null;
-  const authorized = deployment ? teamAccess(deployment) : null;
   const liveEvents = createLiveEvents(liveCalls);
   // Ownership permits cancelling only calls created by this local server.
   // Expiring IDs carry no token; Monitor sessions have their own end/error cleanup.
@@ -74,10 +73,6 @@ export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log =
       response.setHeader('Access-Control-Expose-Headers', versionHeaders.join(', '));
     }
     if (request.method === 'OPTIONS') { response.writeHead(204); response.end(); return; }
-    if (authorized && !authorized(request.headers.authorization)) {
-      response.setHeader('WWW-Authenticate', 'Basic realm="KCM team test", charset="UTF-8"');
-      return error(401, 'TEAM_ACCESS_REQUIRED');
-    }
     if (deployment) {
       response.setHeader('Referrer-Policy', 'no-referrer');
       response.setHeader('X-Frame-Options', 'DENY');
