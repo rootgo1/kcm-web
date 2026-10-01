@@ -1,0 +1,28 @@
+.retell-test { min-height: 100dvh; padding: 40px 20px; display: grid; place-items: center; background: #f5f6f8; }
+.retell-test-card { width: min(100%, 640px); padding: 32px; background: #fff; border: 1px solid #e5e7eb; border-radius: 20px; }
+.retell-test h1 { margin: 0 0 16px; font-size: 28px; }
+.retell-test p { line-height: 1.7; }
+.retell-test-eyebrow { color: #b91c2c; font-weight: 700; margin: 0 0 8px; }
+.retell-test-status { display: flex; flex-wrap: wrap; gap: 12px; padding: 20px; margin: 24px 0 16px; background: #f8f9fb; border-radius: 12px; }
+.retell-test-status code { flex-basis: 100%; overflow-wrap: anywhere; }
+.retell-test-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0; }
+.retell-test button { min-height: 44px; padding: 10px 16px; border: 1px solid #d1d5db; border-radius: 9px; background: #fff; color: #222; cursor: pointer; font: inherit; }
+.retell-test .retell-test-start { background: #d92535; color: #fff; border-color: #d92535; }
+.retell-test button:disabled { opacity: .45; cursor: not-allowed; }
+.retell-test :is(button,a):focus-visible { outline: 3px solid #d92535; outline-offset: 3px; }
+.retell-test-error { color: #a71929; background: #fff1f2; padding: 14px; border-radius: 10px; overflow-wrap: anywhere; }
+.retell-test-note, .retell-test-setup { color: #586174; font-size: 14px; }
+.retell-test a { display: inline-block; margin-top: 12px; color: #a71929; }
+@media(max-width: 480px) { .retell-test { padding: 20px 12px; } .retell-test-card { padding: 24px 18px; } .retell-test h1 { font-size: 25px; } }
+.retell-aux-mic { margin: 24px 0; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background: #f9fafb; }
+.retell-aux-mic-heading, .retell-aux-mic-level { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.retell-aux-mic h2 { margin: 0; font-size: 18px; }
+.retell-aux-mic-state { font-size: 14px; color: #6b7280; }
+.retell-aux-mic-state.is-running { color: #166534; }
+.retell-aux-mic-state.is-error { color: #b91c1c; }
+.retell-aux-mic-level { margin-top: 18px; font-size: 14px; }
+.retell-aux-mic-level output { font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 700; }
+.retell-aux-mic-meter { height: 12px; margin-top: 8px; background: #e5e7eb; border-radius: 6px; overflow: hidden; }
+.retell-aux-mic-meter > span { display: block; height: 100%; background: #d71920; transition: width 80ms linear; }
+.retell-aux-mic .retell-test-actions { margin: 16px 0; }
+.retell-aux-mic .retell-test-note:last-child { margin-bottom: 0; }

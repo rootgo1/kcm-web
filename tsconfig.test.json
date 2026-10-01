@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", "module": "NodeNext", "moduleResolution": "NodeNext",
+    "strict": true, "skipLibCheck": true, "esModuleInterop": true,
+    "allowJs": true, "checkJs": true,
+    "outDir": ".test-dist", "rootDir": ".", "types": ["node"]
+  },
+  "include": ["tests/domain.test.ts", "tests/retell.test.ts", "tests/liveCalls.test.ts", "src/types.ts", "src/lib/domain.ts", "src/data/mockData.ts"]
+}

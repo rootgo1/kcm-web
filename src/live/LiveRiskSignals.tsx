@@ -1,0 +1,37 @@
+import type { LiveCall, LiveTextRisk } from './types';
+import { formatRiskScore } from '../lib/riskScoring';
+
+/** Server results only. No combined numeric score is presented during a live call. */
+export function LiveRiskSignals({ call }: { call: LiveCall }) {
+  const analysis = call.risk_analysis, audio = call.audio_signal, final = call.final_result;
+  return <section className="live-risk-signals" aria-label="현재 감지 신호">
+    <div className="live-risk-heading"><h3>{call.status === 'ended' ? '통화 종료 신호' : '현재 감지 신호'}</h3><span>텍스트 규칙·음성 레벨 · 시험 기준</span></div>
+    <dl className="live-risk-counts">
+      <div><dt>욕설</dt><dd>{analysis ? analysis.profanityCount + '회' : '—'}</dd></div>
+      <div><dt>위협 발언</dt><dd>{analysis ? analysis.threatCount + '회' : '—'}</dd></div>
+      <div><dt>비난 표현</dt><dd>{analysis ? analysis.blameCount + '회' : '—'}</dd></div>
+      <div><dt>선정적 표현</dt><dd>{analysis ? analysis.sexualCount + '회' : '—'}</dd></div>
+      <div><dt>고성</dt><dd>{audio?.available ? audio.shouting_count + '회' : '— / 측정 대기'}{audio?.is_shouting && <span className="live-signal-badge threat">현재 고성</span>}</dd></div>
+    </dl>
+    {analysis?.threatDetected && call.status !== 'ended' && <div className="live-threat-warning" role="alert"><span>현재 통화 대응 경고</span><strong>매우 위험 / 5단계</strong></div>}
+    {!analysis && <p className="live-risk-note" role="status">텍스트 분석 정보 대기 · 대화는 계속 표시됩니다. 백엔드가 최신 코드로 실행 중인지 확인하세요.</p>}
+    {audio && !audio.coverage_complete && <p className="live-risk-note">일부 음성 구간 미측정 · 고성은 관측된 구간만 반영하며 최종 점수는 보류합니다.</p>}
+    {call.status === 'ended' ? final ? <div className="live-final-risk">
+      <h3>이 통화 최종 위험도</h3><strong>{formatRiskScore(final.risk_score)}</strong>
+      <p className="live-risk-note">항목 합계 {final.raw_score}점 · 위협 보정 {final.threat_floor ? '최소 ' + final.threat_floor + '점' : '없음'}{final.adjusted_score > 99 && ' · 99점 상한 적용'}</p>
+      <dl className="live-risk-counts">{(['profanity', 'threat', 'blame', 'sexual', 'shouting'] as const).map((key, index) => <div key={key}><dt>{['욕설', '위협 발언', '비난 표현', '선정적 표현', '고성'][index]}</dt><dd>{final.scores[(key + '_score') as keyof typeof final.scores]}점</dd></div>)}</dl>
+      <details><summary>최종 결과 객체 (전송 전)</summary><pre>{JSON.stringify(final, null, 2)}</pre></details>
+      <p className="live-risk-note">통화별 독립 기록 · {final.rule_version} · n8n 전송/DB 저장 없음</p>
+    </div> : <p className="live-risk-note" role="status">{call.finalization_reason || '최종 위험도 정보 대기 · 최신 백엔드를 확인하세요.'}</p>
+      : <p className="live-risk-note">수신된 고객 발화는 정정될 수 있습니다. 종합 점수는 통화 종료와 고성 최종 수신 후 확정합니다.</p>}
+  </section>;
+}
+export function LiveTurnBadges({ analysis }: { analysis: LiveTextRisk | undefined }) {
+  if (!analysis || !(analysis.profanityCount || analysis.threatCount || analysis.blameCount || analysis.sexualCount)) return null;
+  return <div className="live-turn-signals" aria-label="이 고객 발화의 감지 신호">
+    {analysis.profanityCount > 0 && <span className="live-signal-badge profanity">욕설 감지</span>}
+    {analysis.threatCount > 0 && <span className="live-signal-badge threat">위협 발언</span>}
+    {analysis.blameCount > 0 && <span className="live-signal-badge blame">비난 표현</span>}
+    {analysis.sexualCount > 0 && <span className="live-signal-badge sexual">선정적 표현</span>}
+  </div>;
+}
