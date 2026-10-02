@@ -20,8 +20,9 @@
 | RETELL_API_KEY | 사용자가 직접 입력하는 실제 Retell 키 |
 | N8N_WEBHOOK_URL | 사용자가 Environment에 직접 입력하는 HTTPS Production Webhook URL |
 | KCM_DEMO_CUSTOMER_ID | 사용자가 Environment에 직접 입력하는 E2E 테스트 고객 ID |
+| KCM_DEMO_STORE_ID | 사용자가 Environment에 직접 입력하는 E2E 테스트 매장 ID |
 
-새 두 변수는 `sync: false`이며 실제 값은 Git에 포함하지 않습니다. 기존 서비스에서는 **Environment**에서 직접 추가한 뒤 **Manual Deploy → Deploy latest commit**으로 main의 최신 코드를 적용합니다. 자동 배포 설정은 변경하지 않습니다. 전송 조건·계약·실패 처리·실제 검증 절차는 [n8n 전송 안내](N8N_DELIVERY.md)를 확인하세요.
+Webhook/고객/매장 변수는 `sync: false`이며 실제 값은 Git에 포함하지 않습니다. 기존 서비스에서는 **Environment**에서 직접 추가한 뒤 **Manual Deploy → Deploy latest commit**으로 main의 최신 코드를 적용합니다. 자동 배포 설정은 변경하지 않습니다. 전송 조건·계약·실패 처리·실제 검증 절차는 [n8n 전송 안내](N8N_DELIVERY.md)를 확인하세요.
 
 `PORT`와 `RENDER_EXTERNAL_URL`은 Render 자동 설정을 사용합니다. 별도 도메인을 사용하는 경우에만 `KCM_PUBLIC_ORIGIN`에 경로 없는 HTTPS 원본 주소를 설정합니다. 비밀 값·HTTPS 주소·빌드 화면이 누락되면 공개 서버를 실행하지 않습니다.
 

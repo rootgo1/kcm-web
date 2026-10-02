@@ -1,5 +1,18 @@
 # KCM 작업 상태 — v0.3 / 2026-10-02
 
+## 최신 변경 — n8n payload에 상담 기본정보·최종 대화 추가 / 2026-10-02
+
+- 기준 커밋 `2246c71`의 기존 call_id/consultation_id/customer_id/signals/scores/risk_score/risk_level을 그대로 유지하고 `consultation` 객체만 추가했습니다. 아래 이전 기록의 transcript 미전송 설명은 당시 계약이며 이번 절의 확장 계약으로 대체됩니다.
+- `server/n8n-delivery.mjs`: `consultation`에는 store_id, status:"완료", used_ai:true, 원본 LiveCall.started_at/ended_at, 최종 messages의 transcript를 보냅니다. 시각은 기존 ISO UTC 형식·실제 날짜 유효성·시작≤종료를 검증하며 변환하거나 현재 시각으로 보충하지 않습니다. 누락/오류는 `CONSULTATION_TIMES_INVALID`로 failed 처리합니다.
+- transcript는 각 발화의 turn_id/role/content/start_sec만 새 객체로 선택합니다. 순서·문자열·공백/줄바꿈·역할·null 시점을 유지하며 재분석·정렬·수정하지 않습니다. 빈 대화는 빈 배열입니다. 내부 분석/위험 배지/end_sec/API key/access token은 포함하지 않습니다. purpose/ai_summary는 만들지 않습니다.
+- `KCM_DEMO_STORE_ID`를 고객 ID와 동일하게 서버 환경설정에서 읽어 `server/app.mjs` → `server/live-calls.mjs`의 통화 생성 시 store_id로 보관합니다. `src/live/types.ts`에 선택적 필드를 추가해 기존 snapshot과 호환합니다. 브라우저 입력은 허용하지 않고 재등록으로 매장 ID를 덮어쓰지 않습니다. 미설정은 `STORE_ID_MISSING`/failed이며 결과를 보존합니다.
+- `.env.example`은 빈 값, `render.yaml`은 sync:false 선언만 추가했습니다. 실제 매장 ID는 코드·테스트·문서에 커밋하지 않았습니다. 사용자 .env와 Render 설정은 읽거나 변경하지 않았습니다. 기존 서비스 이름·배포 구조·다른 환경변수는 유지합니다.
+- `server/tests/n8n-delivery.test.mjs`: 기존 20개 검증을 확장하고 15개를 추가해 관련 35개 통과. `npm.cmd run check`: **전체 321개 테스트 통과**, 프런트/백엔드 전체 타입 검사 및 Vite 빌드 성공. 기존 SDK 큰 청크/MockTimers 경고만 있습니다.
+- 자동 검증은 기존 계약 필드 유지, 상담 객체/서버 매장 설정, 원본 시각, 최종 정정된 대화의 순서·역할·내용·null 유지, 원본 비변경·민감 필드 제외·가짜 요약 부재, 매장 미설정/잘못된 시각 실패 보존, 브라우저 매장 주입 차단, 통화별 1회 POST를 포함합니다. 기존 로컬 HTTP 수신기/모의 Monitor 통합 검증도 통과했습니다.
+- `docs/N8N_DELIVERY.md`, `docs/RENDER_DEPLOYMENT.md`, `server/README.md`의 설정/계약 안내를 갱신했습니다. 변경 파일은 위 서버 3개·타입·테스트·환경 예시·Blueprint·문서 3개와 STATUS.md입니다.
+- consultation_id 생성·고객 정책·위험 분석/점수/최종화·전송 상태 전이/실패 보존·Retell/Monitor/SSE·직원 화면 코드는 유지합니다. `npm.cmd run preview:standalone` 성공, 생성 HTML과 프런트 빌드 산출물 내용 변경 없음. 기존 사용자 저장 데이터·미추적 파일은 보존했습니다.
+- GitHub main에 반영하는 범위입니다. 사용자 요청에 따라 실제 Render 환경변수 수정·재배포·Production Webhook 호출은 수행하지 않았습니다. 실제 음성/n8n 수신·브라우저/독립 HTML 직접 실행은 이번 작업에서 미검증입니다. DB 테이블 추정·직접 INSERT·요약 모델은 추가하지 않았습니다.
+
 ## 최신 변경 — 최종 통화 결과 n8n 자동 POST / 2026-10-02
 
 - `server/call-identity.mjs`: Web Call 생성 요청에서 Retell REST 호출 전에 `consultation_<숫자>`를 한 번 생성합니다. 밀리초 기준이며 같은 밀리초/시계 역행은 직전 값+1로 단일 프로세스 내 중복을 방지합니다. 실제 Retell call_id가 반환되면 최초 consultation_id와 서버 설정 customer_id를 연결합니다. 재등록/재연결/중복 종료로 덮어쓰지 않습니다.

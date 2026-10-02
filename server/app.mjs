@@ -26,11 +26,11 @@ async function readBody(request) {
  * stop-call is needed for SDK cancellation while createWebCall is in flight.
  * @param {{ key: string, agentId: string, monitors: Pick<ReturnType<import('./monitor.mjs').createMonitorRegistry>, 'start' | 'close' | 'release'>,
  * fetchImpl?: typeof fetch, log?: (line: string) => void, liveCalls?: ReturnType<typeof createLiveCallStore>,
- * deployment?: import('./deployment.mjs').Deployment | null, demoCustomerId?: string | null,
+ * deployment?: import('./deployment.mjs').Deployment | null, demoCustomerId?: string | null, demoStoreId?: string | null,
  * webhookUrl?: string, webhookFetchImpl?: typeof fetch }} options
  */
 export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log = console.log, liveCalls = createLiveCallStore(), deployment = null,
-  demoCustomerId = null, webhookUrl = '', webhookFetchImpl = fetch }) {
+  demoCustomerId = null, demoStoreId = null, webhookUrl = '', webhookFetchImpl = fetch }) {
   const allowedOrigins = deployment ? new Set([deployment.origin]) : localOrigins;
   const publicHost = deployment ? new URL(deployment.origin).host : null;
   const liveEvents = createLiveEvents(liveCalls);
@@ -146,7 +146,7 @@ export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log =
         owned.delete(data.call_id);
         return;
       }
-      liveCalls.connecting(data.call_id, demoCustomerId, consultationId);
+      liveCalls.connecting(data.call_id, demoCustomerId, consultationId, demoStoreId);
       monitors.start(data.call_id);
       for (const header of versionHeaders) {
         const value = result.headers.get(header);

@@ -21,3 +21,5 @@ services:
         sync: false
       - key: KCM_DEMO_CUSTOMER_ID
         sync: false
+      - key: KCM_DEMO_STORE_ID
+        sync: false

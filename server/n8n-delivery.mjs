@@ -3,15 +3,27 @@ export function n8nConfig(/** @type {NodeJS.ProcessEnv} */ env = process.env) {
   return {
     webhookUrl: env.N8N_WEBHOOK_URL?.trim() ?? '',
     demoCustomerId: env.KCM_DEMO_CUSTOMER_ID?.trim() || null,
+    demoStoreId: env.KCM_DEMO_STORE_ID?.trim() || null,
   };
 }
 
-/** Explicit projection: never forward transcript, tokens, internal metadata or a body wrapper. */
+/** Validate the store's existing ISO UTC timestamps; never invent or replace them. */
+function validCallTimes(/** @type {import('../src/live/types.js').LiveCall} */ call) {
+  const validTime = (/** @type {string | null} */ value) => typeof value === 'string'
+    && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)
+    && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
+  return validTime(call.started_at) && validTime(call.ended_at)
+    && Date.parse(/** @type {string} */ (call.started_at)) <= Date.parse(/** @type {string} */ (call.ended_at));
+}
+
+/** Explicit projection: never forward tokens, internal metadata or a body wrapper. */
 export function callResultPayload(/** @type {import('../src/live/types.js').LiveCall} */ call) {
   const result = call.final_result;
   if (call.status !== 'ended' || !result || result.call_id !== call.call_id) throw new Error('RESULT_NOT_FINAL');
   if (!call.consultation_id || !/^consultation_\d+$/.test(call.consultation_id)) throw new Error('CONSULTATION_ID_INVALID');
   if (!call.customer_id || result.customer_id !== call.customer_id) throw new Error('CUSTOMER_ID_MISSING');
+  if (!call.store_id?.trim()) throw new Error('STORE_ID_MISSING');
+  if (!validCallTimes(call)) throw new Error('CONSULTATION_TIMES_INVALID');
   return {
     call_id: call.call_id,
     consultation_id: call.consultation_id,
@@ -32,6 +44,16 @@ export function callResultPayload(/** @type {import('../src/live/types.js').Live
     },
     risk_score: result.risk_score,
     risk_level: result.risk_level,
+    consultation: {
+      store_id: call.store_id,
+      status: '완료',
+      used_ai: true,
+      started_at: call.started_at,
+      ended_at: call.ended_at,
+      transcript: call.messages.map(message => ({
+        turn_id: message.turn_id, role: message.role, content: message.content, start_sec: message.start_sec,
+      })),
+    },
   };
 }
 
@@ -62,6 +84,8 @@ export function createN8nDelivery({ liveCalls, webhookUrl, fetchImpl = fetch, lo
       failure = 'CUSTOMER_ID_MISSING';
       if (!call.customer_id) throw new Error();
       failure = 'RESULT_INVALID';
+      if (!call.store_id?.trim()) { failure = 'STORE_ID_MISSING'; throw new Error(); }
+      if (!validCallTimes(call)) { failure = 'CONSULTATION_TIMES_INVALID'; throw new Error(); }
       const payload = callResultPayload(call);
       failure = 'NETWORK_ERROR';
       const response = await fetchImpl(webhookUrl, {

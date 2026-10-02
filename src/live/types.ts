@@ -60,6 +60,7 @@ export interface LiveCall {
   // Missing on an older running backend; null means analysis is unavailable.
   risk_analysis?: LiveRiskAnalysis | null;
   customer_id?: string | null;
+  store_id?: string | null;
   audio_signal?: AudioSignalUpdate | null;
   final_result?: LiveFinalRisk | null;
   finalization_reason?: string | null;

@@ -11,12 +11,13 @@ import { createMonitorRegistry } from '../monitor.mjs';
 // Synthetic fixtures only: never the user's production webhook/customer/credentials.
 const webhookUrl = 'https://workflow.example.test/webhook/synthetic-private-path';
 const customerId = 'customer_unit_fixture';
+const storeId = 'store_unit_fixture';
 const audio = (sequence = 1, closed = true) => ({ sequence, shouting_count: 2, is_shouting: false, available: true, coverage_complete: true, closed });
 const transcript = [{ id: 'u1', role: 'user', time_sec: 1, content: '씨발 씨발. 내가 너 찾아간다. 일을 왜 이렇게 못해요? 말이 안 통하네. 이것도 제대로 못해요?' }];
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const getCall = (store, id = 'call_test') => store.snapshot().find(call => call.call_id === id);
-function prepare(store, id = 'call_test', customer = customerId) {
-  store.connecting(id, customer); store.live(id); store.transcript(id, transcript);
+function prepare(store, id = 'call_test', customer = customerId, demoStore = storeId) {
+  store.connecting(id, customer, undefined, demoStore); store.live(id); store.transcript(id, transcript);
 }
 function finish(store, id = 'call_test') { store.audio(id, audio()); store.ended(id); }
 function fixture(t, overrides = {}) {
@@ -36,17 +37,18 @@ test('consultation IDs are numeric, unique in the same millisecond and survive a
   ids.forEach(id => assert.match(id, /^consultation_\d+$/));
 });
 
-test('server config has no implicit demo customer or URL; configured values are trimmed', () => {
-  assert.deepEqual(n8nConfig({}), { webhookUrl: '', demoCustomerId: null });
-  assert.deepEqual(n8nConfig({ N8N_WEBHOOK_URL: ` ${webhookUrl} `, KCM_DEMO_CUSTOMER_ID: ` ${customerId} ` }),
-    { webhookUrl, demoCustomerId: customerId });
+test('server config has no implicit demo customer/store or URL; configured values are trimmed', () => {
+  assert.deepEqual(n8nConfig({}), { webhookUrl: '', demoCustomerId: null, demoStoreId: null });
+  assert.deepEqual(n8nConfig({ N8N_WEBHOOK_URL: ` ${webhookUrl} `, KCM_DEMO_CUSTOMER_ID: ` ${customerId} `, KCM_DEMO_STORE_ID: ` ${storeId} ` }),
+    { webhookUrl, demoCustomerId: customerId, demoStoreId: storeId });
+  assert.equal(n8nConfig({ KCM_DEMO_STORE_ID: '  ' }).demoStoreId, null);
 });
 
 test('final audio before end never posts early; finalized JSON matches the exact contract and 200 marks sent', async t => {
   const { store, requests, logs } = fixture(t);
   prepare(store);
   const consultationId = getCall(store).consultation_id;
-  store.connecting('call_test', 'must-not-replace', 'consultation_999');
+  store.connecting('call_test', 'must-not-replace', 'consultation_999', 'must-not-replace-store');
   store.audio('call_test', audio());
   assert.equal(requests.length, 0);
   store.ended('call_test');
@@ -63,6 +65,11 @@ test('final audio before end never posts early; finalized JSON matches the exact
     signals: { profanity_count: 2, threat_count: 1, blame_count: 3, sexual_count: 0, shouting_count: 2 },
     scores: { profanity_score: 6, threat_score: 20, blame_score: 8, sexual_score: 0, shouting_score: 5 },
     risk_score: 39, risk_level: '주의',
+    consultation: {
+      store_id: storeId, status: '완료', used_ai: true,
+      started_at: getCall(store).started_at, ended_at: getCall(store).ended_at,
+      transcript: [{ turn_id: 'u1', role: 'user', content: transcript[0].content, start_sec: 1 }],
+    },
   });
   assert.equal(Array.isArray(payload), false); assert.equal('body' in payload, false);
   assert.equal(getCall(store).consultation_id, consultationId);
@@ -128,10 +135,12 @@ test('network rejection is sanitized; another call can still finalize and delive
   prepare(store); finish(store); await tick();
   assert.equal(getCall(store).webhook_delivery.error, 'NETWORK_ERROR');
   const first = getCall(store);
-  prepare(store, 'call_other', 'customer_other_fixture'); finish(store, 'call_other'); await tick();
+  prepare(store, 'call_other', 'customer_other_fixture', 'store_other_fixture'); finish(store, 'call_other'); await tick();
   assert.equal(getCall(store, 'call_other').webhook_delivery.status, 'sent');
   assert.notEqual(getCall(store, 'call_other').consultation_id, first.consultation_id);
   assert.equal(getCall(store, 'call_other').final_result.customer_id, 'customer_other_fixture');
+  assert.equal(callResultPayload(getCall(store, 'call_other')).consultation.store_id, 'store_other_fixture');
+  assert.equal(first.store_id, storeId);
   assert.deepEqual(getCall(store), first);
   assert.doesNotMatch(JSON.stringify(logs), /https:|private-key|synthetic-private-path/);
 });
@@ -174,6 +183,95 @@ test('missing customer is never substituted; malformed IDs/unfinalized results c
   assert.throws(() => callResultPayload({ ...call, consultation_id: 'consultation_uuid-hyphen' }), /CONSULTATION_ID_INVALID/);
 });
 
+test('consultation sends the final corrected snapshot in source order, with exact text, both roles and null timing', async t => {
+  const { store, requests } = fixture(t);
+  prepare(store);
+  store.transcript('call_test', [
+    { id: 'u2', role: 'user', content: 'discarded partial', time_sec: 4 },
+    { id: 'removed', role: 'agent', content: 'removed by snapshot', time_sec: 5 },
+  ]);
+  store.transcript('call_test', [
+    { id: 'u2', role: 'user', content: '  정정된 고객 발화\n그대로 보존 <script>text</script>  ', time_sec: 4.75 },
+    { id: 'a1', role: 'agent', content: 'AI 응답 · 줄바꿈\n유지', time_sec: null },
+    { id: 'u3', role: 'user', content: '마지막 발화', time_sec: 1 }, // do not reorder by timestamp
+  ]);
+  const messages = getCall(store).messages, start = getCall(store).started_at;
+  store.ended('call_test'); const end = getCall(store).ended_at;
+  assert.equal(requests.length, 0);
+  store.audio('call_test', audio()); await tick();
+  const sent = JSON.parse(requests[0].init.body);
+  assert.deepEqual(sent.consultation.transcript, messages.map(({ turn_id, role, content, start_sec }) => ({ turn_id, role, content, start_sec })));
+  assert.deepEqual(sent.consultation.transcript.map(turn => turn.role), ['user', 'agent', 'user']);
+  assert.equal(sent.consultation.transcript[1].start_sec, null);
+  assert.equal(sent.consultation.started_at, start); assert.equal(sent.consultation.ended_at, end);
+  assert.deepEqual(getCall(store).messages, messages);
+  store.transcript('call_test', []); store.ended('call_test'); store.audio('call_test', audio(2));
+  assert.equal(requests.length, 1); assert.deepEqual(getCall(store).messages, messages);
+});
+
+test('payload projection excludes sensitive/internal fields and summaries, never mutates the source', () => {
+  const store = createLiveCallStore(); prepare(store); finish(store);
+  const call = getCall(store);
+  Object.assign(call, { access_token: 'private-token-fixture', api_key: 'private-key-fixture', purpose: 'not-generated', ai_summary: 'not-generated' });
+  call.messages[0].access_token = 'private-token-fixture';
+  call.messages[0].api_key = 'private-key-fixture';
+  call.messages[0].analysis = { badge: 'do-not-forward' };
+  const before = structuredClone(call), payload = callResultPayload(call);
+  assert.deepEqual(call, before);
+  assert.deepEqual(Object.keys(payload), ['call_id', 'consultation_id', 'customer_id', 'signals', 'scores', 'risk_score', 'risk_level', 'consultation']);
+  assert.deepEqual(Object.keys(payload.consultation), ['store_id', 'status', 'used_ai', 'started_at', 'ended_at', 'transcript']);
+  assert.deepEqual(Object.keys(payload.consultation.transcript[0]), ['turn_id', 'role', 'content', 'start_sec']);
+  assert.doesNotMatch(JSON.stringify(payload), /private-token|private-key|access_token|api_key|analysis|badge|end_sec|purpose|ai_summary|not-generated|rule_version/);
+  payload.consultation.transcript[0].content = 'changed copy';
+  assert.deepEqual(call, before);
+});
+
+test('empty final transcript stays empty without fabricating content, purpose or summary', async t => {
+  const { store, requests } = fixture(t);
+  prepare(store); store.transcript('call_test', []); finish(store); await tick();
+  const payload = JSON.parse(requests[0].init.body);
+  assert.deepEqual(payload.consultation.transcript, []);
+  assert.equal(payload.risk_score, 5); // unchanged shouting 2 score, no text score
+});
+
+for (const missing of [null, undefined, '', '  ']) {
+  test(`missing store ID (${String(missing)}) fails without POST, fallback identity or loss of call results`, async t => {
+    const { store, requests, logs } = fixture(t);
+    store.connecting('call_test', customerId, undefined, missing); store.live('call_test'); store.transcript('call_test', transcript);
+    finish(store); const result = getCall(store).final_result; await tick();
+    assert.equal(requests.length, 0);
+    assert.equal(getCall(store).webhook_delivery.status, 'failed');
+    assert.equal(getCall(store).webhook_delivery.error, 'STORE_ID_MISSING');
+    assert.throws(() => callResultPayload(getCall(store)), /STORE_ID_MISSING/);
+    store.ended('call_test'); store.audio('call_test', audio(2));
+    assert.deepEqual(getCall(store).final_result, result); assert.equal(requests.length, 0);
+    assert.deepEqual(logs, ['[n8n] delivery failed: call_test (STORE_ID_MISSING)']);
+  });
+}
+
+for (const [field, value] of [['started_at', null], ['ended_at', null], ['started_at', undefined],
+  ['ended_at', ''], ['started_at', 'invalid'], ['ended_at', '2026-02-30T01:00:00.000Z'],
+  ['started_at', '2026-10-02T00:00:02.000Z']]) {
+  test(`invalid/missing/reversed call time ${field}=${String(value)} is rejected without inventing a timestamp`, () => {
+    const store = createLiveCallStore(() => '2026-10-02T00:00:01.000Z');
+    prepare(store); finish(store);
+    const call = { ...getCall(store), [field]: value }, before = structuredClone(call);
+    assert.throws(() => callResultPayload(call), /CONSULTATION_TIMES_INVALID/);
+    assert.deepEqual(call, before);
+  });
+}
+
+test('finalized risk with no Monitor start time becomes failed, preserving the original result and null time', async t => {
+  const { store, requests, logs } = fixture(t);
+  store.connecting('call_test', customerId, undefined, storeId);
+  finish(store); await tick();
+  assert.equal(getCall(store).started_at, null); assert.equal(getCall(store).final_result.risk_score, 5);
+  assert.equal(getCall(store).webhook_delivery.status, 'failed');
+  assert.equal(getCall(store).webhook_delivery.error, 'CONSULTATION_TIMES_INVALID');
+  assert.equal(requests.length, 0);
+  assert.deepEqual(logs, ['[n8n] delivery failed: call_test (CONSULTATION_TIMES_INVALID)']);
+});
+
 test('two delivery subscribers still share the same atomic per-call claim', async t => {
   const a = fixture(t), otherPosts = [];
   const second = createN8nDelivery({ liveCalls: a.store, webhookUrl, fetchImpl: async () => { otherPosts.push(1); return new Response(); }, log() {} });
@@ -200,7 +298,7 @@ test('HTTP create + actual Monitor SDK frames + final audio automatically POST t
   let createIndex = 0;
   const identities = [];
   const server = createBackend({ key: 'synthetic-retell-key', agentId: 'agent_fixture', liveCalls: store,
-    monitors, ...n8nConfig({ N8N_WEBHOOK_URL: webhookUrl, KCM_DEMO_CUSTOMER_ID: customerId }), log: line => logs.push(line),
+    monitors, ...n8nConfig({ N8N_WEBHOOK_URL: webhookUrl, KCM_DEMO_CUSTOMER_ID: customerId, KCM_DEMO_STORE_ID: storeId }), log: line => logs.push(line),
     fetchImpl: async (_url, init) => {
       assert.equal(init.headers.Authorization, 'Bearer synthetic-retell-key');
       assert.deepEqual(JSON.parse(init.body), { agent_id: 'agent_fixture' });
@@ -215,14 +313,17 @@ test('HTTP create + actual Monitor SDK frames + final audio automatically POST t
   t.after(() => { server.closeAllConnections(); server.close(); });
   const base = `http://127.0.0.1:${server.address().port}`;
   const post = (path, body) => fetch(base + path, { method: 'POST', headers: { Origin: 'http://127.0.0.1:5173', 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  assert.equal((await post('/retell/v3/create-web-call', { agent_id: 'agent_fixture', store_id: 'browser-override' })).status, 400);
+  assert.equal(createIndex, 0);
   for (let i = 0; i < 2; i++) {
     const response = await post('/retell/v3/create-web-call', { agent_id: 'agent_fixture' });
     const data = await response.json(); await tick();
     assert.equal(response.status, 200);
-    assert.doesNotMatch(JSON.stringify(data), /webhook|customer|consultation|synthetic-retell-key/);
+    assert.doesNotMatch(JSON.stringify(data), /webhook|customer|consultation|store_id|synthetic-retell-key/);
     const before = getCall(store, data.call_id);
     identities.push(before.consultation_id);
     assert.match(before.consultation_id, /^consultation_\d+$/); assert.equal(before.customer_id, customerId);
+    assert.equal(before.store_id, storeId);
     sockets[i].frame({ type: 'transcript_snapshot', transcripts: transcript });
     sockets[i].frame({ type: 'call_ended', disconnection_reason: 'user_hangup' });
     assert.equal(received.length, i); // raw end never posts

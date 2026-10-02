@@ -17,7 +17,8 @@
 - 마이크 거부·측정 중지·탭 비활성화에 따른 측정 공백·최종 snapshot 미수신은 누락을 0회로 만들지 않습니다. finalization_reason에 점수 보류 이유를 표시합니다. 전송 실패는 고객 페이지의 ‘전송 재시도’로 최신 snapshot을 재전송할 수 있습니다. 전체 측정을 위해 고객 테스트 페이지를 전경에 유지하고 직원 페이지는 다른 창에서 확인하세요.
 - 최종 객체는 {call_id, customer_id, completed_at, signals:{...5 counts}, scores:{...5 scores}, raw_score, adjusted_score, threat_floor, risk_score, risk_level, rule_version}입니다. 최종 확정 시 계약 필드와 consultation_id를 선택해 **서버에서 n8n으로 한 번 POST**합니다. 직접 DB 저장은 하지 않습니다. KCM 기록은 메모리에만 유지하며 서버 재시작 시 사라집니다.
 - 실제 Retell 통화의 고객 식별 연동은 후속 범위입니다. 이번 E2E 데모는 서버의 `KCM_DEMO_CUSTOMER_ID`를 새 Web Call에 적용하며, 미설정 시 customer_id:null을 유지하고 POST를 보류합니다. 이름이나 임의 값으로 고객을 만들지 않습니다. 기존 방문 예약 저장 데이터는 수정하지 않습니다.
-- `N8N_WEBHOOK_URL`/고객 ID 설정, consultation_id 생성, `pending/sent/failed`, 오류 처리와 실제 수신 확인은 [n8n 전송 안내](../docs/N8N_DELIVERY.md)를 따릅니다. 실제 값은 사용자가 로컬 `.env`/Render Environment에 입력하며 GitHub에 커밋하지 않습니다.
+- `N8N_WEBHOOK_URL`/고객 ID/`KCM_DEMO_STORE_ID` 설정, consultation_id 생성, `pending/sent/failed`, 오류 처리와 실제 수신 확인은 [n8n 전송 안내](../docs/N8N_DELIVERY.md)를 따릅니다. 실제 값은 사용자가 로컬 `.env`/Render Environment에 입력하며 GitHub에 커밋하지 않습니다.
+- 기존 위험 결과 계약에 `consultation:{store_id,status,used_ai,started_at,ended_at,transcript}`를 추가합니다. 원본 LiveCall의 시각과 최종 대화를 그대로 투영하며, 매장 ID 누락이나 시각 오류는 전송 실패로 남깁니다. 요약/상담 목적 생성이나 DB 테이블 추정·직접 연동은 하지 않습니다.
 - 적용: 통화가 없을 때 백엔드를 재시작합니다. 고객 #/retell-test → 보조 마이크 정상 확인 → 통화 시작 → 발화/고성 구간 확인 → 종료. 직원 #/home의 ‘실시간 상담 보기’에서 5개 신호와 종료 결과를 확인합니다. 직원용 기존 데모 통화는 별도 상태를 유지합니다.
 
 ## 2단계: 직원용 SSE 대화 표시

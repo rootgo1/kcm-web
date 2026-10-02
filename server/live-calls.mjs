@@ -82,10 +82,11 @@ export function createLiveCallStore(/** @type {() => string} */ now = () => new 
       if (call?.webhook_delivery?.status !== 'pending') return;
       commit('call_status', { ...call, webhook_delivery: { ...call.webhook_delivery, status, completed_at: now(), error } });
     },
-    connecting(/** @type {string} */ callId, /** @type {string | null} */ customerId = null, /** @type {string | undefined} */ consultationId = undefined) {
+    connecting(/** @type {string} */ callId, /** @type {string | null} */ customerId = null, /** @type {string | undefined} */ consultationId = undefined,
+      /** @type {string | null} */ storeId = null) {
       if (calls.has(callId)) return;
       commit('call_status', { call_id: callId, consultation_id: consultationId ?? createConsultationId(), webhook_delivery: null,
-        status: 'connecting', started_at: null, ended_at: null, updated_at: now(), messages: [], error: null, risk_analysis: analyzeTranscriptRisk([]), customer_id: customerId, audio_signal: null, final_result: null, finalization_reason: null });
+        status: 'connecting', started_at: null, ended_at: null, updated_at: now(), messages: [], error: null, risk_analysis: analyzeTranscriptRisk([]), customer_id: customerId, store_id: storeId, audio_signal: null, final_result: null, finalization_reason: null });
     },
     live(/** @type {string} */ callId) {
       const call = calls.get(callId);

@@ -4,19 +4,21 @@
 
 ## 사용자 설정과 적용
 
-로컬 `.env` 또는 Render 서비스 `kcm`의 **Environment**에 아래 두 항목을 직접 추가합니다. 실제 값은 GitHub나 `VITE_*` 변수에 넣지 않습니다. 기존 Retell 환경변수는 유지합니다.
+로컬 `.env` 또는 Render 서비스 `kcm`의 **Environment**에 아래 항목을 직접 추가합니다. 실제 값은 GitHub나 `VITE_*` 변수에 넣지 않습니다. 기존 Retell 환경변수는 유지합니다.
 
 ```dotenv
 N8N_WEBHOOK_URL=
 KCM_DEMO_CUSTOMER_ID=
+KCM_DEMO_STORE_ID=
 ```
 
 - `N8N_WEBHOOK_URL`: 사용자가 확인한 HTTPS Production Webhook URL입니다. 코드·문서·로그에는 실제 URL을 기록하지 않습니다.
 - `KCM_DEMO_CUSTOMER_ID`: 첫 E2E 검증에서 사용하기로 한 DB의 테스트 고객 ID입니다. 값을 지정하면 이 서버가 새로 만드는 테스트 Web Call에 공통 적용됩니다. 실제 고객을 식별하거나 DB를 조회하는 기능은 아닙니다. 미설정 시 `null`을 유지하며 임의의 고객을 대입하지 않습니다.
+- `KCM_DEMO_STORE_ID`: 사용자가 지정하는 데모 매장 ID입니다. 고객 ID와 같이 새 통화 생성 시 서버 설정에서 보관합니다. 브라우저가 지정할 수 없으며 재등록으로 덮어쓰지 않습니다. 미설정 시 임의 값을 만들지 않고 전송을 `failed / STORE_ID_MISSING`으로 처리합니다.
 - 로컬: 통화가 없을 때 백엔드를 재시작합니다(`npm.cmd run server`). 실제 `.env`는 이 작업에서 읽거나 변경하지 않습니다.
-- Render: 현재 자동 배포는 꺼져 있습니다. 두 값을 직접 저장하고 **Manual Deploy → Deploy latest commit**으로 GitHub main의 새 코드를 적용합니다. 진행 중 통화가 없는 시점에 배포하세요. Blueprint의 `sync: false`는 기존 서비스에 새 값을 자동 입력하지 않으므로 Environment에 직접 추가해야 합니다. [Render 공식 안내](https://render.com/docs/blueprint-spec#prompting-for-secret-values)
+- Render: 현재 자동 배포는 꺼져 있습니다. 위 값을 직접 저장하고 **Manual Deploy → Deploy latest commit**으로 GitHub main의 새 코드를 적용합니다. 진행 중 통화가 없는 시점에 배포하세요. Blueprint의 `sync: false`는 기존 서비스에 새 값을 자동 입력하지 않으므로 Environment에 직접 추가해야 합니다. [Render 공식 안내](https://render.com/docs/blueprint-spec#prompting-for-secret-values)
 
-URL/고객 ID 미설정 또는 잘못된 URL은 최종 결과 전송을 `failed`로 남깁니다. KCM 화면·Retell 통화·위험 결과 계산은 계속 사용할 수 있습니다. 설정 변경 후에는 새 통화로 검증합니다. 과거 실패 결과의 자동 재전송은 없습니다.
+URL/고객 ID/매장 ID 미설정 또는 잘못된 URL은 최종 결과 전송을 `failed`로 남깁니다. KCM 화면·Retell 통화·위험 결과 계산은 계속 사용할 수 있습니다. 설정 변경 후에는 새 통화로 검증합니다. 과거 실패 결과의 자동 재전송은 없습니다.
 
 ## ID와 전송 시점
 
@@ -24,6 +26,7 @@ URL/고객 ID 미설정 또는 잘못된 URL은 최종 결과 전송을 `failed`
 2. Retell 응답의 실제 `call_id`에 최초 `consultation_id`와 환경설정의 `customer_id`를 연결합니다. Monitor의 재등록·SSE 재접속·중복 종료로 ID를 덮어쓰지 않습니다. 브라우저가 ID를 지정할 수 없습니다.
 3. **Monitor 종료 + 최종 고성 측정 수신 + 전체 측정 확인 + 유효한 위험 계산**으로 `final_result`가 처음 생길 때만 전송을 시작합니다. raw `call_ended`만으로는 보내지 않으며, 최종 고성 결과가 먼저 도착하거나 늦게 도착하는 경우를 모두 지원합니다.
 4. 기존 확정 결과에서 전송 계약 필드만 선택합니다. 신호나 점수를 재계산하지 않습니다.
+5. `consultation`에 서버 설정 매장 ID, 고정값 `status:완료`, `used_ai:true`, LiveCall의 최초 시작/종료 시각과 최종 대화 snapshot을 추가합니다. 시각은 현재 서버의 ISO UTC 문자열 형식과 실제 날짜 유효성·시작≤종료를 검증한 후 **원본 그대로** 사용합니다. 누락/잘못된 시각은 `CONSULTATION_TIMES_INVALID`로 실패하며 새 시각을 만들지 않습니다.
 
 ## POST 계약
 
@@ -49,11 +52,24 @@ URL/고객 ID 미설정 또는 잘못된 URL은 최종 결과 전송을 `failed`
     "shouting_score": 5
   },
   "risk_score": 39,
-  "risk_level": "주의"
+  "risk_level": "주의",
+  "consultation": {
+    "store_id": "store_example",
+    "status": "완료",
+    "used_ai": true,
+    "started_at": "2026-10-02T01:00:00.000Z",
+    "ended_at": "2026-10-02T01:01:00.000Z",
+    "transcript": [
+      {"turn_id": "u1", "role": "user", "content": "씨발 씨발. 내가 너 찾아간다. 일을 왜 이렇게 못해요? 말이 안 통하네. 이것도 제대로 못해요?", "start_sec": 1},
+      {"turn_id": "a1", "role": "agent", "content": "문의 내용을 확인하겠습니다.", "start_sec": null}
+    ]
+  }
 }
 ```
 
-`threat_count`, `blame_count` 등 계약 필드명은 그대로 유지합니다. DB 컬럼 변환과 저장은 n8n이 담당합니다. transcript·음성·토큰·Webhook URL·내부 규칙 메타데이터는 POST에 포함하지 않습니다.
+`threat_count`, `blame_count` 등 기존 계약 필드는 그대로 유지합니다. `consultation.transcript`는 최종 `LiveCall.messages`에서 `turn_id`, `role`, `content`, `start_sec` 네 필드만 선택합니다. 발화 순서·내용·공백·줄바꿈·user/agent 역할·null 시점을 그대로 유지하며 재분석/정렬/내용 수정은 하지 않습니다. 빈 대화는 빈 배열입니다. 음성·토큰·Webhook URL·내부 규칙 메타데이터·end_sec·위험 배지는 보내지 않습니다.
+
+`purpose`, `ai_summary`는 생성하거나 전송하지 않습니다. DB 컬럼 변환/저장, 향후 요약과 통화 전문 테이블 매핑은 n8n이 담당합니다. KCM은 테이블명·컬럼 구조를 가정하거나 DB에 직접 접근하지 않습니다.
 
 ## 전송 상태와 실패
 
@@ -66,6 +82,6 @@ URL/고객 ID 미설정 또는 잘못된 URL은 최종 결과 전송을 `failed`
 ## 검증 방법
 
 - `npm.cmd run check`: 기존 전체 테스트와 n8n 테스트, 프런트·백엔드 타입 검사 및 빌드.
-- 자동 검증은 실제 Production URL/키/고객 대신 격리된 모의 Retell 전송과 로컬 HTTP 수신기를 사용합니다. 두 통화의 ID 연결, 최종화 순서, 정확한 JSON, 1회 POST, 실패 보존, SSE/키 보호를 확인합니다.
+- 자동 검증은 실제 Production URL/키/고객/매장 대신 격리된 모의 Retell 전송과 로컬 HTTP 수신기를 사용합니다. 두 통화의 ID 연결, 최종화 순서, 기존 JSON 계약 보존과 consultation 추가, 최종 대화 투영/시각 검증/매장 설정 누락, 1회 POST, 실패 보존, SSE/키 보호를 확인합니다.
 - 실제 검증: Production 워크플로 활성 확인 → 고객 `#/retell-test`에서 보조 마이크 시작 → Web Call → 발화 → 종료 → 서버 성공 로그 확인 → n8n **Executions**에서 해당 `call_id`와 `body.consultation_id`, `body.customer_id`, `body.signals`, `body.scores`, `body.risk_score`, `body.risk_level` 확인. [n8n 공식 Webhook 안내](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.webhook/)
 - 사용자가 이번에는 코드·자동 검증·GitHub 반영까지만 요청했으므로 실제 Production POST·새 음성 통화·n8n Executions 확인은 수행하지 않습니다.
