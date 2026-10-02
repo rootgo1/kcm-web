@@ -1,11 +1,73 @@
+# Dependencies and generated output
 node_modules/
 dist/
 .test-dist/
+coverage/
+.cache/
+*.tsbuildinfo
+
+# Local environment values (only the reviewed example is shared)
 .env
 .env.*
 !.env.example
+.envrc
+.dev.vars
+.dev.vars.*
 *.local
+
+# Private keys, certificates and credential stores
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa*
+id_ed25519*
+.ssh/
+.aws/
+.npmrc
+.pypirc
+.netrc
+_netrc
+.docker/config.json
+credentials/
+credentials.json
+credentials.*.json
+*-credentials.json
+service-account*.json
+service_account*.json
+secrets/
+.secrets/
+secrets.json
+secrets.*.json
+
+# n8n runtime data and credential exports; keep workflow source files shareable
+.n8n/
+n8n-data/
+n8n_data/
+*credentials*.json
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.sqlite3-*
+*.db
+*.db-*
+backups/
+dumps/
+
+# Local logs, network captures and UI/deployment screenshots
 *.log
+logs/
+*.har
+*.pcap
+*.pcapng
+/docs/*.png
+
+# OS and editor state
 .DS_Store
 Thumbs.db
 .vscode/
+.idea/
+*.swp
+*.swo

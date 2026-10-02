@@ -1,0 +1,42 @@
+{
+  "version": "0.3.0",
+  "based_on": "KCM_web_starter_v0.2.zip",
+  "changed_or_new": [
+    "00_KCM_미리보기.html",
+    "01_시작안내.txt",
+    "02_CODEX_PROMPT.txt",
+    "AGENTS.md",
+    "README.md",
+    "SPEC.md",
+    "STATUS.md",
+    "docs/CHANGELOG_v0.3.md",
+    "docs/QA_CHECKLIST.md",
+    "docs/QA_REPORT.md",
+    "docs/dashboard-preview.png",
+    "docs/products-preview.png",
+    "docs/profile-preview.png",
+    "docs/qa-results-v0.3.json",
+    "docs/staff-preview.png",
+    "docs/stores-preview.png",
+    "package.json",
+    "scripts/generate-preview.mjs",
+    "src/App.tsx",
+    "src/components/Icon.tsx",
+    "src/components/Layout.tsx",
+    "src/components/ProfileMenu.tsx",
+    "src/data/directoryMockData.ts",
+    "src/data/mockData.ts",
+    "src/data/workspaceMockData.ts",
+    "src/lib/profile.ts",
+    "src/styles.css",
+    "src/types.ts",
+    "tests/domain.test.ts"
+  ],
+  "qa": {
+    "unitTests": 40,
+    "uiChecks": 41,
+    "fullReactTypecheck": false,
+    "viteBuild": false,
+    "windowsExecution": false
+  }
+}
