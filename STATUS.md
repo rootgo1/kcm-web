@@ -1,4 +1,18 @@
-# KCM 작업 상태 — v0.3 / 2026-10-01
+# KCM 작업 상태 — v0.3 / 2026-10-02
+
+## 최신 변경 — 최종 통화 결과 n8n 자동 POST / 2026-10-02
+
+- `server/call-identity.mjs`: Web Call 생성 요청에서 Retell REST 호출 전에 `consultation_<숫자>`를 한 번 생성합니다. 밀리초 기준이며 같은 밀리초/시계 역행은 직전 값+1로 단일 프로세스 내 중복을 방지합니다. 실제 Retell call_id가 반환되면 최초 consultation_id와 서버 설정 customer_id를 연결합니다. 재등록/재연결/중복 종료로 덮어쓰지 않습니다.
+- `server/n8n-delivery.mjs`, `server/live-calls.mjs`, `server/app.mjs`, `server/index.mjs`, `src/live/types.ts`: 기존 Monitor 종료와 최종 고성 측정의 유효성 검사로 final_result가 처음 확정될 때만 서버 fetch로 전송합니다. 확정 전·미측정·불완전 측정·Monitor 오류는 전송하지 않습니다. 최종화 순서와 기존 위험 계산은 그대로입니다.
+- POST는 `call_id`, `consultation_id`, `customer_id`, 5개 signals, 5개 scores, `risk_score`, `risk_level`만 선택한 객체입니다. body wrapper/배열/transcript/음성/키/내부 메타데이터를 추가하지 않습니다. 기존 threat_count/blame_count 필드명을 유지하고 DB 변환/저장은 n8n 담당입니다.
+- call_id별 `webhook_delivery`를 요청 전에 pending으로 선점하고 sent/failed로 종결합니다. 중복 종료/최종화/복수 구독자가 있어도 한 번만 자동 시도합니다. HTTP 오류·네트워크·10초 시간 초과·서버 종료는 고정 원인 코드로 기록하며 최종 결과/시각/이력을 보존합니다. URL·키·응답 본문·예외 원문은 로그에 남기지 않습니다.
+- 자동 재시도·수동 재전송 API·영구 큐·직접 DB 조회/INSERT는 추가하지 않았습니다. 응답 유실 시 이미 상대가 처리했을 가능성이 있으므로 자동 재전송하지 않습니다. 전송 상태는 기존 통화와 같은 서버 메모리 수명입니다. 서버 재시작 뒤 영구 중복 방지는 이번 범위가 아닙니다.
+- `.env.example`, `render.yaml`에 `N8N_WEBHOOK_URL`, `KCM_DEMO_CUSTOMER_ID`를 값 없이 추가했습니다(Render는 sync:false). 실제 URL과 테스트 고객 ID는 커밋하지 않습니다. 사용자가 로컬 .env/Render Environment에 직접 설정합니다. 고객 ID 미설정은 null 유지/전송 failed이며 임의의 고객으로 보충하지 않습니다. 실제 .env는 읽거나 변경하지 않았습니다.
+- `server/tests/n8n-delivery.test.mjs` 신규 20개 + 기존 286개 = **전체 306개 테스트 통과**. `npm.cmd run check`에서 프런트/백엔드 전체 타입 검사와 Vite 빌드 성공. 기존 SDK 큰 청크/MockTimers 경고만 있습니다.
+- 실제 Node HTTP/fetch와 설치된 Monitor SDK를 격리된 모의 전송/로컬 수신기로 연결해 두 통화의 ID 분리·정확한 JSON·최종화 이후 각 1회 수신·200/sent·SSE 복구와 비밀값 미노출을 확인했습니다. 4xx/5xx/리디렉션/네트워크/시간 초과/종료 실패 보존과 다른 통화 정상 처리를 확인했습니다. Production Webhook을 사용한 검증은 아닙니다.
+- 기존 직원 화면·브라우저 통화/마이크·Monitor·SSE 전송 구현·텍스트/고성/점수 정책·예약 업무·패키지는 수정하지 않았습니다. 변경된 src는 타입 선언만이며 Vite 산출물 이름/내용은 기존과 동일합니다. 생성 번들에서 새 환경변수명·Webhook 주소 노출이 없음을 확인했습니다. `npm.cmd run preview:standalone` 성공, 생성 HTML 내용 변경 없음.
+- 안내: `docs/N8N_DELIVERY.md` 신규, `docs/RENDER_DEPLOYMENT.md`, `server/README.md` 갱신. 기존 설정/서비스 이름 kcm/autoDeployTrigger:off는 보존했습니다. GitHub main 반영 후 사용자가 Environment 두 값을 설정하고 Manual Deploy → Deploy latest commit으로 적용할 수 있습니다.
+- 사용자 요청으로 이번에는 코드·자동 검증·GitHub 반영까지만 진행합니다. 실제 Render 환경변수 편집/배포·Production 활성 상태·Retell 음성·n8n Executions/DB 저장·브라우저/독립 HTML 직접 실행은 **미검증**입니다. 사용자 저장 데이터와 기존 미추적 파일을 유지했습니다.
 
 ## 최신 변경 — Render 서비스 이름 일치 / 2026-10-01
 

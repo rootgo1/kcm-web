@@ -2,6 +2,8 @@ import { createServer } from 'node:http';
 import { createLiveCallStore } from './live-calls.mjs';
 import { createLiveEvents } from './live-events.mjs';
 import { serveBuild } from './deployment.mjs';
+import { createConsultationId } from './call-identity.mjs';
+import { createN8nDelivery } from './n8n-delivery.mjs';
 
 const localOrigins = new Set(['http://127.0.0.1:5173', 'http://localhost:5173']);
 const api = 'https://api.retellai.com';
@@ -24,12 +26,15 @@ async function readBody(request) {
  * stop-call is needed for SDK cancellation while createWebCall is in flight.
  * @param {{ key: string, agentId: string, monitors: Pick<ReturnType<import('./monitor.mjs').createMonitorRegistry>, 'start' | 'close' | 'release'>,
  * fetchImpl?: typeof fetch, log?: (line: string) => void, liveCalls?: ReturnType<typeof createLiveCallStore>,
- * deployment?: import('./deployment.mjs').Deployment | null }} options
+ * deployment?: import('./deployment.mjs').Deployment | null, demoCustomerId?: string | null,
+ * webhookUrl?: string, webhookFetchImpl?: typeof fetch }} options
  */
-export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log = console.log, liveCalls = createLiveCallStore(), deployment = null }) {
+export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log = console.log, liveCalls = createLiveCallStore(), deployment = null,
+  demoCustomerId = null, webhookUrl = '', webhookFetchImpl = fetch }) {
   const allowedOrigins = deployment ? new Set([deployment.origin]) : localOrigins;
   const publicHost = deployment ? new URL(deployment.origin).host : null;
   const liveEvents = createLiveEvents(liveCalls);
+  const delivery = createN8nDelivery({ liveCalls, webhookUrl, fetchImpl: webhookFetchImpl, log });
   // Ownership permits cancelling only calls created by this local server.
   // Expiring IDs carry no token; Monitor sessions have their own end/error cleanup.
   /** @type {Map<string, number>} */
@@ -113,6 +118,8 @@ export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log =
       return error(400, 'CONFIGURED_AGENT_ONLY');
     }
     try {
+      // Allocate once before Retell returns its ID; never accept identity from the browser.
+      const consultationId = isCreate ? createConsultationId() : undefined;
       const result = await upstream(isCreate ? createPath : `/v2/stop-call/${stopId}`, isCreate ? { agent_id: agentId } : undefined);
       // Never forward upstream error bodies, headers or error objects containing secrets.
       if (!result.ok) {
@@ -139,6 +146,7 @@ export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log =
         owned.delete(data.call_id);
         return;
       }
+      liveCalls.connecting(data.call_id, demoCustomerId, consultationId);
       monitors.start(data.call_id);
       for (const header of versionHeaders) {
         const value = result.headers.get(header);
@@ -152,7 +160,7 @@ export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log =
       error(502, 'RETELL_CONNECTION_FAILED');
     }
   });
-  server.on('close', () => { liveEvents.close(); clearInterval(expiry); owned.clear(); monitors.close(); });
+  server.on('close', () => { delivery.close(); liveEvents.close(); clearInterval(expiry); owned.clear(); monitors.close(); });
   server.requestTimeout = 20_000;
   server.headersTimeout = 10_000;
   return server;

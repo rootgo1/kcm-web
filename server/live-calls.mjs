@@ -1,5 +1,6 @@
 import { calculateCallRisk, validCount } from '../src/lib/riskPolicy.js';
 import { analyzeTranscriptRisk } from './text-risk.mjs';
+import { createConsultationId } from './call-identity.mjs';
 
 /** @typedef {import('../src/live/types.js').LiveCall} LiveCall */
 /** @typedef {import('../src/live/types.js').LiveMessage} LiveMessage */
@@ -36,13 +37,22 @@ export function createLiveCallStore(/** @type {() => string} */ now = () => new 
   const calls = new Map();
   /** @type {Set<(event: LiveCallsEvent) => void>} */
   const listeners = new Set();
+  /** @type {Set<(call: LiveCall) => void>} */
+  const finalizedListeners = new Set();
   const emit = (/** @type {LiveCallEventType} */ type, /** @type {LiveCall} */ call) => {
     for (const listener of listeners) {
       // A broken subscriber must never interrupt Monitor processing or the voice call.
       try { listener(structuredClone({ type, ...call })); } catch { listeners.delete(listener); }
     }
   };
-  const commit = (/** @type {LiveCallEventType} */ type, /** @type {LiveCall} */ call) => { calls.set(call.call_id, call); emit(type, call); };
+  const commit = (/** @type {LiveCallEventType} */ type, /** @type {LiveCall} */ call) => {
+    const firstFinal = Boolean(call.final_result && !calls.get(call.call_id)?.final_result);
+    calls.set(call.call_id, call);
+    emit(type, call);
+    if (firstFinal) for (const listener of finalizedListeners) {
+      try { listener(structuredClone(call)); } catch { finalizedListeners.delete(listener); }
+    }
+  };
   const finalize = (/** @type {LiveCall} */ call) => {
     if (call.status !== 'ended' || call.final_result) return call;
     const analysis = call.risk_analysis, audio = call.audio_signal;
@@ -58,9 +68,24 @@ export function createLiveCallStore(/** @type {() => string} */ now = () => new 
     snapshot: () => structuredClone([...calls.values()]),
     get subscriberCount() { return listeners.size; },
     subscribe(/** @type {(event: LiveCallsEvent) => void} */ listener) { listeners.add(listener); return () => { listeners.delete(listener); }; },
-    connecting(/** @type {string} */ callId, /** @type {string | null} */ customerId = null) {
+    subscribeFinalized(/** @type {(call: LiveCall) => void} */ listener) { finalizedListeners.add(listener); return () => { finalizedListeners.delete(listener); }; },
+    /** Claim before starting any asynchronous request. Failed/sent calls are never auto-retried. */
+    claimWebhookDelivery(/** @type {string} */ callId) {
+      const call = calls.get(callId);
+      if (!call?.final_result || call.status !== 'ended' || call.webhook_delivery) return null;
+      const next = { ...call, webhook_delivery: { status: /** @type {const} */ ('pending'), attempted_at: now(), completed_at: null, error: null } };
+      commit('call_status', next);
+      return structuredClone(next);
+    },
+    finishWebhookDelivery(/** @type {string} */ callId, /** @type {'sent' | 'failed'} */ status, /** @type {string | null} */ error = null) {
+      const call = calls.get(callId);
+      if (call?.webhook_delivery?.status !== 'pending') return;
+      commit('call_status', { ...call, webhook_delivery: { ...call.webhook_delivery, status, completed_at: now(), error } });
+    },
+    connecting(/** @type {string} */ callId, /** @type {string | null} */ customerId = null, /** @type {string | undefined} */ consultationId = undefined) {
       if (calls.has(callId)) return;
-      commit('call_status', { call_id: callId, status: 'connecting', started_at: null, ended_at: null, updated_at: now(), messages: [], error: null, risk_analysis: analyzeTranscriptRisk([]), customer_id: customerId, audio_signal: null, final_result: null, finalization_reason: null });
+      commit('call_status', { call_id: callId, consultation_id: consultationId ?? createConsultationId(), webhook_delivery: null,
+        status: 'connecting', started_at: null, ended_at: null, updated_at: now(), messages: [], error: null, risk_analysis: analyzeTranscriptRisk([]), customer_id: customerId, audio_signal: null, final_result: null, finalization_reason: null });
     },
     live(/** @type {string} */ callId) {
       const call = calls.get(callId);

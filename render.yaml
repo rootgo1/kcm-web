@@ -17,3 +17,7 @@ services:
         value: agent_0cf2b1f09a8e52e6d2abc45b71
       - key: RETELL_API_KEY
         sync: false
+      - key: N8N_WEBHOOK_URL
+        sync: false
+      - key: KCM_DEMO_CUSTOMER_ID
+        sync: false

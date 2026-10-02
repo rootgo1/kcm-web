@@ -43,6 +43,14 @@ export type LiveFinalRisk = ReturnType<typeof import('../lib/riskPolicy.js').cal
 };
 export interface LiveCall {
   call_id: string;
+  // Optional for snapshots from an older running backend.
+  consultation_id?: string;
+  webhook_delivery?: {
+    status: 'pending' | 'sent' | 'failed';
+    attempted_at: string;
+    completed_at: string | null;
+    error: string | null;
+  } | null;
   status: 'connecting' | 'live' | 'ended' | 'error';
   started_at: string | null;
   ended_at: string | null;
