@@ -244,8 +244,8 @@ test('api: upstream failure is 502, unwired routes are 501, unknown paths 404', 
   const api = createDbInventoryApi({ db: { call: async () => ({ ok: false, code: 'DB_UNAVAILABLE' }), close() {} } });
   const q = new URLSearchParams();
   assert.deepEqual(await api.handle('GET', '/api/inventory/stock', q, {}), { status: 502, body: { error_message: 'DB_UNAVAILABLE' } });
-  for (const [method, path] of [['POST', '/api/inventory/rentals'],
-    ['POST', '/api/inventory/rentals/stock_041/approve'], ['POST', '/api/inventory/rentals/stock_041/cancel'], ['POST', '/api/inventory/reset']]) {
+  for (const [method, path] of [
+    ['POST', '/api/inventory/reset']]) {
     assert.equal((await api.handle(method, path, q, {}))?.status, 501, `${method} ${path}`);
   }
   assert.equal((await api.handle('GET', '/api/inventory/nope', q, {}))?.status, 404);
@@ -270,7 +270,7 @@ test('HTTP: with N8N_INVENTORY_BASE_URL the backend serves stock from n8n; witho
   assert.equal(dbStock.find(row => row.is_home).store_id, 'store_005');
   assert.equal((await (await fetch(`${base(dbServer)}/stores`)).json()).length, 2);
   assert.ok(sent.every(url => url === dbUrl));
-  assert.equal((await fetch(`${base(dbServer)}/rentals`, { method: 'POST', headers: { Origin: 'http://127.0.0.1:5173', 'Content-Type': 'application/json' }, body: '{}' })).status, 501);
+  assert.equal((await fetch(`${base(dbServer)}/reset`, { method: 'POST', headers: { Origin: 'http://127.0.0.1:5173', 'Content-Type': 'application/json' }, body: '{}' })).status, 501);
 
   const memStock = await (await fetch(`${base(memServer)}/stock`)).json();
   assert.equal(memStock.length, 15, 'memory mode keeps the demo seed');
@@ -291,9 +291,10 @@ const adjustRow = (/** @type {Record<string, unknown>} */ over = {}) => ({
 
 test('rentalStatus maps DB delivery/return status to API status (contract §3.4)', () => {
   assert.equal(rentalStatus('요청 중', null), 'requested');
-  assert.equal(rentalStatus('요청 승인', '반납 전'), 'approved');
-  assert.equal(rentalStatus('배송 중', '반납 전'), 'shipping');
+  assert.equal(rentalStatus('요청 승인', null), 'approved');
+  assert.equal(rentalStatus('배송 중', null), 'shipping');
   assert.equal(rentalStatus('배송 완료', '반납 전'), 'delivered');
+  assert.equal(rentalStatus('배송 완료', '반납 중'), 'returning');
   assert.equal(rentalStatus('배송 완료', '반납 완료'), 'returned');
   assert.equal(rentalStatus('???', null), 'unknown');
 });
@@ -357,4 +358,145 @@ test('api POST /stock/adjust: validates input, sends ADJUST_INVENTORY, accepts b
   assert.equal(calls.length, before);
   const noHome = createDbInventoryApi({ db: { call: async () => reply, close() {} } });
   assert.equal((await noHome.handle('POST', '/api/inventory/stock/adjust', new URLSearchParams(), { model_id: 'product_001', quantity: 1 }))?.status, 503);
+});
+
+test('api POST /rentals: home store asks nearby stores via CREATE_RENTAL; phones never reach the browser', async () => {
+  const calls = [];
+  const logs = [];
+  const created = { ...dbRental, rentalId: 'stock_041', provideStoreId: null, provideStoreName: null, deliveryStatus: '요청 중', returnStatus: null,
+    approver: null, provideInventory: null, role: undefined };
+  const candidates = [
+    { storeId: 'store_001', storeName: '테스트 1호점', distanceKm: 1.2, available: 3, manager: { name: '점장1', phone: '000-0000-0101' }, noStore: false, appliedRadiusKm: 3 },
+    { storeId: 'store_004', storeName: '테스트 4호점', distanceKm: 2.8, available: 5, manager: { name: '점장4', phone: '000-0000-0104' }, noStore: false, appliedRadiusKm: 3 },
+  ];
+  let reply = { ok: true, data: { rental: created, appliedRadiusKm: 3, candidates } };
+  const api = createDbInventoryApi({ db: { call: async (action, fields = {}, options = {}) => { calls.push({ action, fields, options }); return reply; }, close() {} },
+    homeStoreId: 'store_005', log: line => logs.push(line) });
+  const post = (/** @type {unknown} */ body) => api.handle('POST', '/api/inventory/rentals', new URLSearchParams(), body);
+
+  const res = await post({ model_id: 'product_001', quantity: 1, radius_km: 3 });
+  assert.equal(res?.status, 200);
+  assert.equal(res?.body.rental.rental_id, 'stock_041');
+  assert.equal(res?.body.rental.status, 'requested');
+  assert.equal(res?.body.rental.role, 'sent');
+  assert.equal(res?.body.rental.from_store_id, null);
+  assert.equal(res?.body.applied_radius_km, 3);
+  assert.deepEqual(res?.body.candidates, [
+    { store_id: 'store_001', store_name: '테스트 1호점', distance_km: 1.2, available: 3 },
+    { store_id: 'store_004', store_name: '테스트 4호점', distance_km: 2.8, available: 5 },
+  ]);
+  assert.ok(!JSON.stringify(res?.body).includes('000-0000'), 'no phone numbers to the browser');
+  assert.deepEqual(calls[0].fields, { requestStoreId: 'store_005', productId: 'product_001', quantity: 1, radiusKm: 3 });
+  assert.equal(calls[0].action, 'CREATE_RENTAL');
+  assert.ok(calls[0].options.timeoutMs >= 20_000, 'geocoding is slow: longer timeout');
+  assert.deepEqual(logs, ['[inventory] rental requested (notification pending): stock_041 → 2 store(s)']);
+
+  await post({ model_id: 'product_001', quantity: 2 });
+  assert.deepEqual(calls[1].fields, { requestStoreId: 'store_005', productId: 'product_001', quantity: 2 }, 'radius omitted → n8n default');
+
+  reply = { ok: false, code: 'NO_LENDER_AVAILABLE' };
+  assert.deepEqual(await post({ model_id: 'product_001', quantity: 99 }), { status: 409, body: { error_message: 'NO_LENDER_AVAILABLE' } });
+  reply = { ok: true, data: { candidates } };
+  assert.equal((await post({ model_id: 'product_001', quantity: 1 }))?.status, 502, 'missing rental → upstream failure');
+
+  const before = calls.length;
+  assert.equal((await post({ model_id: 'DEMO-I002', quantity: 1 }))?.body.error_message, 'MODEL_NOT_FOUND');
+  for (const quantity of [0, 100, 1.5, '1']) assert.equal((await post({ model_id: 'product_001', quantity }))?.body.error_message, 'INVALID_QUANTITY');
+  for (const radius_km of [0, -1, 51, '3']) assert.equal((await post({ model_id: 'product_001', quantity: 1, radius_km }))?.body.error_message, 'INVALID_RADIUS');
+  assert.equal(calls.length, before, 'invalid input never reaches n8n');
+  const noHome = createDbInventoryApi({ db: { call: async () => reply, close() {} } });
+  assert.equal((await noHome.handle('POST', '/api/inventory/rentals', new URLSearchParams(), { model_id: 'product_001', quantity: 1 }))?.status, 503);
+});
+
+test('db client: a per-call timeout overrides the default', async () => {
+  const logs = [];
+  const db = createInventoryDb({ baseUrl, log: line => logs.push(line), timeoutMs: 10_000,
+    fetchImpl: (_url, init) => new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(init.signal.reason))) });
+  const keepAlive = setTimeout(() => {}, 1000);
+  const started = Date.now();
+  assert.deepEqual(await db.call('CREATE_RENTAL', {}, { timeoutMs: 20 }), { ok: false, code: 'DB_UNAVAILABLE' });
+  clearTimeout(keepAlive);
+  assert.ok(Date.now() - started < 1000);
+  assert.deepEqual(logs, ['[n8n] inventory db failed: CREATE_RENTAL (TIMEOUT)']);
+});
+
+test('api POST /rentals/:id/approve: lender approves via APPROVE_RENTAL, low stock logged on crossing, no phones', async () => {
+  const calls = [];
+  const logs = [];
+  const approved = { ...dbRental, rentalId: 'stock_041', productId: 'product_001', quantity: 1, requestStoreId: 'store_005', provideStoreId: 'store_001',
+    deliveryStatus: '요청 승인', returnStatus: null, returnedAt: null, provideInventory: { stockQty: 15, reservedQty: 2, transferQty: 1, available: 12 }, role: undefined };
+  let reply = { ok: true, data: approved };
+  const api = createDbInventoryApi({ db: { call: async (action, fields = {}) => { calls.push({ action, ...fields }); return reply; }, close() {} },
+    homeStoreId: 'store_005', log: line => logs.push(line) });
+  const approve = (/** @type {string} */ id, /** @type {unknown} */ body) => api.handle('POST', `/api/inventory/rentals/${id}/approve`, new URLSearchParams(), body);
+
+  const res = await approve('stock_041', { store_id: 'store_001' });
+  assert.equal(res?.status, 200);
+  assert.equal(res?.body.status, 'approved');
+  assert.equal(res?.body.from_store_id, 'store_001');
+  assert.equal(res?.body.role, 'lending');
+  assert.ok(!JSON.stringify(res?.body).includes('000-0000'));
+  assert.deepEqual(calls, [{ action: 'APPROVE_RENTAL', rentalId: 'stock_041', storeId: 'store_001' }]);
+  assert.deepEqual(logs, ['[inventory] RENTAL_APPROVED (notification pending): stock_041 by store_001'], '12 left: no low-stock line');
+
+  // Lender drops from 2 to 1 available → low stock crossing is logged once.
+  reply = { ok: true, data: [{ ...approved, provideInventory: { stockQty: 3, reservedQty: 1, transferQty: 1, available: 1 } }] };
+  await approve('stock_041', {});
+  assert.deepEqual(calls[1], { action: 'APPROVE_RENTAL', rentalId: 'stock_041', storeId: 'store_005' }, 'default: home store acts');
+  assert.equal(logs.at(-1), '[inventory] low stock (notification pending): store_005 product_001 available=1');
+
+  for (const code of ['SAME_STORE', 'INVALID_RENTAL_STATUS', 'OUT_OF_STOCK']) {
+    reply = { ok: false, code };
+    assert.deepEqual(await approve('stock_041', { store_id: 'store_001' }), { status: 409, body: { error_message: code } });
+  }
+  reply = { ok: false, code: 'RENTAL_NOT_FOUND' };
+  assert.equal((await approve('stock_999', { store_id: 'store_001' }))?.status, 404);
+  reply = { ok: true, data: [] };
+  assert.equal((await approve('stock_041', { store_id: 'store_001' }))?.status, 502);
+
+  const before = calls.length;
+  assert.equal((await approve('stock_041', { store_id: 'DEMO-S002' }))?.body.error_message, 'STORE_NOT_FOUND');
+  assert.equal((await approve('rental_1', { store_id: 'store_001' }))?.status, 404, 'memory-mode id format is not a DB rental');
+  assert.equal(calls.length, before);
+});
+
+test('api POST /rentals/:id/(cancel|ship|deliver|return): one rule each, notifications only for ship/return', async () => {
+  const calls = [];
+  const logs = [];
+  const base = { ...dbRental, rentalId: 'stock_041', requestStoreId: 'store_005', provideStoreId: 'store_001', returnedAt: null, role: undefined };
+  const replies = {
+    CANCEL_RENTAL: { ...base, provideStoreId: null, provideStoreName: null, deliveryStatus: '요청 중', returnStatus: null, approver: null, provideInventory: null },
+    SHIP_RENTAL: { ...base, deliveryStatus: '배송 중', returnStatus: null },
+    DELIVER_RENTAL: { ...base, deliveryStatus: '배송 완료', returnStatus: '반납 전' },
+    RETURN_RENTAL: { ...base, deliveryStatus: '배송 완료', returnStatus: '반납 완료', returnedAt: '2026-10-05T06:47:21.270Z' },
+  };
+  const api = createDbInventoryApi({ db: { call: async (action, fields = {}) => { calls.push({ action, ...fields }); return { ok: true, data: [replies[action]] }; }, close() {} },
+    homeStoreId: 'store_005', log: line => logs.push(line) });
+  const act = (/** @type {string} */ name, /** @type {unknown} */ body) => api.handle('POST', `/api/inventory/rentals/stock_041/${name}`, new URLSearchParams(), body);
+
+  const cancelled = await act('cancel', {});
+  assert.equal(cancelled?.body.status, 'cancelled'); assert.equal(cancelled?.body.role, 'sent');
+  const shipped = await act('ship', { store_id: 'store_001' });
+  assert.equal(shipped?.body.status, 'shipping'); assert.equal(shipped?.body.role, 'lending');
+  assert.equal((await act('deliver', {}))?.body.status, 'delivered');
+  const returned = await act('return', { store_id: 'store_001' });
+  assert.equal(returned?.body.status, 'returned'); assert.equal(returned?.body.returned_at, '2026-10-05T06:47:21.270Z');
+
+  assert.deepEqual(calls, [
+    { action: 'CANCEL_RENTAL', rentalId: 'stock_041', storeId: 'store_005' },
+    { action: 'SHIP_RENTAL', rentalId: 'stock_041', storeId: 'store_001' },
+    { action: 'DELIVER_RENTAL', rentalId: 'stock_041', storeId: 'store_005' },
+    { action: 'RETURN_RENTAL', rentalId: 'stock_041', storeId: 'store_001' },
+  ]);
+  assert.deepEqual(logs, [
+    '[inventory] RENTAL_SHIPPED (notification pending): stock_041 by store_001',
+    '[inventory] RENTAL_RETURNED (notification pending): stock_041 by store_001',
+  ], 'no notification for cancel or deliver');
+  for (const res of [cancelled, shipped, returned]) assert.ok(!JSON.stringify(res?.body).includes('000-0000'));
+
+  const failing = createDbInventoryApi({ db: { call: async () => ({ ok: false, code: 'STORE_NOT_ALLOWED' }), close() {} }, homeStoreId: 'store_005' });
+  assert.deepEqual(await failing.handle('POST', '/api/inventory/rentals/stock_041/ship', new URLSearchParams(), {}), { status: 403, body: { error_message: 'STORE_NOT_ALLOWED' } });
+  const mismatch = createDbInventoryApi({ db: { call: async () => ({ ok: false, code: 'INVENTORY_MISMATCH' }), close() {} }, homeStoreId: 'store_005' });
+  assert.equal((await mismatch.handle('POST', '/api/inventory/rentals/stock_041/return', new URLSearchParams(), {}))?.status, 502, 'unknown-to-browser codes are upstream failures');
+  assert.equal((await api.handle('POST', '/api/inventory/rentals/stock_041/reject', new URLSearchParams(), {}))?.status, 404, 'reject no longer exists');
 });

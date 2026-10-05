@@ -9,7 +9,7 @@ export interface StockRow {
   stock_qty?: number; reserved_qty?: number; transfer_qty?: number; available?: number;
   maker?: string | null; price?: number | null;
 }
-export type RentalStatus = 'requested' | 'approved' | 'shipping' | 'delivered' | 'returned' | 'rejected' | 'unknown';
+export type RentalStatus = 'requested' | 'approved' | 'shipping' | 'delivered' | 'returning' | 'returned' | 'cancelled' | 'rejected' | 'unknown';
 export type RentalRole = 'sent' | 'incoming' | 'lending';
 export interface RentalRow {
   rental_id: string; model_id: string; model_name: string; variant?: string; quantity: number;
@@ -22,7 +22,7 @@ export interface RentalRow {
 export const LOW_STOCK_THRESHOLD = 1;
 
 export const rentalStatusLabels: Record<RentalStatus, string> = {
-  requested: '요청 중', approved: '승인', shipping: '배송 중', delivered: '도착', returned: '반납 완료', rejected: '거절', unknown: '확인 필요',
+  requested: '요청 중', approved: '승인', shipping: '배송 중', delivered: '도착', returning: '반납 중', returned: '반납 완료', cancelled: '취소됨', rejected: '거절', unknown: '확인 필요',
 };
 export const rentalRoleLabels: Record<RentalRole, string> = { sent: '보낸 요청', incoming: '받은 요청', lending: '빌려준 건' };
 export const rentalRoles: RentalRole[] = ['sent', 'incoming', 'lending'];

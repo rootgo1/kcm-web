@@ -2,7 +2,7 @@
  * Smart inventory backed by the n8n DB webhook `kcm-inventory-db`.
  * The backend never connects to the DB; every read/write goes through n8n (project doc KCM스마트재고.md §3).
  * Naming: DB `inventories` = per-store stock counts (actions *_INVENTORY); DB `stocks` = rentals (actions *_RENTAL).
- * Wired so far: GET /stores, GET /stock, POST /stock/adjust, GET /rentals. Other inventory routes answer 501 in DB mode until they are connected.
+ * Wired: GET /stores, GET /stock, POST /stock/adjust, GET /rentals, POST /rentals, POST /rentals/:id/(approve|cancel|ship|deliver|return). Other inventory routes answer 501 in DB mode until they are connected.
  */
 
 export const INVENTORY_DB_PATH = '/kcm-inventory-db';
@@ -30,8 +30,12 @@ export function createInventoryDb({ baseUrl, fetchImpl = fetch, log = console.lo
   /** @type {DbResult} */
   const unavailable = { ok: false, code: 'DB_UNAVAILABLE' };
 
-  /** @param {string} action @param {Record<string, unknown>} [fields] @returns {Promise<DbResult>} */
-  async function call(action, fields = {}) {
+  /**
+   * @param {string} action @param {Record<string, unknown>} [fields]
+   * @param {{ timeoutMs?: number }} [options] per-call override (CREATE_RENTAL geocodes every candidate store and is slow)
+   * @returns {Promise<DbResult>}
+   */
+  async function call(action, fields = {}, options = {}) {
     if (!valid || !url) { report(`[n8n] inventory db skipped: ${action} (N8N_INVENTORY_BASE_URL_INVALID)`); return unavailable; }
     const controller = new AbortController();
     controllers.add(controller);
@@ -39,7 +43,7 @@ export function createInventoryDb({ baseUrl, fetchImpl = fetch, log = console.lo
     try {
       const response = await fetchImpl(url.href, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, ...fields }), redirect: 'manual',
-        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(timeoutMs)]),
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(options.timeoutMs ?? timeoutMs)]),
       });
       if (!response.ok) { failure = `HTTP_${response.status}`; void response.body?.cancel().catch(() => {}); throw new Error(failure); }
       /** @type {any} */
@@ -71,21 +75,25 @@ const httpStatus = /** @type {Record<string, number>} */ ({
   RENTAL_NOT_FOUND: 404, INVENTORY_NOT_FOUND: 404, STORE_NOT_FOUND: 404, MODEL_NOT_FOUND: 404,
   STORE_NOT_ALLOWED: 403,
   SAME_STORE: 409, INVALID_RENTAL_STATUS: 409, OUT_OF_STOCK: 409, NO_LENDER_AVAILABLE: 409,
-  INVALID_QUANTITY: 400,
+  INVALID_QUANTITY: 400, INVALID_RADIUS: 400,
   NOT_IMPLEMENTED: 501,
   HOME_STORE_NOT_CONFIGURED: 503,
 });
 
 const dbStoreId = /^store_\d{3,}$/;
 const dbProductId = /^product_\d{3,}$/;
-const pendingPost = new Set(['/api/inventory/rentals', '/api/inventory/reset']);
+const pendingPost = new Set(['/api/inventory/reset']);
+/** CREATE_RENTAL: n8n geocodes the requester and every candidate store (Kakao), then inserts; measured ~7 s without the insert. */
+export const CREATE_RENTAL_TIMEOUT_MS = 25_000;
 
 /**
  * DB `stocks.delivery_status` + `return_status` → API status (contract §3.4). There is no `rejected` in DB mode.
+ * DB rule `stocks_check2`: `return_status` only has a value once delivered (`배송 완료`).
  * @param {unknown} deliveryStatus @param {unknown} returnStatus
  */
 export function rentalStatus(deliveryStatus, returnStatus) {
   if (deliveryStatus === '배송 완료' && returnStatus === '반납 완료') return 'returned';
+  if (deliveryStatus === '배송 완료' && returnStatus === '반납 중') return 'returning';
   if (deliveryStatus === '요청 중') return 'requested';
   if (deliveryStatus === '요청 승인') return 'approved';
   if (deliveryStatus === '배송 중') return 'shipping';
@@ -106,7 +114,19 @@ function singleRow(result) {
   if (code !== undefined && code !== 'OK') return { ok: false, code: typeof code === 'string' && /^[A-Z_]{1,64}$/.test(code) ? code : 'DB_UNAVAILABLE' };
   return { ok: true, data: row };
 }
-const pendingRentalAction = /^\/api\/inventory\/rentals\/(stock_\d{3,})\/(approve|cancel|ship|deliver|return)$/;
+const rentalActionPath = /^\/api\/inventory\/rentals\/(stock_\d{3,})\/(approve|cancel|ship|deliver|return)$/;
+
+/**
+ * Status changes on one rental (contract §3.10–3.12). `actor` is who may do it; the SQL in n8n is the final check.
+ * `notify` names the kcm-rental-status event (sent later; logged for now). Cancel and deliver send none.
+ */
+const rentalActions = /** @type {const} */ ({
+  approve: { action: 'APPROVE_RENTAL', actor: 'lender', notify: 'RENTAL_APPROVED' },
+  cancel: { action: 'CANCEL_RENTAL', actor: 'requester', notify: null },
+  ship: { action: 'SHIP_RENTAL', actor: 'lender', notify: 'RENTAL_SHIPPED' },
+  deliver: { action: 'DELIVER_RENTAL', actor: 'requester', notify: null },
+  return: { action: 'RETURN_RENTAL', actor: 'lender', notify: 'RENTAL_RETURNED' },
+});
 
 /**
  * REST routes under /api/inventory in DB mode. Responses keep the in-memory API's field names
@@ -147,9 +167,14 @@ export function createDbInventoryApi({ db, homeStoreId = null, log = console.log
     requester_name: row.requester?.name ?? null, approver_name: row.approver?.name ?? null,
     delivery_status: row.deliveryStatus ?? null, return_status: row.returnStatus ?? null,
   });
+  /** Candidate stores for the browser: no employee names or phone numbers (those are only for notifications). */
+  const candidateRow = (/** @type {any} */ row) => ({
+    store_id: row.storeId, store_name: row.storeName, distance_km: row.distanceKm ?? null, available: row.available ?? null,
+  });
   /** Placeholder until the kcm-inventory-changed webhook is wired: log only when the count newly crosses the threshold. */
   const lowStock = (/** @type {any} */ row) => {
     const before = Number(row.availableBefore), after = Number(row.available);
+    if (!Number.isFinite(before) || !Number.isFinite(after)) return;
     if (!(before > DB_LOW_STOCK_THRESHOLD && after <= DB_LOW_STOCK_THRESHOLD)) return;
     report(`[inventory] low stock (notification pending): ${row.storeId} ${row.productId} available=${after}`);
   };
@@ -190,7 +215,51 @@ export function createDbInventoryApi({ db, homeStoreId = null, log = console.log
         lowStock(result.data);
         return { status: 200, body: stockRow(result.data) };
       }
-      if (pendingPost.has(path) || pendingRentalAction.test(path)) return fail('NOT_IMPLEMENTED');
+      if (path === '/api/inventory/rentals') {
+        // Home store asks nearby stores at once (n8n picks candidates by distance); the first to approve takes it.
+        if (!homeStoreId) return fail('HOME_STORE_NOT_CONFIGURED');
+        if (typeof body.model_id !== 'string' || !dbProductId.test(body.model_id)) return fail('MODEL_NOT_FOUND');
+        if (!Number.isInteger(body.quantity) || body.quantity < 1 || body.quantity > 99) return fail('INVALID_QUANTITY');
+        const radius = body.radius_km;
+        if (radius !== undefined && !(typeof radius === 'number' && Number.isFinite(radius) && radius > 0 && radius <= 50)) return fail('INVALID_RADIUS');
+        const result = await db.call('CREATE_RENTAL',
+          { requestStoreId: homeStoreId, productId: body.model_id, quantity: body.quantity, ...(radius === undefined ? {} : { radiusKm: radius }) },
+          { timeoutMs: CREATE_RENTAL_TIMEOUT_MS });
+        if (!result.ok) return fail(result.code);
+        const data = /** @type {any} */ (result.data);
+        const rental = Array.isArray(data?.rental) ? data.rental[0] : data?.rental;
+        if (!rental || typeof rental.rentalId !== 'string') return fail('DB_UNAVAILABLE');
+        const candidates = Array.isArray(data.candidates) ? data.candidates.filter((/** @type {any} */ c) => c && typeof c.storeId === 'string') : [];
+        report(`[inventory] rental requested (notification pending): ${rental.rentalId} → ${candidates.length} store(s)`);
+        return { status: 200, body: {
+          rental: { ...rentalRow(rental), role: 'sent' },
+          applied_radius_km: data.appliedRadiusKm ?? null,
+          candidates: candidates.map(candidateRow),
+        } };
+      }
+      const match = rentalActionPath.exec(path);
+      if (match) {
+        const [, rentalId, name] = match;
+        const spec = rentalActions[/** @type {keyof typeof rentalActions} */ (name)];
+        // No login yet: the acting store comes from the body (default: home store) — demo trust. n8n checks it is the right party.
+        const storeId = body.store_id ?? homeStoreId;
+        if (!storeId) return fail('HOME_STORE_NOT_CONFIGURED');
+        if (typeof storeId !== 'string' || !dbStoreId.test(storeId)) return fail('STORE_NOT_FOUND');
+        const result = singleRow(await db.call(spec.action, { rentalId, storeId }));
+        if (!result.ok) return fail(result.code);
+        const rental = /** @type {any} */ (result.data);
+        if (typeof rental.rentalId !== 'string') return fail('DB_UNAVAILABLE');
+        if (spec.notify) report(`[inventory] ${spec.notify} (notification pending): ${rental.rentalId} by ${storeId}`);
+        if (name === 'approve') {
+          // Approval moved units into transfer_qty at the lender: before = after + quantity.
+          const after = rental.provideInventory?.available;
+          if (typeof after === 'number') lowStock({ storeId, productId: rental.productId, availableBefore: after + Number(rental.quantity), available: after });
+        }
+        const row = rentalRow(rental);
+        // A cancelled request no longer exists in the DB; the response is its last state.
+        return { status: 200, body: { ...row, role: storeId === rental.requestStoreId ? 'sent' : 'lending', ...(name === 'cancel' ? { status: 'cancelled' } : {}) } };
+      }
+      if (pendingPost.has(path)) return fail('NOT_IMPLEMENTED');
       return { status: 404, body: { error_message: 'NOT_FOUND' } };
     },
   };

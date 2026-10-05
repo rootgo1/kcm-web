@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => {
     proxy: {
       '/retell': { target: `http://127.0.0.1:${backendPort}`, changeOrigin: true },
       '/api/live-calls': { target: `http://127.0.0.1:${backendPort}`, changeOrigin: true },
+      '/api/inventory': { target: `http://127.0.0.1:${backendPort}`, changeOrigin: true },
     },
   },
   build: { target: 'es2022', sourcemap: false },
