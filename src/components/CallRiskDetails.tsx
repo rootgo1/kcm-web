@@ -38,6 +38,6 @@ export function CallRiskDetails({ call, customer, calls }: { call: DemoCall; cus
     <details className="call-criteria"><summary>통화별 위험 이력 ({history.length}건)</summary>
       {history.length ? <ol className="call-action-list">{history.map(record => <li key={record.call_id}><strong>{record.call_id}</strong> · <time dateTime={record.completedAt}>{new Date(record.completedAt).toLocaleString('ko-KR')}</time> · {formatRiskScore(record.risk_score)}</li>)}</ol> : <p>확정된 통화 이력이 없습니다.</p>}
     </details>
-    <p className="muted-text">팀의 통화별 위험도 정책입니다. 고객의 고정 성격·예측 확률·KT 공식 정책을 뜻하지 않으며 점수만으로 통화를 차단하거나 종료하지 않습니다.</p>
+    <p className="microcopy">위험도는 응대 참고 정보이며 점수만으로 통화를 차단하거나 종료하지 않습니다.</p>
   </section>;
 }

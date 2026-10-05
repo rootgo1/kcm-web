@@ -50,17 +50,17 @@ export function createCallController(client: Pick<RetellClient, 'createWebCall' 
           transcript: false, // Monitor is server-only; never open an authenticated browser Monitor.
           hooks: {
             onStatus: status => {
-              if (current !== generation || disposed) return;
+              if (current !== generation || disposed || (view.status !== 'connecting' && view.status !== 'live')) return;
               if (status === 'live') publish({ status: 'live', callId: session?.callId ?? '' });
             },
             onError: error => {
-              if (current !== generation || disposed) return;
+              if (current !== generation || disposed || view.status === 'ended') return;
               publish({ error: callErrorMessage(error) });
               // A mic/media failure after creation leaves a registered call. Clean up only our call.
               if (session?.callId) void client.stopCall(session.callId).catch(() => {});
             },
             onEnd: () => {
-              if (current !== generation || disposed) return;
+              if (current !== generation || disposed || view.status === 'ended') return;
               const callId = session?.callId ?? '';
               session = null;
               publish({ status: 'ended', callId });

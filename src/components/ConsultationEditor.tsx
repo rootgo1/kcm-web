@@ -59,7 +59,7 @@ export function ConsultationEditor({ appointment, onClose, onSave, registerGuard
       <p className="modal-lead">아직 반영하지 않은 입력이 있습니다. 변경을 버리면 마지막으로 반영한 기록은 유지됩니다.</p>
       <div className="modal-actions"><button ref={continueRef} className="button button-secondary" onClick={continueEditing}>계속 작성</button><button className="button button-primary" onClick={() => { const leave = leaveRef.current; leaveRef.current = null; leave?.(); }}>변경 버리기</button></div>
     </div> : <form className="consultation-form" ref={formRef} noValidate onSubmit={event => { event.preventDefault(); save(completed ? 'amend' : 'complete'); }}>
-      <p className="muted-text">{completed ? `완료 상태·건수와 최초 완료 시각(${consultationTime(appointment.consultation?.completedAt)})은 유지됩니다.` : '요약과 결과 구분은 상담 완료 시 필수입니다. 미완성 내용은 임시 반영할 수 있습니다.'}</p>
+      <p className="muted-text">{completed ? `최초 완료 시각은 ${consultationTime(appointment.consultation?.completedAt)}입니다. 수정 내용은 이력에 남습니다.` : '상담 요약과 결과 구분을 입력해 주세요. 작성 중인 내용은 초안으로 저장할 수 있습니다.'}</p>
       <div className="consultation-field"><label htmlFor="consultation-summary">상담 요약 <span>완료 시 필수 · {result.summary.length}/1,000자</span></label>
         <textarea id="consultation-summary" rows={4} value={result.summary} onChange={event => change('summary', event.target.value)} aria-invalid={!!errors.summary} aria-describedby={errors.summary ? 'summary-error' : undefined}/>
         {errors.summary && <p id="summary-error" className="field-error" role="alert">{errors.summary}</p>}
@@ -79,9 +79,9 @@ export function ConsultationEditor({ appointment, onClose, onSave, registerGuard
         {errors.followUpMemo && <p id="memo-error" className="field-error" role="alert">{errors.followUpMemo}</p>}
       </div>
       {notice && <p className="field-error" role="alert">{notice}</p>}
-      <p className="microcopy">샘플 사용자 기준으로 반영합니다. 실제 연락은 발송되지 않으며, 새로고침하면 기록과 이력이 사라집니다.</p>
+      <p className="microcopy">상담 기록은 새로고침하면 초기화되며 고객에게 연락을 보내지 않습니다.</p>
       <div className="modal-actions"><button type="button" className="button button-secondary" onClick={() => requestLeave(onClose)}>취소</button>
-        {!completed && <button type="button" className="button button-secondary" onClick={() => save('draft')}>결과 임시 반영</button>}
+        {!completed && <button type="button" className="button button-secondary" onClick={() => save('draft')}>초안 저장</button>}
         <button type="submit" className="button button-primary">{completed ? '수정 내용 반영' : '상담 완료'}</button>
       </div>
     </form>}

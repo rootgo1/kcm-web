@@ -62,6 +62,6 @@ export function ProfileMenu({ employee, store, open, onOpenChange }: {
         <div className="profile-panel-actions"><button className="profile-logout" onClick={() => { close(); setLogoutNotice(true); }}><Icon name="logout" size={17}/>로그아웃<Icon name="chevron" size={13}/></button></div>
       </div>}
     </div>
-    {logoutNotice && <Modal title="로그아웃 안내" onClose={() => setLogoutNotice(false)}><p className="modal-lead">현재 로그아웃 버튼은 화면 동작을 확인하기 위한 예시입니다.</p><p className="muted-text">실제 로그인·인증이 연결되지 않아 종료할 세션이 없습니다. 인증 연동 시 로그아웃 처리와 로그인 화면 이동을 연결할 예정입니다.</p><div className="modal-actions"><button className="button button-primary" onClick={() => setLogoutNotice(false)}>확인</button></div></Modal>}
+    {logoutNotice && <Modal title="로그아웃 안내" onClose={() => setLogoutNotice(false)}><p className="modal-lead">현재는 별도의 로그인 없이 이용하는 화면입니다.</p><p className="muted-text">종료할 로그인 세션이 없습니다. 이용을 마치려면 브라우저 탭을 닫아 주세요.</p><div className="modal-actions"><button className="button button-primary" onClick={() => setLogoutNotice(false)}>확인</button></div></Modal>}
   </>;
 }

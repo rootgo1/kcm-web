@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Icon } from './Icon';
-export function Modal({ title, onClose, children, wide = false, eyebrow = 'KCM · 샘플 화면' }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean; eyebrow?: string }) {
+export function Modal({ title, onClose, children, wide = false, eyebrow = 'KCM' }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean; eyebrow?: string }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = ref.current;

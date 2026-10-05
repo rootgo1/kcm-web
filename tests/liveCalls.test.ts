@@ -1,4 +1,5 @@
 import { calculateCallRisk } from '../src/lib/riskPolicy.js';
+import './livePresentation.test.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { applyLiveEvent, isNearConversationBottom, parseLiveEvent, subscribeLiveCalls } from '../src/live/liveCalls.js';
