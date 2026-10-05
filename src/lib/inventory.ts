@@ -76,6 +76,7 @@ const errorMessages: Record<string, string> = {
   MODEL_NOT_FOUND: '모델을 찾을 수 없습니다.',
   INVENTORY_NOT_FOUND: '이 매장에는 해당 모델의 재고 정보가 없습니다.',
   HOME_STORE_NOT_CONFIGURED: '우리 매장 설정(KCM_DEMO_STORE_ID)이 없습니다.',
+  INVENTORY_NOT_CONFIGURED: '스마트 재고 서버 설정(N8N_INVENTORY_BASE_URL)이 없습니다. .env를 확인해 주세요.',
   NOT_IMPLEMENTED: '아직 연결되지 않은 기능입니다.',
 };
 export function inventoryErrorMessage(code: string): string { return errorMessages[code] ?? `요청을 처리하지 못했습니다. (${code})`; }

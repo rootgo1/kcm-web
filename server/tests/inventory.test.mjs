@@ -2,161 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { createBackend } from '../app.mjs';
-import { createInventoryEvents, createInventoryStore, HOME_STORE_ID, inventoryConfig } from '../inventory.mjs';
-import { createInventoryDb, createDbInventoryApi, createInventoryNotifier, inventoryDbConfig, INVENTORY_DB_PATH, rentalStatus } from '../inventory-db.mjs';
+import { createInventoryDb, createDbInventoryApi, createInventoryNotifier, inventoryDbConfig, INVENTORY_DB_PATH, rentalStatus } from '../inventory.mjs';
 
-// Synthetic fixtures only: never a production webhook.
-const webhookUrl = 'https://workflow.example.test/webhook/inventory-fixture';
-const lender = 'DEMO-S002', iphone = 'DEMO-I002';
-const at = () => '2026-10-02T00:00:00.000Z';
-const qty = (store, storeId, modelId) => store.stock(storeId).value.find(row => row.model_id === modelId).quantity;
-const tick = () => new Promise(resolve => setImmediate(resolve));
-
-test('config reads only the inventory webhook and trims it', () => {
-  assert.deepEqual(inventoryConfig({}), { inventoryWebhookUrl: '' });
-  assert.deepEqual(inventoryConfig({ N8N_INVENTORY_WEBHOOK_URL: ` ${webhookUrl} `, N8N_WEBHOOK_URL: 'https://other.example.test' }), { inventoryWebhookUrl: webhookUrl });
-});
-
-test('stock lists home and other stores; filter by store and unknown store', () => {
-  const store = createInventoryStore({ now: at });
-  assert.equal(store.stock(null).value.length, 15);
-  const home = store.stock(HOME_STORE_ID).value;
-  assert.equal(home.length, 3);
-  assert.ok(home.every(row => row.is_home && row.store_name === 'KT플라자 동성로점'));
-  assert.deepEqual(store.stock('nope'), { ok: false, status: 404, code: 'STORE_NOT_FOUND' });
-});
-
-test('only the home store count can be adjusted, to a non-negative integer', () => {
-  const store = createInventoryStore({ now: at });
-  assert.equal(store.adjust(HOME_STORE_ID, iphone, 4).value.quantity, 4);
-  assert.equal(qty(store, HOME_STORE_ID, iphone), 4);
-  assert.equal(store.adjust(lender, iphone, 9).code, 'STORE_NOT_ALLOWED');
-  assert.equal(store.adjust(HOME_STORE_ID, iphone, -1).code, 'INVALID_QUANTITY');
-  assert.equal(store.adjust(HOME_STORE_ID, iphone, 1.5).code, 'INVALID_QUANTITY');
-  assert.equal(store.adjust(HOME_STORE_ID, 'nope', 1).code, 'MODEL_NOT_FOUND');
-});
-
-test('full rental flow: request → approve deducts lender stock → ship → deliver → return restores it', () => {
-  const store = createInventoryStore({ now: at });
-  const before = qty(store, lender, iphone);
-  const rental = store.request(iphone, 2, lender).value;
-  assert.equal(rental.status, 'requested'); assert.equal(rental.to_store_id, HOME_STORE_ID); assert.ok(!('deadline' in rental), 'no return deadline by team decision');
-  assert.equal(qty(store, lender, iphone), before, 'requesting does not move stock');
-  assert.equal(store.approve(rental.rental_id, lender).value.status, 'approved');
-  assert.equal(qty(store, lender, iphone), before - 2);
-  assert.equal(store.deliver(rental.rental_id, HOME_STORE_ID).code, 'INVALID_RENTAL_STATUS', 'must ship before delivery');
-  assert.equal(store.ship(rental.rental_id, HOME_STORE_ID).code, 'STORE_NOT_ALLOWED', 'only the lender ships');
-  assert.equal(store.ship(rental.rental_id, lender).value.status, 'shipping');
-  assert.equal(store.deliver(rental.rental_id, HOME_STORE_ID).value.status, 'delivered');
-  assert.equal(qty(store, HOME_STORE_ID, iphone), 0, 'borrowed units are not counted as home stock');
-  const done = store.complete(rental.rental_id, lender).value;
-  assert.equal(done.status, 'returned');
-  assert.deepEqual(done.history.map(h => h.status), ['requested', 'approved', 'shipping', 'delivered', 'returned']);
-  assert.equal(qty(store, lender, iphone), before);
-  assert.equal(store.rentals(HOME_STORE_ID).value.length, 1);
-  assert.equal(store.rentals(lender).value.length, 1);
-  assert.equal(store.rentals('DEMO-S003').value.length, 0);
-});
-
-test('without a lender, the store with the most units is picked; none available is a 409', () => {
-  const store = createInventoryStore({ now: at });
-  assert.equal(store.request(iphone, 1).value.from_store_id, 'DEMO-S002');
-  assert.equal(store.request(iphone, 50).code, 'NO_LENDER_AVAILABLE');
-  assert.equal(store.request(iphone, 1, HOME_STORE_ID).code, 'SAME_STORE');
-  assert.equal(store.request(iphone, 0).code, 'INVALID_QUANTITY');
-});
-
-test('approval: only the lender, only once, never below zero (last unit can not be sold twice)', () => {
-  const store = createInventoryStore({ now: at });
-  const a = store.request(iphone, 1, 'DEMO-S005').value, b = store.request(iphone, 1, 'DEMO-S005').value;
-  assert.equal(store.approve(a.rental_id, HOME_STORE_ID).code, 'STORE_NOT_ALLOWED');
-  assert.equal(store.approve(a.rental_id, 'DEMO-S005').ok, true);
-  assert.equal(store.approve(a.rental_id, 'DEMO-S005').code, 'INVALID_RENTAL_STATUS', 'double approval is rejected');
-  assert.equal(store.approve(b.rental_id, 'DEMO-S005').code, 'OUT_OF_STOCK');
-  assert.equal(qty(store, 'DEMO-S005', iphone), 0);
-  assert.equal(store.reject(b.rental_id, 'DEMO-S005').value.status, 'rejected');
-  assert.equal(store.deliver(b.rental_id, HOME_STORE_ID).code, 'INVALID_RENTAL_STATUS');
-  assert.equal(store.approve('rental_999', 'DEMO-S005').code, 'RENTAL_NOT_FOUND');
-});
-
-test('events use the n8n contract; LOW_STOCK fires only when crossing the threshold', () => {
-  const store = createInventoryStore({ now: at });
-  const created = store.request(iphone, 2, lender);
-  assert.deepEqual(created.events, [{ event: 'RENTAL_REQUESTED', rentalId: 'rental_1', productName: 'iPhone Pro', quantity: 2,
-    fromStore: 'KCM 수성 데모점', toStore: 'KT플라자 동성로점', occurredAt: at() }]);
-  const approved = store.approve('rental_1', lender);
-  assert.deepEqual(approved.events.map(e => e.event), ['RENTAL_APPROVED', 'LOW_STOCK'], '3 → 1 crosses the threshold');
-  assert.deepEqual(approved.events[1], { event: 'LOW_STOCK', productName: 'iPhone Pro', store: 'KCM 수성 데모점', quantity: 1, threshold: 1, occurredAt: at() });
-  assert.deepEqual(store.reject(store.request(iphone, 1, lender).value.rental_id, lender).events.map(e => e.event), ['RENTAL_REJECTED']);
-  const galaxyZ = 'DEMO-I003';
-  assert.deepEqual(store.adjust(HOME_STORE_ID, galaxyZ, 1).events.map(e => e.event), ['LOW_STOCK']);
-  assert.deepEqual(store.adjust(HOME_STORE_ID, galaxyZ, 0).events, [], 'already low: no repeat alert');
-  assert.deepEqual(store.adjust(HOME_STORE_ID, galaxyZ, 5).events, []);
-  assert.deepEqual(store.adjust(HOME_STORE_ID, galaxyZ, 2).events, [], '2 units left is not low');
-  assert.deepEqual(store.adjust(HOME_STORE_ID, galaxyZ, 0).events.map(e => e.event), ['LOW_STOCK'], 'dropping straight to 0 also alerts');
-});
-
-test('reset restores seed stock and clears rentals', () => {
-  const store = createInventoryStore({ now: at });
-  const r = store.request(iphone, 1, lender).value;
-  store.approve(r.rental_id, lender);
-  store.reset();
-  assert.equal(qty(store, lender, iphone), 3);
-  assert.equal(store.rentals(HOME_STORE_ID).value.length, 0);
-});
-
-test('events: no URL sends nothing; invalid URL is skipped; HTTP failure is logged with a code only', async () => {
-  const requests = [], logs = [];
-  const fetchImpl = async (url, init) => { requests.push({ url, init }); return new Response('secret-body', { status: 500 }); };
-  await createInventoryEvents({ webhookUrl: '', fetchImpl, log: l => logs.push(l) }).notify({ event: 'x' });
-  await createInventoryEvents({ webhookUrl: 'http://insecure.example.test', fetchImpl, log: l => logs.push(l) }).notify({ event: 'x' });
-  assert.equal(requests.length, 0);
-  await createInventoryEvents({ webhookUrl, fetchImpl, log: l => logs.push(l) }).notify({ event: 'rental.shipping' });
-  assert.equal(requests.length, 1);
-  assert.deepEqual(logs, ['[n8n] inventory event skipped: x (N8N_INVENTORY_WEBHOOK_URL_INVALID)', '[n8n] inventory event failed: rental.shipping (HTTP_500)']);
-  assert.ok(!logs.join().includes('secret-body') && !logs.join().includes(webhookUrl));
-});
-
-test('HTTP: REST flow through the backend and one n8n event per change', async t => {
-  const events = [];
-  const server = createBackend({ key: '', agentId: '', monitors: { start() {}, close() {}, release() {} }, log: () => {},
-    inventory: createInventoryStore({ now: at }), inventoryWebhookUrl: webhookUrl,
-    webhookFetchImpl: async (url, init) => { assert.equal(url, webhookUrl); events.push(JSON.parse(init.body)); return new Response('ok'); } });
-  server.listen(0, '127.0.0.1'); await once(server, 'listening');
-  t.after(() => { server.closeAllConnections(); server.close(); });
-  const base = `http://127.0.0.1:${server.address().port}/api/inventory`;
-  const headers = { Origin: 'http://127.0.0.1:5173', 'Content-Type': 'application/json' };
-  const post = (path, body) => fetch(base + path, { method: 'POST', headers, body: JSON.stringify(body) });
-
-  assert.equal((await (await fetch(`${base}/stores`)).json()).length, 5);
-  assert.equal((await (await fetch(`${base}/stock?store_id=${HOME_STORE_ID}`)).json()).length, 3);
-  assert.equal((await post('/stock/adjust', { model_id: 'DEMO-I001', quantity: 6 })).status, 200);
-  assert.equal((await post('/stock/adjust', { model_id: 'DEMO-I003', quantity: 1 })).status, 200);
-
-  const created = await (await post('/rentals', { model_id: iphone, quantity: 1 })).json();
-  assert.equal(created.status, 'requested');
-  const forbidden = await post(`/rentals/${created.rental_id}/approve`, { store_id: HOME_STORE_ID });
-  assert.equal(forbidden.status, 403);
-  assert.deepEqual(await forbidden.json(), { error_message: 'STORE_NOT_ALLOWED' });
-  assert.equal((await (await post(`/rentals/${created.rental_id}/approve`, { store_id: created.from_store_id })).json()).status, 'approved');
-  assert.equal((await (await post(`/rentals/${created.rental_id}/ship`, { store_id: created.from_store_id })).json()).status, 'shipping');
-  assert.equal((await (await post(`/rentals/${created.rental_id}/deliver`, {})).json()).status, 'delivered');
-  assert.equal((await (await post(`/rentals/${created.rental_id}/return`, { store_id: created.from_store_id })).json()).status, 'returned');
-  assert.equal((await (await fetch(`${base}/rentals`)).json())[0].status, 'returned');
-
-  const noOrigin = await fetch(`${base}/rentals`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-  assert.equal(noOrigin.status, 403);
-  assert.equal((await fetch(`${base}/rentals`, { method: 'POST', headers: { Origin: headers.Origin, 'Content-Type': 'text/plain' }, body: '{}' })).status, 415);
-  assert.equal((await fetch(`${base}/unknown`)).status, 404);
-
-  await tick();
-  assert.deepEqual(events.map(e => e.event),
-    ['LOW_STOCK', 'RENTAL_REQUESTED', 'RENTAL_APPROVED', 'RENTAL_SHIPPED', 'RENTAL_DELIVERED', 'RENTAL_RETURNED']);
-  assert.deepEqual(events[2], { event: 'RENTAL_APPROVED', rentalId: created.rental_id, productName: 'iPhone Pro', quantity: 1,
-    fromStore: 'KCM 수성 데모점', toStore: 'KT플라자 동성로점', occurredAt: at() });
-});
-
-// ---- DB mode (n8n kcm-inventory-db) ----
 // Synthetic fixtures only: never the real n8n URL or real store data.
 const baseUrl = 'https://workflow.example.test/webhook';
 const dbUrl = baseUrl + INVENTORY_DB_PATH;
@@ -253,13 +100,13 @@ test('api: upstream failure is 502, unwired routes are 501, unknown paths 404', 
   assert.equal(await api.handle('GET', '/retell/config', q, {}), null);
 });
 
-test('HTTP: with N8N_INVENTORY_BASE_URL the backend serves stock from n8n; without it the memory store is used', async t => {
+test('HTTP: with N8N_INVENTORY_BASE_URL the backend serves stock from n8n; without it inventory routes answer 503', async t => {
   const sent = [];
   const dbServer = createBackend({ key: '', agentId: '', monitors: { start() {}, close() {}, release() {} }, log: () => {},
     demoStoreId: 'store_005', inventoryBaseUrl: baseUrl,
     webhookFetchImpl: async (url, init) => { sent.push(url); return json({ ok: true, data: JSON.parse(String(init?.body)).action === 'GET_STORES' ? stores : stock }); } });
-  const memServer = createBackend({ key: '', agentId: '', monitors: { start() {}, close() {}, release() {} }, log: () => {} });
-  for (const server of [dbServer, memServer]) {
+  const offServer = createBackend({ key: '', agentId: '', monitors: { start() {}, close() {}, release() {} }, log: () => {} });
+  for (const server of [dbServer, offServer]) {
     server.listen(0, '127.0.0.1'); await once(server, 'listening');
     t.after(() => { server.closeAllConnections(); server.close(); });
   }
@@ -272,9 +119,10 @@ test('HTTP: with N8N_INVENTORY_BASE_URL the backend serves stock from n8n; witho
   assert.ok(sent.every(url => url === dbUrl));
   assert.equal((await fetch(`${base(dbServer)}/reset`, { method: 'POST', headers: { Origin: 'http://127.0.0.1:5173', 'Content-Type': 'application/json' }, body: '{}' })).status, 501);
 
-  const memStock = await (await fetch(`${base(memServer)}/stock`)).json();
-  assert.equal(memStock.length, 15, 'memory mode keeps the demo seed');
-  assert.ok(memStock[0].store_id.startsWith('DEMO-'));
+  const off = await fetch(`${base(offServer)}/stock`);
+  assert.equal(off.status, 503);
+  assert.deepEqual(await off.json(), { error_message: 'INVENTORY_NOT_CONFIGURED' });
+  assert.equal((await fetch(`http://127.0.0.1:${offServer.address().port}/retell/config`)).status, 200, 'other routes unaffected');
 });
 
 const dbRental = {
@@ -475,7 +323,7 @@ test('api POST /rentals/:id/approve: lender approves via APPROVE_RENTAL, low sto
 
   const before = calls.length;
   assert.equal((await approve('stock_041', { store_id: 'DEMO-S002' }))?.body.error_message, 'STORE_NOT_FOUND');
-  assert.equal((await approve('rental_1', { store_id: 'store_001' }))?.status, 404, 'memory-mode id format is not a DB rental');
+  assert.equal((await approve('rental_1', { store_id: 'store_001' }))?.status, 404, 'old demo id format is not a DB rental');
   assert.equal(calls.length, before);
 });
 

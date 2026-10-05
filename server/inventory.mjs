@@ -1,269 +1,346 @@
 /**
- * Smart inventory demo API. State lives in this server process only (no DB) and resets on restart.
- * Stores/models mirror the UI sample data. Rental status changes and LOW_STOCK are POSTed to n8n
- * when configured, for notifications only (n8n does not own the data).
+ * Smart inventory API, backed by the n8n DB webhook `kcm-inventory-db` (the old in-memory demo store was removed).
+ * Without N8N_INVENTORY_BASE_URL every /api/inventory route answers 503 INVENTORY_NOT_CONFIGURED.
+ * The backend never connects to the DB; every read/write goes through n8n (project doc KCM스마트재고.md §3).
+ * Naming: DB `inventories` = per-store stock counts (actions *_INVENTORY); DB `stocks` = rentals (actions *_RENTAL).
+ * Wired: GET /stores, GET /stock, POST /stock/adjust, GET /rentals, POST /rentals, POST /rentals/:id/(approve|cancel|ship|deliver|return). Other inventory routes answer 501 in DB mode until they are connected.
  */
 
-export const HOME_STORE_ID = 'DEMO-S001';
+export const INVENTORY_DB_PATH = '/kcm-inventory-db';
 
-/** Virtual stores and stock only; not real store data. */
-const seedStores = [
-  { id: 'DEMO-S001', name: 'KT플라자 동성로점', is_home: true },
-  { id: 'DEMO-S002', name: 'KCM 수성 데모점', is_home: false },
-  { id: 'DEMO-S003', name: 'KCM 동성로 데모점', is_home: false },
-  { id: 'DEMO-S004', name: 'KCM 성서 데모점', is_home: false },
-  { id: 'DEMO-S005', name: 'KCM 구미 데모점', is_home: false },
-];
-const seedModels = [
-  { id: 'DEMO-I001', name: 'Galaxy S 시리즈', variant: '256GB · 블랙' },
-  { id: 'DEMO-I002', name: 'iPhone Pro', variant: '256GB · 내추럴' },
-  { id: 'DEMO-I003', name: 'Galaxy Z 시리즈', variant: '256GB · 실버' },
-];
-/** @type {Record<string, Record<string, number>>} */
-const seedStock = {
-  'DEMO-S001': { 'DEMO-I001': 2, 'DEMO-I002': 0, 'DEMO-I003': 5 },
-  'DEMO-S002': { 'DEMO-I001': 4, 'DEMO-I002': 3, 'DEMO-I003': 1 },
-  'DEMO-S003': { 'DEMO-I001': 1, 'DEMO-I002': 0, 'DEMO-I003': 3 },
-  'DEMO-S004': { 'DEMO-I001': 5, 'DEMO-I002': 2, 'DEMO-I003': 0 },
-  'DEMO-S005': { 'DEMO-I001': 0, 'DEMO-I002': 1, 'DEMO-I003': 2 },
-};
-
-/** Team rule: alert when only 1 unit (or none) is left. */
-export const LOW_STOCK_THRESHOLD = 1;
-
-/** @typedef {'requested' | 'approved' | 'shipping' | 'delivered' | 'returned' | 'rejected'} RentalStatus */
-/**
- * @typedef {{ rental_id: string, model_id: string, quantity: number, from_store_id: string, to_store_id: string,
- * status: RentalStatus, requested_at: string, updated_at: string,
- * history: { status: RentalStatus, at: string, store_id: string }[] }} Rental
- */
-/** @typedef {Record<string, unknown>} InventoryEvent n8n notification payload (flat, camelCase). */
-/** @typedef {{ ok: true, value: any, events?: InventoryEvent[] } | { ok: false, status: number, code: string }} Outcome */
-
-/** n8n event name per status the rental moves into. */
-const rentalEvents = /** @type {const} */ ({
-  requested: 'RENTAL_REQUESTED', approved: 'RENTAL_APPROVED', rejected: 'RENTAL_REJECTED',
-  shipping: 'RENTAL_SHIPPED', delivered: 'RENTAL_DELIVERED', returned: 'RENTAL_RETURNED',
-});
-
-const fail = (/** @type {number} */ status, /** @type {string} */ code) => /** @type {Outcome} */ ({ ok: false, status, code });
-
-/** Server-only configuration. Separate from the call-result webhook. */
-export function inventoryConfig(/** @type {NodeJS.ProcessEnv} */ env = process.env) {
-  return { inventoryWebhookUrl: env.N8N_INVENTORY_WEBHOOK_URL?.trim() ?? '' };
+/** Server-only configuration. An empty base URL keeps the in-memory demo store. */
+export function inventoryDbConfig(/** @type {NodeJS.ProcessEnv} */ env = process.env) {
+  return { inventoryBaseUrl: (env.N8N_INVENTORY_BASE_URL?.trim() ?? '').replace(/\/+$/, '') };
 }
 
-/**
- * Single-process store: each operation runs synchronously, so a stock check and its change
- * can't interleave with another request (no double approval / overselling the last unit).
- * @param {{ now?: () => string }} [options]
- */
-export function createInventoryStore({ now = () => new Date().toISOString() } = {}) {
-  /** @type {Map<string, number>} */
-  const stock = new Map();
-  /** @type {Map<string, Rental>} */
-  const rentals = new Map();
-  let sequence = 0;
-  const key = (/** @type {string} */ storeId, /** @type {string} */ modelId) => `${storeId}:${modelId}`;
-  const store = (/** @type {unknown} */ id) => seedStores.find(item => item.id === id);
-  const model = (/** @type {unknown} */ id) => seedModels.find(item => item.id === id);
-  const quantityOf = (/** @type {string} */ storeId, /** @type {string} */ modelId) => stock.get(key(storeId, modelId)) ?? 0;
-  const stockRow = (/** @type {string} */ storeId, /** @type {string} */ modelId) => {
-    const s = /** @type {typeof seedStores[number]} */ (store(storeId)), m = /** @type {typeof seedModels[number]} */ (model(modelId));
-    return { store_id: s.id, store_name: s.name, is_home: s.is_home, model_id: m.id, model_name: m.name, variant: m.variant, quantity: quantityOf(s.id, m.id) };
-  };
-  const view = (/** @type {Rental} */ rental) => ({
-    ...rental, history: rental.history.map(entry => ({ ...entry })),
-    model_name: model(rental.model_id)?.name ?? '', from_store_name: store(rental.from_store_id)?.name ?? '', to_store_name: store(rental.to_store_id)?.name ?? '',
-  });
-  const reset = () => {
-    stock.clear(); rentals.clear(); sequence = 0;
-    for (const [storeId, models] of Object.entries(seedStock)) for (const [modelId, quantity] of Object.entries(models)) stock.set(key(storeId, modelId), quantity);
-  };
-  reset();
-
-  /** @param {Rental} rental @param {RentalStatus} status @param {string} at @returns {InventoryEvent} */
-  const rentalEvent = (rental, status, at) => ({
-    event: rentalEvents[/** @type {keyof typeof rentalEvents} */ (status)], rentalId: rental.rental_id,
-    productName: model(rental.model_id)?.name ?? '', quantity: rental.quantity,
-    fromStore: store(rental.from_store_id)?.name ?? '', toStore: store(rental.to_store_id)?.name ?? '',
-    occurredAt: at,
-  });
-  /**
-   * Sets a count and reports LOW_STOCK only when it newly crosses the threshold (no repeat alerts).
-   * @param {string} storeId @param {string} modelId @param {number} quantity @returns {InventoryEvent[]}
-   */
-  const setStock = (storeId, modelId, quantity) => {
-    const before = quantityOf(storeId, modelId);
-    stock.set(key(storeId, modelId), quantity);
-    if (before <= LOW_STOCK_THRESHOLD || quantity > LOW_STOCK_THRESHOLD) return [];
-    return [{ event: 'LOW_STOCK', productName: model(modelId)?.name ?? '', store: store(storeId)?.name ?? '',
-      quantity, threshold: LOW_STOCK_THRESHOLD, occurredAt: now() }];
-  };
-
-  /**
-   * Shared rule for status changes: only the named party may act, and only from the expected status.
-   * `apply` may block (return a failure) or return extra events such as LOW_STOCK.
-   * @param {unknown} rentalId @param {unknown} actor @param {RentalStatus} from @param {RentalStatus} to
-   * @param {'from_store_id' | 'to_store_id'} party @param {(rental: Rental) => Outcome | InventoryEvent[]} [apply]
-   * @returns {Outcome}
-   */
-  const transition = (rentalId, actor, from, to, party, apply) => {
-    const rental = typeof rentalId === 'string' ? rentals.get(rentalId) : undefined;
-    if (!rental) return fail(404, 'RENTAL_NOT_FOUND');
-    if (actor !== rental[party]) return fail(403, 'STORE_NOT_ALLOWED');
-    if (rental.status !== from) return fail(409, 'INVALID_RENTAL_STATUS');
-    const extra = apply?.(rental) ?? [];
-    if (!Array.isArray(extra)) return extra;
-    const at = now();
-    rental.status = to; rental.updated_at = at;
-    rental.history.push({ status: to, at, store_id: /** @type {string} */ (actor) });
-    return { ok: true, value: view(rental), events: [rentalEvent(rental, to, at), ...extra] };
-  };
-
-  return {
-    reset,
-    stores: () => seedStores.map(item => ({ ...item })),
-    /** @param {string | null} storeId */
-    stock(storeId) {
-      if (storeId !== null && !store(storeId)) return fail(404, 'STORE_NOT_FOUND');
-      const rows = seedStores.filter(s => storeId === null || s.id === storeId).flatMap(s => seedModels.map(m => stockRow(s.id, m.id)));
-      return /** @type {Outcome} */ ({ ok: true, value: rows });
-    },
-    /** Manual count correction; only the home store's own stock. */
-    adjust(/** @type {unknown} */ storeId, /** @type {unknown} */ modelId, /** @type {unknown} */ quantity) {
-      if (storeId !== HOME_STORE_ID) return store(storeId) ? fail(403, 'STORE_NOT_ALLOWED') : fail(404, 'STORE_NOT_FOUND');
-      if (!model(modelId)) return fail(404, 'MODEL_NOT_FOUND');
-      if (!Number.isInteger(quantity) || /** @type {number} */ (quantity) < 0 || /** @type {number} */ (quantity) > 9999) return fail(400, 'INVALID_QUANTITY');
-      const events = setStock(HOME_STORE_ID, /** @type {string} */ (modelId), /** @type {number} */ (quantity));
-      return /** @type {Outcome} */ ({ ok: true, value: stockRow(HOME_STORE_ID, /** @type {string} */ (modelId)), events });
-    },
-    /** Rentals the store sent or received, newest first. */
-    rentals(/** @type {string} */ storeId) {
-      if (!store(storeId)) return fail(404, 'STORE_NOT_FOUND');
-      const rows = [...rentals.values()].filter(r => r.from_store_id === storeId || r.to_store_id === storeId).reverse().map(view);
-      return /** @type {Outcome} */ ({ ok: true, value: rows });
-    },
-    /**
-     * Home store borrows from another store. Without from_store_id, picks the store with the most units.
-     * Stock is only checked here; it is deducted on approval.
-     */
-    request(/** @type {unknown} */ modelId, /** @type {unknown} */ quantity, /** @type {unknown} */ fromStoreId) {
-      if (!model(modelId)) return fail(404, 'MODEL_NOT_FOUND');
-      if (!Number.isInteger(quantity) || /** @type {number} */ (quantity) < 1 || /** @type {number} */ (quantity) > 99) return fail(400, 'INVALID_QUANTITY');
-      const amount = /** @type {number} */ (quantity), modelKey = /** @type {string} */ (modelId);
-      let lender = fromStoreId;
-      if (lender === undefined || lender === null) {
-        const candidates = seedStores.filter(s => !s.is_home && quantityOf(s.id, modelKey) >= amount);
-        candidates.sort((a, b) => quantityOf(b.id, modelKey) - quantityOf(a.id, modelKey));
-        if (!candidates.length) return fail(409, 'NO_LENDER_AVAILABLE');
-        lender = candidates[0].id;
-      }
-      if (!store(lender)) return fail(404, 'STORE_NOT_FOUND');
-      if (lender === HOME_STORE_ID) return fail(400, 'SAME_STORE');
-      if (quantityOf(/** @type {string} */ (lender), modelKey) < amount) return fail(409, 'OUT_OF_STOCK');
-      const at = now();
-      /** @type {Rental} */
-      const rental = { rental_id: `rental_${++sequence}`, model_id: modelKey, quantity: amount, from_store_id: /** @type {string} */ (lender), to_store_id: HOME_STORE_ID,
-        status: 'requested', requested_at: at, updated_at: at, history: [{ status: 'requested', at, store_id: HOME_STORE_ID }] };
-      rentals.set(rental.rental_id, rental);
-      return /** @type {Outcome} */ ({ ok: true, value: view(rental), events: [rentalEvent(rental, 'requested', at)] });
-    },
-    /** Lender approves: stock leaves the lender at this point. */
-    approve: (/** @type {unknown} */ id, /** @type {unknown} */ actor) => transition(id, actor, 'requested', 'approved', 'from_store_id', rental => {
-      const available = quantityOf(rental.from_store_id, rental.model_id);
-      if (available < rental.quantity) return fail(409, 'OUT_OF_STOCK');
-      return setStock(rental.from_store_id, rental.model_id, available - rental.quantity);
-    }),
-    reject: (/** @type {unknown} */ id, /** @type {unknown} */ actor) => transition(id, actor, 'requested', 'rejected', 'from_store_id'),
-    /** Lender sends the approved units. */
-    ship: (/** @type {unknown} */ id, /** @type {unknown} */ actor) => transition(id, actor, 'approved', 'shipping', 'from_store_id'),
-    /** Borrower confirms arrival. Borrowed units are not added to the borrower's own stock. */
-    deliver: (/** @type {unknown} */ id, /** @type {unknown} */ actor) => transition(id, actor, 'shipping', 'delivered', 'to_store_id'),
-    /** Lender confirms the units came back; stock is restored. */
-    complete: (/** @type {unknown} */ id, /** @type {unknown} */ actor) => transition(id, actor, 'delivered', 'returned', 'from_store_id',
-      rental => setStock(rental.from_store_id, rental.model_id, quantityOf(rental.from_store_id, rental.model_id) + rental.quantity)),
-  };
-}
+/** @typedef {{ ok: true, data: unknown } | { ok: false, code: string }} DbResult */
 
 /**
- * Fire-and-forget change events to n8n. One attempt, no retry; failures never affect the API response.
- * @param {{ webhookUrl: string, fetchImpl?: typeof fetch, log?: (line: string) => void, timeoutMs?: number }} options
+ * Calls n8n with `{ action, ...fields }` and expects `{ ok: true, data }` or `{ ok: false, code }`.
+ * One attempt, no retry. Network errors, timeouts, non-2xx and malformed bodies all become DB_UNAVAILABLE;
+ * only a fixed code is logged (never the URL or response body).
+ * @param {{ baseUrl: string, fetchImpl?: typeof fetch, log?: (line: string) => void, timeoutMs?: number }} options
  */
-export function createInventoryEvents({ webhookUrl, fetchImpl = fetch, log = console.log, timeoutMs = 10_000 }) {
+export function createInventoryDb({ baseUrl, fetchImpl = fetch, log = console.log, timeoutMs = 10_000 }) {
+  /** @type {URL | null} */
+  let url = null;
+  try { url = new URL(baseUrl + INVENTORY_DB_PATH); } catch { url = null; }
+  const valid = Boolean(url && url.protocol === 'https:' && !url.username && !url.password && !url.search && !url.hash);
   const controllers = new Set();
   const report = (/** @type {string} */ message) => { try { log(message); } catch { /* logging must not affect the API */ } };
-  /** @param {Record<string, unknown>} payload */
-  const notify = async payload => {
-    if (!webhookUrl) return;
-    let url;
-    try { url = new URL(webhookUrl); } catch { url = null; }
-    if (!url || url.protocol !== 'https:' || url.username || url.password || url.hash) { report(`[n8n] inventory event skipped: ${payload.event} (N8N_INVENTORY_WEBHOOK_URL_INVALID)`); return; }
+  /** @type {DbResult} */
+  const unavailable = { ok: false, code: 'DB_UNAVAILABLE' };
+
+  /**
+   * @param {string} action @param {Record<string, unknown>} [fields]
+   * @param {{ timeoutMs?: number }} [options] per-call override (CREATE_RENTAL geocodes every candidate store and is slow)
+   * @returns {Promise<DbResult>}
+   */
+  async function call(action, fields = {}, options = {}) {
+    if (!valid || !url) { report(`[n8n] inventory db skipped: ${action} (N8N_INVENTORY_BASE_URL_INVALID)`); return unavailable; }
     const controller = new AbortController();
     controllers.add(controller);
     let failure = 'NETWORK_ERROR';
     try {
-      const response = await fetchImpl(webhookUrl, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), redirect: 'manual',
-        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(timeoutMs)]),
+      const response = await fetchImpl(url.href, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, ...fields }), redirect: 'manual',
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(options.timeoutMs ?? timeoutMs)]),
       });
-      // Never read or log the response body.
-      void response.body?.cancel().catch(() => {});
-      if (!response.ok) { failure = `HTTP_${response.status}`; throw new Error(); }
-      report(`[n8n] inventory event delivered: ${payload.event}`);
+      if (!response.ok) { failure = `HTTP_${response.status}`; void response.body?.cancel().catch(() => {}); throw new Error(failure); }
+      /** @type {any} */
+      let body;
+      try { body = JSON.parse(await response.text()); } catch { failure = 'INVALID_RESPONSE'; throw new Error(failure); }
+      if (body && body.ok === true && 'data' in body) return { ok: true, data: body.data };
+      if (body && body.ok === false && typeof body.code === 'string' && /^[A-Z_]{1,64}$/.test(body.code)) return { ok: false, code: body.code };
+      failure = 'INVALID_RESPONSE';
+      throw new Error(failure);
     } catch (error) {
       if (controller.signal.aborted) failure = 'SERVER_STOPPED';
       else if (error instanceof Error && error.name === 'TimeoutError') failure = 'TIMEOUT';
-      report(`[n8n] inventory event failed: ${payload.event} (${failure})`);
+      report(`[n8n] inventory db failed: ${action} (${failure})`);
+      return unavailable;
     } finally { controllers.delete(controller); }
-  };
+  }
+
   return {
-    notify,
+    call,
     close() { for (const controller of controllers) controller.abort(); },
   };
 }
 
-const rentalAction = /^\/api\/inventory\/rentals\/(rental_\d{1,9})\/(approve|reject|ship|deliver|return)$/;
+export const RENTAL_STATUS_PATH = '/kcm-rental-status';
+export const INVENTORY_CHANGED_PATH = '/kcm-inventory-changed';
 
 /**
- * REST routes under /api/inventory. Returns null for paths it doesn't own.
- * The acting store comes from the body; there is no login yet, so this is demo-only trust.
- * @param {{ store: ReturnType<typeof createInventoryStore>, events: ReturnType<typeof createInventoryEvents> }} options
+ * Fire-and-forget notifications to the n8n alert webhooks (contract §4): rental status and low stock.
+ * One attempt, no retry, 10 s; failures never affect the API response. Only the event and a fixed code are logged
+ * (never phone numbers, the URL or the response body). Payloads without recipients are skipped.
+ * @param {{ baseUrl: string, fetchImpl?: typeof fetch, log?: (line: string) => void, timeoutMs?: number }} options
  */
-export function createInventoryApi({ store, events }) {
-  /** @param {Outcome} outcome */
-  const respond = outcome => {
-    if (!outcome.ok) return { status: outcome.status, body: { error_message: outcome.code } };
-    for (const event of outcome.events ?? []) void events.notify(event);
-    return { status: 200, body: outcome.value };
+export function createInventoryNotifier({ baseUrl, fetchImpl = fetch, log = console.log, timeoutMs = 10_000 }) {
+  const controllers = new Set();
+  const report = (/** @type {string} */ message) => { try { log(message); } catch { /* logging must not affect the API */ } };
+  let valid = false;
+  try { const url = new URL(baseUrl + RENTAL_STATUS_PATH); valid = url.protocol === 'https:' && !url.username && !url.password && !url.search && !url.hash; } catch { valid = false; }
+  /** @param {string} path @param {Record<string, unknown>} payload */
+  async function send(path, payload) {
+    const event = String(payload.event);
+    if (!valid) { report(`[n8n] inventory notify skipped: ${event} (N8N_INVENTORY_BASE_URL_INVALID)`); return; }
+    if (!Array.isArray(payload.recipients) || payload.recipients.length === 0) { report(`[n8n] inventory notify skipped: ${event} (NO_RECIPIENTS)`); return; }
+    const controller = new AbortController();
+    controllers.add(controller);
+    let failure = 'NETWORK_ERROR';
+    try {
+      const response = await fetchImpl(baseUrl + path, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), redirect: 'manual',
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(timeoutMs)]),
+      });
+      void response.body?.cancel().catch(() => {});
+      if (!response.ok) { failure = `HTTP_${response.status}`; throw new Error(failure); }
+      report(`[n8n] inventory notify delivered: ${event}`);
+    } catch (error) {
+      if (controller.signal.aborted) failure = 'SERVER_STOPPED';
+      else if (error instanceof Error && error.name === 'TimeoutError') failure = 'TIMEOUT';
+      report(`[n8n] inventory notify failed: ${event} (${failure})`);
+    } finally { controllers.delete(controller); }
+  }
+  return {
+    /** @param {Record<string, unknown>} payload */
+    rentalStatus: payload => send(RENTAL_STATUS_PATH, payload),
+    /** @param {Record<string, unknown>} payload */
+    inventoryChanged: payload => send(INVENTORY_CHANGED_PATH, payload),
+    close() { for (const controller of controllers) controller.abort(); },
   };
-  const optionalStore = (/** @type {unknown} */ value) => value === undefined ? HOME_STORE_ID : value;
+}
+
+/** Used when N8N_INVENTORY_BASE_URL is not set: inventory routes answer 503 instead of pretending to work. */
+export const inventoryNotConfiguredApi = {
+  /** @param {string} _method @param {string} path @returns {Promise<{ status: number, body: unknown } | null>} */
+  async handle(_method, path) {
+    return path.startsWith('/api/inventory') ? { status: 503, body: { error_message: 'INVENTORY_NOT_CONFIGURED' } } : null;
+  },
+};
+
+/** Team rule: alert when only 1 unit (or none) is available. */
+export const DB_LOW_STOCK_THRESHOLD = 1;
+
+/** n8n/contract error code → HTTP status for the browser. Unknown codes are treated as upstream failures. */
+const httpStatus = /** @type {Record<string, number>} */ ({
+  RENTAL_NOT_FOUND: 404, INVENTORY_NOT_FOUND: 404, STORE_NOT_FOUND: 404, MODEL_NOT_FOUND: 404,
+  STORE_NOT_ALLOWED: 403,
+  SAME_STORE: 409, INVALID_RENTAL_STATUS: 409, OUT_OF_STOCK: 409, NO_LENDER_AVAILABLE: 409,
+  INVALID_QUANTITY: 400, INVALID_RADIUS: 400,
+  NOT_IMPLEMENTED: 501,
+  HOME_STORE_NOT_CONFIGURED: 503,
+});
+
+const dbStoreId = /^store_\d{3,}$/;
+const dbProductId = /^product_\d{3,}$/;
+const pendingPost = new Set(['/api/inventory/reset']);
+/** CREATE_RENTAL: n8n geocodes the requester and every candidate store (Kakao), then inserts; measured ~7 s without the insert. */
+export const CREATE_RENTAL_TIMEOUT_MS = 25_000;
+
+/**
+ * DB `stocks.delivery_status` + `return_status` → API status (contract §3.4). There is no `rejected` in DB mode.
+ * DB rule `stocks_check2`: `return_status` only has a value once delivered (`배송 완료`).
+ * @param {unknown} deliveryStatus @param {unknown} returnStatus
+ */
+export function rentalStatus(deliveryStatus, returnStatus) {
+  if (deliveryStatus === '배송 완료' && returnStatus === '반납 완료') return 'returned';
+  if (deliveryStatus === '배송 완료' && returnStatus === '반납 중') return 'returning';
+  if (deliveryStatus === '요청 중') return 'requested';
+  if (deliveryStatus === '요청 승인') return 'approved';
+  if (deliveryStatus === '배송 중') return 'shipping';
+  if (deliveryStatus === '배송 완료') return 'delivered';
+  return 'unknown';
+}
+
+/**
+ * Single-row actions (ADJUST_INVENTORY, later the rental changes) report their result in a `code` column.
+ * Accept both `{ ok:false, code }` and `{ ok:true, data: row | [row] }` with `row.code !== 'OK'`.
+ * @param {DbResult} result @returns {DbResult}
+ */
+function singleRow(result) {
+  if (!result.ok) return result;
+  const row = Array.isArray(result.data) ? result.data[0] : result.data;
+  if (!row || typeof row !== 'object') return { ok: false, code: 'DB_UNAVAILABLE' };
+  const code = /** @type {any} */ (row).code;
+  if (code !== undefined && code !== 'OK') return { ok: false, code: typeof code === 'string' && /^[A-Z_]{1,64}$/.test(code) ? code : 'DB_UNAVAILABLE' };
+  return { ok: true, data: row };
+}
+const rentalActionPath = /^\/api\/inventory\/rentals\/(stock_\d{3,})\/(approve|cancel|ship|deliver|return)$/;
+
+/**
+ * Status changes on one rental (contract §3.10–3.12). `actor` is who may do it; the SQL in n8n is the final check.
+ * `notify` names the kcm-rental-status event (sent later; logged for now). Cancel and deliver send none.
+ */
+const rentalActions = /** @type {const} */ ({
+  approve: { action: 'APPROVE_RENTAL', actor: 'lender', notify: 'RENTAL_APPROVED' },
+  cancel: { action: 'CANCEL_RENTAL', actor: 'requester', notify: null },
+  ship: { action: 'SHIP_RENTAL', actor: 'lender', notify: 'RENTAL_SHIPPED' },
+  deliver: { action: 'DELIVER_RENTAL', actor: 'requester', notify: null },
+  return: { action: 'RETURN_RENTAL', actor: 'lender', notify: 'RENTAL_RETURNED' },
+});
+
+/**
+ * REST routes under /api/inventory in DB mode. Responses keep the in-memory API's field names
+ * (store_id, model_id, quantity, ...) so the screen works with either mode; DB-only fields are added alongside.
+ * `quantity` is the available count (stock − reserved − transfer). Employee phone numbers never go to the browser.
+ * @param {{ db: ReturnType<typeof createInventoryDb>, homeStoreId?: string | null, log?: (line: string) => void,
+ *   notify?: Pick<ReturnType<typeof createInventoryNotifier>, 'rentalStatus' | 'inventoryChanged'> | null }} options
+ */
+export function createDbInventoryApi({ db, homeStoreId = null, log = console.log, notify = null }) {
+  const report = (/** @type {string} */ message) => { try { log(message); } catch { /* logging must not affect the API */ } };
+  const fail = (/** @type {string} */ code) => ({ status: httpStatus[code] ?? 502, body: { error_message: code } });
+  /** @param {DbResult} result @param {(row: any) => unknown} map @param {string} key */
+  const rows = (result, map, key) => {
+    if (!result.ok) return fail(result.code);
+    if (!Array.isArray(result.data)) return fail('DB_UNAVAILABLE');
+    // n8n can emit an empty item when a query returns nothing; keep only real rows.
+    return { status: 200, body: result.data.filter(row => row && typeof row[key] === 'string').map(map) };
+  };
+  const storeRow = (/** @type {any} */ row) => ({
+    id: row.storeId, name: row.storeName, is_home: row.storeId === homeStoreId, address: row.address ?? null, phone: row.phone ?? null,
+  });
+  const variant = (/** @type {any} */ row) => [row.storageGb ? `${row.storageGb}GB` : '', row.color ?? ''].filter(Boolean).join(' · ');
+  const stockRow = (/** @type {any} */ row) => ({
+    store_id: row.storeId, store_name: row.storeName, is_home: row.storeId === homeStoreId,
+    model_id: row.productId, model_name: row.productName,
+    variant: variant(row),
+    quantity: row.available,
+    maker: row.maker ?? null, price: row.price ?? null,
+    stock_qty: row.stockQty, reserved_qty: row.reservedQty, transfer_qty: row.transferQty, available: row.available,
+  });
+  const rentalRow = (/** @type {any} */ row) => ({
+    rental_id: row.rentalId, model_id: row.productId, model_name: row.productName, variant: variant(row), quantity: row.quantity,
+    from_store_id: row.provideStoreId ?? null, from_store_name: row.provideStoreName ?? null,
+    to_store_id: row.requestStoreId, to_store_name: row.requestStoreName,
+    status: rentalStatus(row.deliveryStatus, row.returnStatus),
+    // sent = we asked, lending = we lent, incoming = an open request we could approve
+    role: typeof row.role === 'string' ? row.role.toLowerCase() : null,
+    requested_at: row.requestedAt ?? null, returned_at: row.returnedAt ?? null,
+    requester_name: row.requester?.name ?? null, approver_name: row.approver?.name ?? null,
+    delivery_status: row.deliveryStatus ?? null, return_status: row.returnStatus ?? null,
+  });
+  /** Candidate stores for the browser: no employee names or phone numbers (those are only for notifications). */
+  const candidateRow = (/** @type {any} */ row) => ({
+    store_id: row.storeId, store_name: row.storeName, distance_km: row.distanceKm ?? null, available: row.available ?? null,
+  });
+  /** Placeholder until the kcm-inventory-changed webhook is wired: log only when the count newly crosses the threshold. */
+  /** A recipient for n8n (name + phone), or null when there is no phone to send to. */
+  const person = (/** @type {any} */ p) => p && typeof p.phone === 'string' && p.phone ? { name: typeof p.name === 'string' ? p.name : '', phone: p.phone } : null;
+  /** Low stock alert (kcm-inventory-changed) only when the available count newly crosses the threshold (no repeats). */
+  const lowStock = (/** @type {any} */ row) => {
+    const before = Number(row.availableBefore), after = Number(row.available);
+    if (!Number.isFinite(before) || !Number.isFinite(after)) return;
+    if (!(before > DB_LOW_STOCK_THRESHOLD && after <= DB_LOW_STOCK_THRESHOLD)) return;
+    report(`[inventory] low stock: ${row.storeId} ${row.productId} available=${after}`);
+    const recipient = person(row.manager);
+    void notify?.inventoryChanged({
+      event: 'INVENTORY_CHANGED', storeName: row.storeName, productName: row.productName, storageGb: row.storageGb ?? undefined, color: row.color ?? undefined,
+      stockQuantity: row.stockQty, reservedQuantity: row.reservedQty, transferQuantity: row.transferQty, threshold: DB_LOW_STOCK_THRESHOLD,
+      recipients: recipient ? [recipient] : [],
+    });
+  };
+  /** Rental status alert (kcm-rental-status). */
+  const rentalNotice = (/** @type {string} */ event, /** @type {any} */ rental, /** @type {{ name: string, phone: string }[]} */ recipients) => {
+    if (!notify) { report(`[inventory] ${event} not sent (notifier not configured): ${rental.rentalId}`); return; }
+    void notify.rentalStatus({
+      event, rentalId: rental.rentalId, productName: rental.productName, quantity: rental.quantity,
+      ...(rental.provideStoreName ? { fromStore: rental.provideStoreName } : {}), toStore: rental.requestStoreName, recipients,
+    });
+  };
+
   return {
     /**
      * @param {string} method @param {string} path @param {URLSearchParams} query @param {any} body
-     * @returns {{ status: number, body: unknown } | null}
+     * @returns {Promise<{ status: number, body: unknown } | null>}
      */
-    handle(method, path, query, body) {
+    async handle(method, path, query, body) {
       if (!path.startsWith('/api/inventory')) return null;
       if (method === 'GET') {
-        if (path === '/api/inventory/stores') return { status: 200, body: store.stores() };
-        if (path === '/api/inventory/stock') return respond(store.stock(query.get('store_id')));
-        if (path === '/api/inventory/rentals') return respond(store.rentals(query.get('store_id') ?? HOME_STORE_ID));
+        if (path === '/api/inventory/stores') return rows(await db.call('GET_STORES'), storeRow, 'storeId');
+        if (path === '/api/inventory/stock') {
+          const storeId = query.get('store_id');
+          if (storeId !== null && !dbStoreId.test(storeId)) return fail('STORE_NOT_FOUND');
+          return rows(await db.call('GET_INVENTORY', { storeId: storeId ?? '' }), stockRow, 'storeId');
+        }
+        if (path === '/api/inventory/rentals') {
+          const storeId = query.get('store_id') ?? homeStoreId;
+          if (!storeId) return fail('HOME_STORE_NOT_CONFIGURED');
+          if (!dbStoreId.test(storeId)) return fail('STORE_NOT_FOUND');
+          return rows(await db.call('GET_RENTALS', { storeId }), rentalRow, 'rentalId');
+        }
         return { status: 404, body: { error_message: 'NOT_FOUND' } };
       }
       if (method !== 'POST') return { status: 405, body: { error_message: 'METHOD_NOT_ALLOWED' } };
       if (typeof body !== 'object' || body === null || Array.isArray(body)) return { status: 400, body: { error_message: 'INVALID_REQUEST_BODY' } };
-      if (path === '/api/inventory/stock/adjust') return respond(store.adjust(optionalStore(body.store_id), body.model_id, body.quantity));
-      if (path === '/api/inventory/rentals') return respond(store.request(body.model_id, body.quantity, body.from_store_id));
-      if (path === '/api/inventory/reset') { store.reset(); return { status: 200, body: { reset: true } }; }
-      const match = rentalAction.exec(path);
-      if (!match) return { status: 404, body: { error_message: 'NOT_FOUND' } };
-      const [, id, action] = match;
-      if (action === 'approve') return respond(store.approve(id, body.store_id));
-      if (action === 'reject') return respond(store.reject(id, body.store_id));
-      if (action === 'ship') return respond(store.ship(id, body.store_id));
-      if (action === 'deliver') return respond(store.deliver(id, optionalStore(body.store_id)));
-      return respond(store.complete(id, body.store_id));
+      if (path === '/api/inventory/stock/adjust') {
+        // Manual count correction: only the home store's own stock (no login yet, demo trust).
+        if (!homeStoreId) return fail('HOME_STORE_NOT_CONFIGURED');
+        const storeId = body.store_id ?? homeStoreId;
+        if (storeId !== homeStoreId) return fail(typeof storeId === 'string' && dbStoreId.test(storeId) ? 'STORE_NOT_ALLOWED' : 'STORE_NOT_FOUND');
+        if (typeof body.model_id !== 'string' || !dbProductId.test(body.model_id)) return fail('MODEL_NOT_FOUND');
+        if (!Number.isInteger(body.quantity) || body.quantity < 0 || body.quantity > 9999) return fail('INVALID_QUANTITY');
+        const result = singleRow(await db.call('ADJUST_INVENTORY', { storeId, productId: body.model_id, stockQty: body.quantity }));
+        if (!result.ok) return fail(result.code);
+        lowStock(result.data);
+        return { status: 200, body: stockRow(result.data) };
+      }
+      if (path === '/api/inventory/rentals') {
+        // Home store asks nearby stores at once (n8n picks candidates by distance); the first to approve takes it.
+        if (!homeStoreId) return fail('HOME_STORE_NOT_CONFIGURED');
+        if (typeof body.model_id !== 'string' || !dbProductId.test(body.model_id)) return fail('MODEL_NOT_FOUND');
+        if (!Number.isInteger(body.quantity) || body.quantity < 1 || body.quantity > 99) return fail('INVALID_QUANTITY');
+        const radius = body.radius_km;
+        if (radius !== undefined && !(typeof radius === 'number' && Number.isFinite(radius) && radius > 0 && radius <= 50)) return fail('INVALID_RADIUS');
+        const result = await db.call('CREATE_RENTAL',
+          { requestStoreId: homeStoreId, productId: body.model_id, quantity: body.quantity, ...(radius === undefined ? {} : { radiusKm: radius }) },
+          { timeoutMs: CREATE_RENTAL_TIMEOUT_MS });
+        if (!result.ok) return fail(result.code);
+        const data = /** @type {any} */ (result.data);
+        const rental = Array.isArray(data?.rental) ? data.rental[0] : data?.rental;
+        if (!rental || typeof rental.rentalId !== 'string') return fail('DB_UNAVAILABLE');
+        const candidates = Array.isArray(data.candidates) ? data.candidates.filter((/** @type {any} */ c) => c && typeof c.storeId === 'string') : [];
+        // Every candidate store's manager, with store name and distance for the message.
+        rentalNotice('RENTAL_REQUESTED', rental, candidates.flatMap((/** @type {any} */ c) => {
+          const p = person(c.manager);
+          return p ? [{ ...p, storeName: c.storeName, ...(typeof c.distanceKm === 'number' ? { distanceKm: c.distanceKm } : {}) }] : [];
+        }));
+        return { status: 200, body: {
+          rental: { ...rentalRow(rental), role: 'sent' },
+          applied_radius_km: data.appliedRadiusKm ?? null,
+          candidates: candidates.map(candidateRow),
+        } };
+      }
+      const match = rentalActionPath.exec(path);
+      if (match) {
+        const [, rentalId, name] = match;
+        const spec = rentalActions[/** @type {keyof typeof rentalActions} */ (name)];
+        // No login yet: the acting store comes from the body (default: home store) — demo trust. n8n checks it is the right party.
+        const storeId = body.store_id ?? homeStoreId;
+        if (!storeId) return fail('HOME_STORE_NOT_CONFIGURED');
+        if (typeof storeId !== 'string' || !dbStoreId.test(storeId)) return fail('STORE_NOT_FOUND');
+        const result = singleRow(await db.call(spec.action, { rentalId, storeId }));
+        if (!result.ok) return fail(result.code);
+        const rental = /** @type {any} */ (result.data);
+        if (typeof rental.rentalId !== 'string') return fail('DB_UNAVAILABLE');
+        // Approve/ship/return go to the requesting store (contract §4.1).
+        if (spec.notify) { const p = person(rental.requester); rentalNotice(spec.notify, rental, p ? [p] : []); }
+        if (name === 'approve') {
+          // Approval moved units into transfer_qty at the lender: before = after + quantity.
+          const after = rental.provideInventory?.available;
+          const inv = rental.provideInventory;
+          if (typeof after === 'number') lowStock({ storeId, productId: rental.productId, storeName: rental.provideStoreName, productName: rental.productName,
+            storageGb: rental.storageGb, color: rental.color, stockQty: inv.stockQty, reservedQty: inv.reservedQty, transferQty: inv.transferQty,
+            availableBefore: after + Number(rental.quantity), available: after, manager: rental.approver });
+        }
+        const row = rentalRow(rental);
+        // A cancelled request no longer exists in the DB; the response is its last state.
+        return { status: 200, body: { ...row, role: storeId === rental.requestStoreId ? 'sent' : 'lending', ...(name === 'cancel' ? { status: 'cancelled' } : {}) } };
+      }
+      if (pendingPost.has(path)) return fail('NOT_IMPLEMENTED');
+      return { status: 404, body: { error_message: 'NOT_FOUND' } };
     },
   };
 }

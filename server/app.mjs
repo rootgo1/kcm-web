@@ -4,8 +4,7 @@ import { createLiveEvents } from './live-events.mjs';
 import { serveBuild } from './deployment.mjs';
 import { createConsultationId } from './call-identity.mjs';
 import { createN8nDelivery } from './n8n-delivery.mjs';
-import { createInventoryApi, createInventoryEvents, createInventoryStore } from './inventory.mjs';
-import { createDbInventoryApi, createInventoryDb, createInventoryNotifier } from './inventory-db.mjs';
+import { createDbInventoryApi, createInventoryDb, createInventoryNotifier, inventoryNotConfiguredApi } from './inventory.mjs';
 
 const localOrigins = new Set(['http://127.0.0.1:5173', 'http://localhost:5173']);
 const api = 'https://api.retellai.com';
@@ -29,20 +28,18 @@ async function readBody(request) {
  * @param {{ key: string, agentId: string, monitors: Pick<ReturnType<import('./monitor.mjs').createMonitorRegistry>, 'start' | 'close' | 'release'>,
  * fetchImpl?: typeof fetch, log?: (line: string) => void, liveCalls?: ReturnType<typeof createLiveCallStore>,
  * deployment?: import('./deployment.mjs').Deployment | null, demoCustomerId?: string | null, demoStoreId?: string | null,
- * webhookUrl?: string, webhookFetchImpl?: typeof fetch, inventory?: ReturnType<typeof createInventoryStore>, inventoryWebhookUrl?: string, inventoryBaseUrl?: string }} options
+ * webhookUrl?: string, webhookFetchImpl?: typeof fetch, inventoryBaseUrl?: string }} options
  */
 export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log = console.log, liveCalls = createLiveCallStore(), deployment = null,
-  demoCustomerId = null, demoStoreId = null, webhookUrl = '', webhookFetchImpl = fetch, inventory = createInventoryStore(), inventoryWebhookUrl = '', inventoryBaseUrl = '' }) {
+  demoCustomerId = null, demoStoreId = null, webhookUrl = '', webhookFetchImpl = fetch, inventoryBaseUrl = '' }) {
   const allowedOrigins = deployment ? new Set([deployment.origin]) : localOrigins;
   const publicHost = deployment ? new URL(deployment.origin).host : null;
   const liveEvents = createLiveEvents(liveCalls);
   const delivery = createN8nDelivery({ liveCalls, webhookUrl, fetchImpl: webhookFetchImpl, log });
-  const inventoryEvents = createInventoryEvents({ webhookUrl: inventoryWebhookUrl, fetchImpl: webhookFetchImpl, log });
-  // N8N_INVENTORY_BASE_URL set → DB mode through n8n; otherwise the in-memory demo store.
+  // Smart inventory goes through n8n (N8N_INVENTORY_BASE_URL); without it the routes answer 503.
   const inventoryDb = inventoryBaseUrl ? createInventoryDb({ baseUrl: inventoryBaseUrl, fetchImpl: webhookFetchImpl, log }) : null;
   const inventoryNotify = inventoryBaseUrl ? createInventoryNotifier({ baseUrl: inventoryBaseUrl, fetchImpl: webhookFetchImpl, log }) : null;
-  const inventoryApi = inventoryDb ? createDbInventoryApi({ db: inventoryDb, homeStoreId: demoStoreId, log, notify: inventoryNotify })
-    : createInventoryApi({ store: inventory, events: inventoryEvents });
+  const inventoryApi = inventoryDb ? createDbInventoryApi({ db: inventoryDb, homeStoreId: demoStoreId, log, notify: inventoryNotify }) : inventoryNotConfiguredApi;
   // Ownership permits cancelling only calls created by this local server.
   // Expiring IDs carry no token; Monitor sessions have their own end/error cleanup.
   /** @type {Map<string, number>} */
@@ -179,7 +176,7 @@ export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log =
       error(502, 'RETELL_CONNECTION_FAILED');
     }
   });
-  server.on('close', () => { delivery.close(); inventoryEvents.close(); inventoryDb?.close(); inventoryNotify?.close(); liveEvents.close(); clearInterval(expiry); owned.clear(); monitors.close(); });
+  server.on('close', () => { delivery.close(); inventoryDb?.close(); inventoryNotify?.close(); liveEvents.close(); clearInterval(expiry); owned.clear(); monitors.close(); });
   server.requestTimeout = 20_000;
   server.headersTimeout = 10_000;
   return server;
