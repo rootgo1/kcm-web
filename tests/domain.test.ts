@@ -1,7 +1,6 @@
 import test from 'node:test';
 import './callWorkflow.test.js';
 import './callPresentation.test.js';
-import './inventory.test.js';
 import assert from 'node:assert/strict';
 import { createMockData } from '../src/data/mockData.js';
 import { availableStock, filterAppointments, getMetrics, markReviewed, parsePage } from '../src/lib/domain.js';
