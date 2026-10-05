@@ -65,7 +65,13 @@ const errorMessages: Record<string, string> = {
   NETWORK: '백엔드에 연결하지 못했습니다. 백엔드 서버(npm run server)가 실행 중인지 확인해 주세요.',
   DB_UNAVAILABLE: '재고 DB(n8n)에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.',
   INVALID_QUANTITY: '수량을 확인해 주세요. 예약·이동 중인 수량보다 적게 입력할 수 없습니다.',
-  STORE_NOT_ALLOWED: '우리 매장 재고만 수정할 수 있습니다.',
+  STORE_NOT_ALLOWED: '우리 매장이 할 수 없는 작업입니다.',
+  NO_LENDER_AVAILABLE: '빌려줄 수 있는 매장이 없습니다. 주변 매장에 재고가 없거나 부족합니다.',
+  INVALID_RENTAL_STATUS: '이미 처리된 대여입니다. 새로고침해서 최신 상태를 확인해 주세요.',
+  SAME_STORE: '우리 매장이 보낸 요청은 승인할 수 없습니다.',
+  OUT_OF_STOCK: '가용 재고가 부족해 승인할 수 없습니다.',
+  RENTAL_NOT_FOUND: '대여 건을 찾을 수 없습니다. 이미 취소됐을 수 있습니다.',
+  INVALID_RADIUS: '검색 반경을 확인해 주세요.',
   STORE_NOT_FOUND: '매장을 찾을 수 없습니다.',
   MODEL_NOT_FOUND: '모델을 찾을 수 없습니다.',
   INVENTORY_NOT_FOUND: '이 매장에는 해당 모델의 재고 정보가 없습니다.',
@@ -82,4 +88,31 @@ export function formatRequestedAt(iso: string | null | undefined): string {
   const parts = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
     .formatToParts(date).reduce<Record<string, string>>((acc, part) => ({ ...acc, [part.type]: part.value }), {});
   return `${parts.month}/${parts.day} ${parts.hour}:${parts.minute}`;
+}
+
+export type RentalActionName = 'approve' | 'cancel' | 'ship' | 'deliver' | 'return';
+export interface RentalActionSpec { name: RentalActionName; label: string; done: string; confirm?: string }
+
+/** The one thing our store can do next with a rental, or null. Mirrors who may act in the n8n SQL. */
+export function nextRentalAction(rental: RentalRow, role: RentalRole): RentalActionSpec | null {
+  if (role === 'sent' && rental.status === 'requested') return { name: 'cancel', label: '요청 취소', done: '대여 요청을 취소했습니다.',
+    confirm: '이 대여 요청을 취소할까요? 취소한 요청은 목록에서 사라집니다.' };
+  if (role === 'sent' && rental.status === 'shipping') return { name: 'deliver', label: '도착 확인', done: '도착을 확인했습니다. 다 쓰면 빌려준 매장에 돌려주세요.' };
+  if (role === 'incoming' && rental.status === 'requested') return { name: 'approve', label: '승인', done: '승인했습니다. 빌려줄 수량이 이동 중으로 잡혔습니다.' };
+  if (role === 'lending' && rental.status === 'approved') return { name: 'ship', label: '배송 시작', done: '배송을 시작했습니다.' };
+  if (role === 'lending' && (rental.status === 'delivered' || rental.status === 'returning')) return { name: 'return', label: '반납 완료', done: '반납 완료 처리했습니다. 이동 중 수량이 가용 재고로 돌아왔습니다.',
+    confirm: '단말을 돌려받았나요? 반납 완료하면 이동 중 수량이 다시 가용 재고로 돌아옵니다.' };
+  return null;
+}
+
+export interface RentalCandidate { store_id: string; store_name: string; distance_km: number | null; available: number | null }
+export interface RentalRequestResult { rental: RentalRow; applied_radius_km: number | null; candidates: RentalCandidate[] }
+
+/** e.g. "3km 안 2개 매장에 요청했습니다: 대구점(1.2km), 서대구점(2.8km)". */
+export function describeRequest(result: RentalRequestResult): string {
+  const { candidates, applied_radius_km: radius } = result;
+  if (!candidates.length) return `${result.rental.rental_id} 요청을 보냈습니다.`;
+  const scope = radius === null ? '거리 제한 없이' : `${radius}km 안`;
+  const names = candidates.slice(0, 3).map(c => c.distance_km === null ? c.store_name : `${c.store_name}(${c.distance_km}km)`).join(', ');
+  return `${result.rental.rental_id} · ${scope} ${candidates.length}개 매장에 요청했습니다: ${names}${candidates.length > 3 ? ' 외' : ''}`;
 }

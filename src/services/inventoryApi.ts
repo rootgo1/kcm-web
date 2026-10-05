@@ -1,4 +1,4 @@
-import type { InventoryStore, RentalRow, StockRow } from '../lib/inventory';
+import type { InventoryStore, RentalActionName, RentalRequestResult, RentalRow, StockRow } from '../lib/inventory';
 
 /** Error carrying the backend's `error_message` code (or NETWORK / HTTP_xxx). */
 export class InventoryApiError extends Error {
@@ -22,7 +22,17 @@ export const inventoryApi = {
   stores: () => request<InventoryStore[]>('/stores'),
   stock: (storeId?: string) => request<StockRow[]>(`/stock${storeId ? `?store_id=${encodeURIComponent(storeId)}` : ''}`),
   rentals: () => request<RentalRow[]>('/rentals'),
-  adjust: (modelId: string, quantity: number) => request<StockRow>('/stock/adjust', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model_id: modelId, quantity }),
-  }),
+  adjust: (modelId: string, quantity: number) => request<StockRow>('/stock/adjust', post({ model_id: modelId, quantity })),
+  /** Ask nearby stores (DB mode: n8n picks by distance; can take ~10 s). Memory mode returns just the rental. */
+  requestRental: async (modelId: string, quantity: number, radiusKm?: number): Promise<RentalRequestResult> => {
+    const body = await request<RentalRequestResult | RentalRow>('/rentals', post({ model_id: modelId, quantity, ...(radiusKm ? { radius_km: radiusKm } : {}) }));
+    return 'rental' in body ? body : { rental: body, applied_radius_km: null, candidates: [] };
+  },
+  /** approve / cancel / ship / deliver / return, acting as `storeId` (our store). */
+  rentalAction: (rentalId: string, action: RentalActionName, storeId: string) =>
+    request<RentalRow>(`/rentals/${encodeURIComponent(rentalId)}/${action}`, post({ store_id: storeId })),
 };
+
+function post(body: unknown): RequestInit {
+  return { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+}

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  availableOf, counterpartName, formatRequestedAt, inventoryErrorMessage, lockedOf, rentalRole, stockLevel, stockQtyOf, validateStockInput,
+  availableOf, counterpartName, describeRequest, formatRequestedAt, inventoryErrorMessage, lockedOf, nextRentalAction, rentalRole, stockLevel, stockQtyOf, validateStockInput,
   type RentalRow, type StockRow,
 } from '../src/lib/inventory.js';
 
@@ -47,4 +47,30 @@ test('스마트 재고: 오류 코드는 한국어 안내로, 요청일은 한�
   assert.equal(formatRequestedAt('2026-09-25T06:13:58.488Z'), '9/25 15:13');
   assert.equal(formatRequestedAt(null), '-');
   assert.equal(formatRequestedAt('not a date'), '-');
+});
+
+test('스마트 재고: 우리 매장이 할 수 있는 다음 처리만 버튼으로 나온다', () => {
+  const name = (over: Partial<RentalRow>, role: 'sent' | 'incoming' | 'lending') => nextRentalAction(rental(over), role)?.name ?? null;
+  assert.equal(name({ status: 'requested' }, 'sent'), 'cancel');
+  assert.equal(name({ status: 'approved' }, 'sent'), null, '빌려주는 매장의 배송을 기다림');
+  assert.equal(name({ status: 'shipping' }, 'sent'), 'deliver');
+  assert.equal(name({ status: 'delivered' }, 'sent'), null, '반납 완료는 빌려준 매장이 처리');
+  assert.equal(name({ status: 'requested' }, 'incoming'), 'approve');
+  assert.equal(name({ status: 'approved' }, 'lending'), 'ship');
+  assert.equal(name({ status: 'shipping' }, 'lending'), null, '요청 매장의 도착 확인을 기다림');
+  assert.equal(name({ status: 'delivered' }, 'lending'), 'return');
+  assert.equal(name({ status: 'returning' }, 'lending'), 'return');
+  assert.equal(name({ status: 'returned' }, 'lending'), null);
+  assert.ok(nextRentalAction(rental({ status: 'requested' }), 'sent')?.confirm, '취소는 한 번 더 확인');
+  assert.ok(nextRentalAction(rental({ status: 'delivered' }), 'lending')?.confirm, '반납 완료는 한 번 더 확인');
+  assert.equal(nextRentalAction(rental({ status: 'requested' }), 'incoming')?.confirm, undefined);
+});
+
+test('스마트 재고: 대여 요청 결과 문구', () => {
+  const r = rental({ rental_id: 'stock_042' });
+  const c = (n: number) => ({ store_id: `store_00${n}`, store_name: `${n}호점`, distance_km: n * 1.1, available: 3 });
+  assert.equal(describeRequest({ rental: r, applied_radius_km: 3, candidates: [c(1), c(2)] }), 'stock_042 · 3km 안 2개 매장에 요청했습니다: 1호점(1.1km), 2호점(2.2km)');
+  assert.match(describeRequest({ rental: r, applied_radius_km: null, candidates: [c(1), c(2), c(3), c(4)] }), /거리 제한 없이 4개 매장.* 외$/);
+  assert.equal(describeRequest({ rental: r, applied_radius_km: null, candidates: [] }), 'stock_042 요청을 보냈습니다.');
+  assert.match(inventoryErrorMessage('NO_LENDER_AVAILABLE'), /빌려줄 수 있는 매장이 없습니다/);
 });
