@@ -8,6 +8,7 @@ import { analysisStatusLabels, callRisk, callStatusLabels, signalEvidence, signa
 import { canRequestSupport, isOpenSupport, latestSupport, supportStatusLabels, type SupportHandler } from '../lib/callSupport';
 import { nextCallBlocker } from '../lib/callWorkflow';
 import { maskCustomerName } from '../lib/customerName';
+import { uiText } from '../lib/uiText';
 
 type Props = { state: CallDemoState; onStart: (id: string) => void; onSupport: SupportHandler; onNext: (id: string) => void } & CallResultActions;
 export function SupportPage({ state, onStart, onSupport, onDraft, onComplete, onNext }: Props) {
@@ -20,14 +21,14 @@ export function SupportPage({ state, onStart, onSupport, onDraft, onComplete, on
   const calls = state.calls.filter(call => filter === 'all' || (filter === 'support' ? call.supportRequests.some(isOpenSupport) : filter === 'recent' ? call.status === 'completed' || call.status === 'ended' : call.status !== 'completed' && call.status !== 'ended'));
   const choose = (id: string) => { setSelectedId(id); guideRef.current?.focus(); };
   return <>
-    <div className="page-heading"><div><span className="eyebrow">상담업무</span><h1>상담지원</h1><p>통화 위험 신호와 대응 가이드를 확인하고 관리자 지원을 요청하세요.</p></div><span className="small-badge">통화 데모</span></div>
+    <div className="page-heading"><div><span className="eyebrow">상담업무</span><h1>상담지원</h1><p>통화 위험 신호와 대응 가이드를 확인하고 관리자 지원을 요청하세요.</p></div></div>
     <section className="card appointments-card" aria-label="상담지원 통화 목록">
       <div className="card-heading"><div className="title-with-icon"><span className="small-icon red"><Icon name="shield" size={18}/></span><h2>현재·최근 통화</h2></div>
         <div className="call-filters"><label htmlFor="support-filter">통화 범위</label><select id="support-filter" value={filter} onChange={event => setFilter(event.target.value as typeof filter)}><option value="all">전체 통화</option><option value="active">현재 통화</option><option value="recent">완료·종료 통화</option><option value="support">미완료 지원 요청</option></select></div>
       </div>
       <div className="table-scroll" role="region" aria-label="상담지원 목록 · 좌우 스크롤" tabIndex={0}><table className="appointment-table support-call-table"><thead><tr><th scope="col">고객 / 통화</th><th scope="col">문의 유형</th><th scope="col">상담 상태</th><th scope="col">위험도·현재 경고</th><th scope="col">감지 신호</th><th scope="col">관리자 지원</th><th scope="col">상담·지원</th></tr></thead><tbody>
         {calls.map(call => { const risk = callRisk(call), support = latestSupport(call); return <tr key={call.id} className={selected?.id === call.id ? 'is-selected' : ''}>
-          <td><strong>{maskCustomerName(call.customerLabel)}</strong><small className="muted-text">{call.id}</small></td><td>{call.inquiryType}</td><td><span className="status-pill neutral">{callStatusLabels[call.status]}</span><small className="muted-text">{analysisStatusLabels[call.analysis.status]}</small></td>
+          <td><strong>{maskCustomerName(call.customerLabel)}</strong><small className="muted-text">{call.id}</small></td><td>{uiText(call.inquiryType)}</td><td><span className="status-pill neutral">{callStatusLabels[call.status]}</span><small className="muted-text">{analysisStatusLabels[call.analysis.status]}</small></td>
           <td><span className={`risk-badge risk-${risk.grade ?? 'unavailable'}`}>{risk.text}</span></td>
           <td><div className="support-signal-summary">{(Object.keys(signalLabels) as CallSignal[]).map(signal => <span className="small-badge" key={signal}>{signalLabels[signal]} {signalEvidence(call.analysis, signal)?.length ?? '—'}</span>)}</div></td>
           <td>{support ? <span className="small-badge">{supportStatusLabels[support.status]}</span> : <span className="muted-text">—</span>}</td>
@@ -37,11 +38,11 @@ export function SupportPage({ state, onStart, onSupport, onDraft, onComplete, on
       {calls.length === 0 && <div className="empty-search" role="status"><strong>조건에 맞는 통화가 없습니다.</strong><button className="text-button" onClick={() => setFilter('all')}>전체 통화 보기</button></div>}
     </section>
     {selected && <section className="card support-guide-card" ref={guideRef} tabIndex={-1} aria-label={`${selected.id} 대응 가이드·관리자 지원`}>
-      <div className="card-heading"><div><h2>{maskCustomerName(selected.customerLabel)} · {selected.id} 대응 가이드</h2><p className="muted-text">{selected.inquiryType} · {callStatusLabels[selected.status]}</p></div><button className="button button-secondary" onClick={() => setDetailId(selected.id)}>선택 통화 상세 보기</button></div>
-      <div className="support-guide-grid"><section aria-label="AI 권장 대응 가이드"><h3 className="section-label">AI 권장 대응 가이드 <span className="small-badge">가상 분석 예시</span></h3>
+      <div className="card-heading"><div><h2>{maskCustomerName(selected.customerLabel)} · {selected.id} 대응 가이드</h2><p className="muted-text">{uiText(selected.inquiryType)} · {callStatusLabels[selected.status]}</p></div><button className="button button-secondary" onClick={() => setDetailId(selected.id)}>선택 통화 상세 보기</button></div>
+      <div className="support-guide-grid"><section aria-label="AI 권장 대응 가이드"><h3 className="section-label">AI 권장 대응 가이드</h3>
         {selected.analysis.status === 'completed' && selected.analysis.recommendedActions.length ? <ul className="call-action-list">{selected.analysis.recommendedActions.map(action => <li key={action}>{action}</li>)}</ul> : <p className="muted-text">{analysisStatusLabels[selected.analysis.status]} · 대응 가이드가 아직 없습니다.</p>}
         <h3 className="section-label">권장 첫 응대</h3><blockquote className="call-opening">{selected.analysis.status === 'completed' && selected.analysis.openingLine || '첫 응대 문구 분석 결과를 기다리고 있습니다.'}</blockquote>
-        <p className="microcopy">팀 시연용 대응 예시이며 KT 공식 매뉴얼이 아닙니다. 실제 Retell 통화와는 별도의 샘플 상담입니다.</p>
+        <p className="microcopy">대응 가이드는 직원 판단을 돕기 위한 참고 정보입니다.</p>
       </section><div>{!detail && <CallSupportPanel key={selected.id} call={selected} onSupport={onSupport}/>}</div></div>
     </section>}
     {detail && <CallBriefing key={detail.id} call={detail} calls={state.calls} customer={state.customers.find(customer => customer.id === detail.customerId)} nextCall={nextCallBlocker(state.calls, detail)} onStart={onStart} onSupport={onSupport} onDraft={onDraft} onComplete={onComplete} onNext={onNext} onOpen={setDetailId} onClose={() => setDetailId(null)}/>}

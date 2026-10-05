@@ -3,6 +3,8 @@ import './callWorkflow.test.js';
 import './callPresentation.test.js';
 import './callPagination.test.js';
 import './aftercare.test.js';
+import './uiText.test.js';
+import './productLookup.test.js';
 import assert from 'node:assert/strict';
 import { createMockData } from '../src/data/mockData.js';
 import { availableStock, filterAppointments, getMetrics, markReviewed, parsePage } from '../src/lib/domain.js';

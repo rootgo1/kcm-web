@@ -844,6 +844,63 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
   .support-guide-grid { padding: 16px; gap: 16px; }
   .aftercare-notice { padding: 14px 16px; }
 }
+/* Product lookup and comparison use the shared directory, card and button styles. */
+.product-catalog-grid { grid-template-columns: minmax(250px,.8fr) minmax(0,1.8fr); }
+.product-catalog-grid > *, .product-detail-heading > div { min-width: 0; }
+.product-catalog-list .directory-options { display: block; }
+.product-catalog-list .directory-option { padding-block: 13px; }
+.product-search-row { display: flex; align-items: center; gap: 8px; padding: 12px 18px 4px; }
+.product-search-row .search-field { width: 100%; flex: 1; }
+.product-search-row > .text-button { padding: 8px; flex-shrink: 0; }
+.product-detail { padding: 22px; }
+.product-detail-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-bottom: 17px; border-bottom: 1px solid var(--line); }
+.product-detail-heading h2 { font-size: 19px; line-height: 1.5; margin-top: 4px; }
+.product-detail-heading p { color: #7c8593; font-size: 11px; line-height: 1.7; margin-top: 5px; overflow-wrap: anywhere; }
+.product-detail-heading .button { min-height: 38px; white-space: normal; }
+.product-detail-heading .button:disabled { color: #8792a1; background: #f5f6f8; border-color: #e4e7ec; box-shadow: none; cursor: not-allowed; }
+.product-detail-sections { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 19px; padding-top: 18px; }
+.product-detail-sections h3 { font-size: 12px; font-weight: 600; color: #525f70; line-height: 1.6; }
+.product-detail-fields { margin-top: 12px; }
+.product-detail-fields > div { padding: 9px 0; border-top: 1px solid #f0f1f4; }
+.product-detail-fields dt { color: #8993a1; font-size: 10px; line-height: 1.6; }
+.product-detail-fields dd { margin: 5px 0 0; color: #546173; font-size: 11px; line-height: 1.8; word-break: keep-all; overflow-wrap: anywhere; }
+.product-search-empty { padding: 22px; color: #7c8593; font-size: 12px; line-height: 1.8; }
+.product-search-empty h2 { font-size: 16px; margin-top: 8px; }
+.product-search-empty p { font-size: 11px; margin-top: 5px; }
+.product-comparison { margin-top: 18px; min-width: 0; overflow: hidden; }
+.product-comparison .card-heading { gap: 12px; align-items: center; flex-wrap: wrap; padding-block: 17px; }
+.product-comparison-note { color: #8792a1; font-size: 10px; line-height: 1.8; margin-top: 5px; }
+.product-comparison-scroll { display: block; width: 100%; }
+.product-comparison-table { width: 100%; min-width: 540px; border-collapse: collapse; table-layout: fixed; font-size: 11px; }
+.product-comparison-table th, .product-comparison-table td { text-align: left; vertical-align: top; padding: 11px 18px; border-top: 1px solid var(--line); line-height: 1.8; word-break: keep-all; overflow-wrap: anywhere; }
+.product-comparison-table thead th { background: #fafbfc; color: #505d6e; }
+.product-comparison-table tr > :first-child { width: 104px; color: #7c8593; font-weight: 500; }
+.product-comparison-table td { color: #596779; }
+.product-comparison-table thead .text-button { display: inline-flex; vertical-align: middle; padding: 4px; margin-left: 5px; }
+.product-comparison-empty { display: flex; gap: 10px; align-items: center; padding: 0 22px 19px; color: #8993a1; font-size: 11px; line-height: 1.8; }
+.product-reference-note { font-size: 9px; color: #8792a1; line-height: 1.9; margin-top: 12px; padding-inline: 2px; word-break: keep-all; overflow-wrap: anywhere; }
+@media (max-width: 1060px) {
+  .product-catalog-grid { grid-template-columns: minmax(0,1fr); }
+  .product-catalog-list .directory-options { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .product-catalog-list .directory-option { padding-inline: 9px; gap: 8px; }
+}
+@media (max-width: 650px) {
+  .product-catalog-list .directory-options { display: block; }
+  .product-detail { padding: 18px; }
+  .product-detail-sections { grid-template-columns: minmax(0,1fr); gap: 18px; }
+  .product-detail-fields > div { display: grid; grid-template-columns: 83px minmax(0,1fr); gap: 10px; }
+  .product-detail-fields dd { margin-top: 0; }
+  .product-detail-heading h2 { font-size: 18px; }
+  .product-comparison .card-heading { padding-inline: 16px; }
+  .product-comparison-empty { padding-inline: 16px; }
+  .product-comparison-table th, .product-comparison-table td { padding-inline: 12px; }
+}
+@media (max-width: 530px) {
+  [aria-label="상품관리 탭"] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
+  [aria-label="상품관리 탭"] [role="tab"] { min-width: 0; padding-inline: 8px; }
+  .modal-actions { flex-wrap: wrap; }
+  .modal-actions > .button { max-width: 100%; white-space: normal; }
+}
 </style></head><body><div id="root"></div><!-- Generated from src/. React/ReactDOM/Scheduler: Copyright Meta Platforms, Inc. and affiliates, MIT License. See THIRD_PARTY_NOTICES.txt. No font files are embedded. --><script>(function(){'use strict';
 const process={env:{NODE_ENV:'production'}};
 const modules={"react":function(module,exports,require){
@@ -1254,6 +1311,7 @@ const SupportPage_1 = require("./pages/SupportPage");
 const MarketingPage_1 = require("./pages/MarketingPage");
 const aftercare_1 = require("./lib/aftercare");
 const aftercareMockData_1 = require("./data/aftercareMockData");
+const uiText_1 = require("./lib/uiText");
 function App() {
     const [page, setPage] = (0, react_1.useState)(() => (0, domain_1.parsePage)(window.location.hash));
     const [data, setData] = (0, react_1.useState)(null);
@@ -1301,7 +1359,7 @@ function App() {
         setError('');
         dashboardRepository_1.dashboardRepository.load().then(result => { if (active)
             commitData(result); }).catch(() => { if (active)
-            setError('샘플 데이터를 불러오지 못했습니다. 다시 시도해 주세요.'); }).finally(() => { if (active)
+            setError('데이터를 불러오지 못했습니다. 다시 시도해 주세요.'); }).finally(() => { if (active)
             setLoading(false); });
         return () => { active = false; };
     }, [loadKey, commitData]);
@@ -1318,9 +1376,9 @@ function App() {
     const items = (0, react_1.useMemo)(() => data ? (0, domain_1.filterAppointments)(data.appointments, filter, query) : [], [data, filter, query]);
     const selected = items.find(item => item.id === selectedId) ?? items[0];
     const editing = data?.appointments.find(item => item.id === editorId);
-    const reset = () => requestLeave(() => { setFilter('all'); setQuery(''); setSelectedId('DEMO-R002'); setCallState((0, callMockData_1.createCallDemoState)()); setAftercare({}); setLoadKey(key => key + 1); setModal(null); setToast('샘플 화면을 초기화했습니다.'); });
+    const reset = () => requestLeave(() => { setFilter('all'); setQuery(''); setSelectedId('DEMO-R002'); setCallState((0, callMockData_1.createCallDemoState)()); setAftercare({}); setLoadKey(key => key + 1); setModal(null); setToast('현재 화면 기록을 초기화했습니다.'); });
     const onReview = (id) => { if (dataRef.current)
-        commitData((0, domain_1.markReviewed)(dataRef.current, id)); setToast('이 화면에서 확인 처리했습니다. 실제 DB는 변경되지 않습니다.'); };
+        commitData((0, domain_1.markReviewed)(dataRef.current, id)); setToast('브리핑을 확인했습니다.'); };
     const onStartCall = (id) => {
         const at = new Date().toISOString();
         setCallState(current => ({ ...current, calls: (0, callConsultation_1.startCallConsultation)(current.calls, id, at) }));
@@ -1346,19 +1404,19 @@ function App() {
             startLockRef.current = true;
             setStarting(true);
             commitData(next);
-            setToast('상담을 시작했습니다. 샘플 기록은 새로고침하면 초기화됩니다.');
+            setToast('상담을 시작했습니다.');
         }
     };
     const onSave = (id, result, mode) => {
         if (!dataRef.current)
-            return '샘플 데이터를 확인해 주세요.';
+            return '상담 데이터를 확인해 주세요.';
         const saved = (0, consultation_1.saveConsultation)(dataRef.current, id, result, mode, new Date().toISOString());
         if (saved.notice || Object.keys(saved.errors).length)
             return saved.notice ?? Object.values(saved.errors).join(' ');
         guardRef.current = null;
         setEditorId(null);
         commitData(saved.data);
-        setToast(!saved.changed ? '변경 사항이 없어 기존 기록과 이력을 유지했습니다.' : mode === 'amend' ? '수정 내용과 이력을 반영했습니다. 최초 완료 시각과 완료 건수는 유지됩니다.' : mode === 'complete' ? '상담을 완료했습니다. 예약 상태와 홈 집계에 반영했습니다.' : '결과를 임시 반영했습니다. 상담 중 상태를 유지합니다.');
+        setToast(!saved.changed ? '변경 사항이 없어 기존 기록과 이력을 유지했습니다.' : mode === 'amend' ? '수정 내용과 이력을 반영했습니다. 최초 완료 시각과 완료 건수는 유지됩니다.' : mode === 'complete' ? '상담을 완료했습니다. 예약 상태와 홈 집계에 반영했습니다.' : '결과를 반영했습니다. 상담 중 상태를 유지합니다.');
     };
     const metrics = data ? (0, domain_1.getMetrics)(data) : null;
     const callMetrics = (0, callRisk_1.getCallMetrics)(calls);
@@ -1388,7 +1446,7 @@ function App() {
         __React.createElement(Layout_1.Layout, { data: data, page: page, navigate: navigate }, loading ? __React.createElement("div", { className: "loading-view", role: "status" },
             __React.createElement("div", { className: "loader" }),
             __React.createElement("h1", null, "\uB300\uC2DC\uBCF4\uB4DC\uB97C \uC900\uBE44\uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4"),
-            __React.createElement("p", null, "\uC0D8\uD50C \uB370\uC774\uD130\uB97C \uBD88\uB7EC\uC624\uB294 \uC911\uC785\uB2C8\uB2E4.")) : error || !data ? __React.createElement("div", { className: "loading-view", role: "alert" },
+            __React.createElement("p", null, "\uC5C5\uBB34 \uC815\uBCF4\uB97C \uBD88\uB7EC\uC624\uB294 \uC911\uC785\uB2C8\uB2E4.")) : error || !data ? __React.createElement("div", { className: "loading-view", role: "alert" },
             __React.createElement(Icon_1.Icon, { name: "alert", size: 32 }),
             __React.createElement("h1", null, "\uB370\uC774\uD130\uB97C \uD655\uC778\uD574 \uC8FC\uC138\uC694"),
             __React.createElement("p", null, error),
@@ -1402,7 +1460,7 @@ function App() {
                 __React.createElement("div", { className: "heading-actions" },
                     __React.createElement("button", { className: "button button-secondary", onClick: () => setModal('reset') },
                         __React.createElement(Icon_1.Icon, { name: "refresh", size: 16 }),
-                        "\uC0D8\uD50C \uCD08\uAE30\uD654"),
+                        "\uD654\uBA74 \uCD08\uAE30\uD654"),
                     __React.createElement("button", { className: "button button-primary", onClick: () => navigate('appointments') },
                         "\uC608\uC57D\u00B7\uC0C1\uB2F4 \uBCF4\uAE30",
                         __React.createElement(Icon_1.Icon, { name: "arrow", size: 16 })))),
@@ -1440,8 +1498,7 @@ function App() {
                         __React.createElement("div", { className: "title-with-icon" },
                             __React.createElement("span", { className: "small-icon gray" },
                                 __React.createElement(Icon_1.Icon, { name: "activity", size: 18 })),
-                            __React.createElement("h2", null, "\uCD5C\uADFC \uC5C5\uBB34 \uD750\uB984")),
-                        __React.createElement("span", { className: "small-badge" }, "\uC0D8\uD50C \uAE30\uB85D")),
+                            __React.createElement("h2", null, "\uCD5C\uADFC \uC5C5\uBB34 \uD750\uB984"))),
                     __React.createElement("div", { className: "activity-timeline" }, data.activities.map(item => __React.createElement("div", { className: "activity-item", key: item.id },
                         __React.createElement("span", { className: `activity-dot ${item.kind}` }),
                         __React.createElement("div", null,
@@ -1451,38 +1508,36 @@ function App() {
                     __React.createElement("div", { className: "workflow-note" },
                         __React.createElement(Icon_1.Icon, { name: "sparkles", size: 17 }),
                         __React.createElement("span", null, "\uC0C1\uB2F4 \uACB0\uACFC\uAC00 \uC9C1\uC6D0\uC758 \uC900\uBE44\uB85C \uC774\uC5B4\uC9D1\uB2C8\uB2E4."),
-                        __React.createElement("button", { className: "text-button", onClick: () => setModal('help'), "aria-label": "\uD504\uB85C\uD1A0\uD0C0\uC785 \uC548\uB0B4 \uBCF4\uAE30" },
+                        __React.createElement("button", { className: "text-button", onClick: () => setModal('help'), "aria-label": "KCM \uC774\uC6A9 \uC548\uB0B4 \uBCF4\uAE30" },
                             __React.createElement(Icon_1.Icon, { name: "arrow", size: 16 })))))) : page === 'appointments' ? __React.createElement(__React.Fragment, null,
             __React.createElement("div", { className: "page-heading" },
                 __React.createElement("div", null,
                     __React.createElement("span", { className: "eyebrow" }, "\uACE0\uAC1D\uAD00\uB9AC"),
                     __React.createElement("h1", null, "\uC608\uC57D\u00B7\uC0C1\uB2F4\uAD00\uB9AC"),
-                    __React.createElement("p", null, "\uACE0\uAC1D\uC744 \uC120\uD0DD\uD574 \uC0AC\uC804 \uC0C1\uB2F4 \uB0B4\uC6A9\uACFC \uBE0C\uB9AC\uD551\uC744 \uD655\uC778\uD558\uC138\uC694.")),
-                __React.createElement("span", { className: "small-badge" }, "\uC0D8\uD50C \uC0C1\uB2F4 \uCC98\uB9AC")),
+                    __React.createElement("p", null, "\uACE0\uAC1D\uC744 \uC120\uD0DD\uD574 \uC0AC\uC804 \uC0C1\uB2F4 \uB0B4\uC6A9\uACFC \uBE0C\uB9AC\uD551\uC744 \uD655\uC778\uD558\uC138\uC694."))),
             __React.createElement("div", { className: "dashboard-grid" },
                 table,
                 briefing)) : page === 'support' ? __React.createElement(SupportPage_1.SupportPage, { state: callState, onStart: onStartCall, onSupport: onSupport, onDraft: onCallDraft, onComplete: onCallComplete, onNext: id => setCallState(current => (0, callWorkflow_1.createNextDemoCall)(current, id)) }) : page === 'marketing' ? __React.createElement(MarketingPage_1.MarketingPage, { items: aftercareList, records: aftercare, store: data.store, onReview: onAftercareReview, onSend: onAftercareSend, onSupport: () => navigate('support') }) : __React.createElement(SecondaryPages_1.SecondaryPages, { key: page === 'stores' ? storeInfoVisit : page, page: page, data: data })),
-        modal === 'help' && __React.createElement(Modal_1.Modal, { title: "KCM \uD504\uB85C\uD1A0\uD0C0\uC785 \uC548\uB0B4", onClose: () => setModal(null) },
+        modal === 'help' && __React.createElement(Modal_1.Modal, { title: "KCM \uC774\uC6A9 \uC548\uB0B4", onClose: () => setModal(null) },
             __React.createElement("div", { className: "help-content" },
                 __React.createElement("p", { className: "modal-lead" },
                     "AI \uC120\uC751\uB300\uC640 \uD1B5\uD654 \uC704\uD5D8 \uC2E0\uD638\uB97C \uBC14\uD0D5\uC73C\uB85C ",
-                    __React.createElement("strong", null, "\uC9C1\uC6D0\uC758 \uC0C1\uB2F4 \uC900\uBE44\uC640 \uB300\uC751\uC744 \uC9C0\uC6D0\uD558\uB294 KCM \uC2DC\uC5F0 \uD654\uBA74"),
-                    "\uC785\uB2C8\uB2E4."),
-                __React.createElement("div", { className: "notice-inline" },
-                    __React.createElement(Icon_1.Icon, { name: "shield", size: 19 }),
-                    __React.createElement("span", null, "\uC608\uC57D\u00B7\uC9C1\uC6D0\u00B7\uB9E4\uC7A5\u00B7\uC0C1\uD488\u00B7\uC7AC\uACE0\uB294 \uAC00\uC0C1 \uC608\uC2DC\uC785\uB2C8\uB2E4. \uC2E4\uC2DC\uAC04 AI \uC0C1\uB2F4 \uC601\uC5ED\uC5D0\uB294 \uC2E4\uC81C \uD14C\uC2A4\uD2B8 \uD1B5\uD654\uAC00 \uD45C\uC2DC\uB420 \uC218 \uC788\uC2B5\uB2C8\uB2E4. KT \uACF5\uC2DD \uC6B4\uC601 \uC11C\uBE44\uC2A4\uAC00 \uC544\uB2D9\uB2C8\uB2E4.")),
-                __React.createElement("h3", null, "\uC9C0\uAE08 \uD655\uC778\uD560 \uC218 \uC788\uB294 \uB3D9\uC791"),
-                __React.createElement("p", null, "\uD1B5\uD654 \uD604\uD669\u00B7\uC704\uD5D8 \uB4F1\uAE09 \uD544\uD130\uC640 \uADFC\uAC70 \uBC1C\uC5B8\uC744 \uD3EC\uD568\uD55C \uD1B5\uD654 \uBE0C\uB9AC\uD551, \uD1B5\uD654 \uC0C1\uB2F4 \uC2DC\uC791\u00B7\uC774\uC5B4\uBCF4\uAE30\u00B7\uACB0\uACFC \uAE30\uB85D\u00B7\uC644\uB8CC \uC870\uD68C, \uD1B5\uD654\uBCC4 \uCD5C\uC885 \uC704\uD5D8\uB3C4\u00B7\uC774\uB825\u00B7\uB3D9\uC77C \uACE0\uAC1D \uB2E4\uC74C \uD1B5\uD654 \uB370\uBAA8, \uAD00\uB9AC\uC790 \uC9C0\uC6D0 \uC694\uCCAD\u00B7\uD655\uC778\u00B7\uC9C0\uC6D0 \uC644\uB8CC\u00B7\uC7AC\uC694\uCCAD \uB370\uBAA8, \uBA54\uB274 \uC774\uB3D9, \uC608\uC57D \uAC80\uC0C9\u00B7\uD544\uD130, \uACE0\uAC1D \uC120\uD0DD, \uC0D8\uD50C \uBE0C\uB9AC\uD551 \uC0C1\uC138 \uBCF4\uAE30, \uBE0C\uB9AC\uD551 \uD655\uC778 \uC0C1\uD0DC \uBCC0\uACBD, \uC0C1\uB2F4 \uC2DC\uC791\u00B7\uACB0\uACFC \uC784\uC2DC \uBC18\uC601\u00B7\uC644\uB8CC\u00B7\uC644\uB8CC \uACB0\uACFC \uC218\uC815\uACFC \uC774\uB825 \uC870\uD68C, \uC7AC\uACE0 \uC870\uD68C \uC608\uC2DC\uB97C \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uC0C1\uD488\uAD00\uB9AC 4\uAC1C \uD0ED\uACFC \uC790\uC0AC\u00B7\uD0C0\uC0AC \uC804\uD658, \uB9E4\uC7A5\uAD00\uB9AC 2\uAC1C \uD0ED, \uAC00\uC0C1 \uB9E4\uC7A5 5\uACF3\uACFC \uC6B0\uB9AC \uB9E4\uC7A5 \uC9C1\uC6D0\uC758 \uC815\uBCF4\u00B7\uB9AC\uBDF0 \uBC30\uCE58\uB3C4 \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."),
-                __React.createElement("h3", null, "\uC2E4\uC81C \uD1B5\uD654\uC640 \uC678\uBD80 \uC800\uC7A5"),
-                __React.createElement("p", null, "\uACE0\uAC1D\uC6A9 \uD654\uBA74\uC758 Retell \uD1B5\uD654\uB294 Monitor\uC640 SSE\uB97C \uD1B5\uD574 \uC9C1\uC6D0 \uD654\uBA74\uC5D0 \uD45C\uC2DC\uB429\uB2C8\uB2E4. 5\uAC1C \uC704\uD5D8 \uC2E0\uD638\uC758 \uCD5C\uC885 \uACB0\uACFC\uC640 \uC0C1\uB2F4 \uC804\uBB38\uC740 \uC11C\uBC84 \uD658\uACBD\uC124\uC815\uC5D0 \uB530\uB77C n8n\uC73C\uB85C \uC804\uC1A1\uD569\uB2C8\uB2E4. \uC218\uC2E0 \uC751\uB2F5\uACFC DB \uC800\uC7A5 \uC131\uACF5\uC740 \uB2E4\uB974\uBBC0\uB85C \uC800\uC7A5\u00B7AI \uC694\uC57D \uACB0\uACFC\uB294 n8n\uC5D0\uC11C \uD655\uC778\uD569\uB2C8\uB2E4."),
-                __React.createElement("h3", null, "\uC2DC\uC5F0 \uBC94\uC704 \uBC16"),
-                __React.createElement("p", null, "\uC2E4\uC81C \uB85C\uADF8\uC778, DB \uC774\uB825 \uC870\uD68C, \uC608\uC57D \uB4F1\uB85D\u00B7\uBCC0\uACBD, \uC7AC\uACE0 \uB300\uC5EC, \uBB38\uC790 \uBC1C\uC1A1\uC740 \uC5F0\uACB0\uD558\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4."),
-                __React.createElement("p", { className: "muted-text" }, "\uC608\uC57D\u00B7\uB370\uBAA8 \uC0C1\uB2F4\uC740 \uC0C8\uB85C\uACE0\uCE68 \uC2DC \uCD08\uAE30\uD654\uB429\uB2C8\uB2E4. \uC2E4\uC2DC\uAC04 \uD1B5\uD654 \uC774\uB825\uC740 \uD604\uC7AC \uC11C\uBC84 \uBA54\uBAA8\uB9AC\uC5D0\uC11C \uC870\uD68C\uD558\uBA70 \uC11C\uBC84 \uC7AC\uC2DC\uC791 \uC2DC \uD654\uBA74\uC5D0\uC11C \uC0AC\uB77C\uC9D1\uB2C8\uB2E4. \uC678\uBD80\uC5D0 \uC800\uC7A5\uB41C \uB370\uC774\uD130\uB294 \uBCC4\uB3C4\uC785\uB2C8\uB2E4."))),
-        modal === 'reset' && __React.createElement(Modal_1.Modal, { title: "\uC0D8\uD50C \uD654\uBA74\uC744 \uCD08\uAE30\uD654\uD560\uAE4C\uC694?", onClose: () => setModal(null) },
+                    __React.createElement("strong", null, "\uC9C1\uC6D0\uC758 \uC0C1\uB2F4 \uC900\uBE44\uC640 \uB300\uC751\uC744 \uC9C0\uC6D0\uD569\uB2C8\uB2E4.")),
+                __React.createElement("h3", null, "\uC0C1\uB2F4 \uC900\uBE44\uBD80\uD130 \uC0AC\uD6C4\uAD00\uB9AC\uAE4C\uC9C0"),
+                __React.createElement("p", null, "\uD1B5\uD654 \uD604\uD669\uC5D0\uC11C \uBE0C\uB9AC\uD551\uACFC \uC704\uD5D8 \uC2E0\uD638\uB97C \uD655\uC778\uD558\uACE0 \uC0C1\uB2F4\uC744 \uC2DC\uC791\uD558\uC138\uC694. \uC0C1\uB2F4 \uACB0\uACFC\uB97C \uAE30\uB85D\uD558\uBA74 \uC644\uB8CC \uB0B4\uC5ED\uC744 \uC870\uD68C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uAD00\uB9AC\uC790 \uC9C0\uC6D0\uC740 \uC694\uCCAD\u00B7\uD655\uC778\u00B7\uC644\uB8CC \uD750\uB984\uC73C\uB85C \uAD00\uB9AC\uD558\uBA70, \uC644\uB8CC \uC0C1\uB2F4\uC758 \uD6C4\uC18D \uC548\uB0B4\uB294 \uB9C8\uCF00\uD305\uC5D0\uC11C \uD655\uC778\uD558\uACE0 \uCC98\uB9AC\uD569\uB2C8\uB2E4."),
+                __React.createElement("h3", null, "\uB9E4\uC7A5 \uC5C5\uBB34"),
+                __React.createElement("p", null, "\uC608\uC57D\u00B7\uC0C1\uB2F4\uAD00\uB9AC\uC5D0\uC11C \uACB0\uACFC\uC640 \uC218\uC815 \uC774\uB825\uC744 \uD655\uC778\uD558\uC138\uC694. \uC0C1\uD488\uAD00\uB9AC\uC5D0\uC11C\uB294 \uC694\uAE08\uC81C\uC640 \uACB0\uD569\u00B7\uD61C\uD0DD\u00B7\uC81C\uD488\uC744 \uC870\uD68C\uD558\uACE0 \uBE44\uAD50\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uB9E4\uC7A5\uAD00\uB9AC\uC5D0\uC11C \uB9E4\uC7A5\uACFC \uC9C1\uC6D0\uC758 \uC0C1\uC138 \uC815\uBCF4\uB97C \uD655\uC778\uD558\uC138\uC694."),
+                __React.createElement("h3", null, "\uD1B5\uD654 \uAE30\uB85D \uD655\uC778"),
+                __React.createElement("p", null, "\uACE0\uAC1D\uC6A9 AI \uC0C1\uB2F4\uC740 \uC2E4\uC2DC\uAC04 \uC0C1\uB2F4 \uC601\uC5ED\uC5D0\uC11C \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uCD5C\uC885 \uACB0\uACFC \uC804\uC1A1\uC758 \uC218\uC2E0 \uC751\uB2F5\uC740 \uC678\uBD80 \uC800\uC7A5 \uC644\uB8CC\uC640 \uB2E4\uB985\uB2C8\uB2E4. \uC800\uC7A5\u00B7\uC694\uC57D \uACB0\uACFC\uB294 \uBCC4\uB3C4 \uD655\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4."),
+                __React.createElement("details", { className: "call-criteria" },
+                    __React.createElement("summary", null, "\uC774\uC6A9 \uBC94\uC704 \uBC0F \uAE30\uB85D \uBCF4\uAD00"),
+                    __React.createElement("p", null, "\uD604\uC7AC \uC608\uC57D\u00B7\uC0C1\uD488\u00B7\uB9E4\uC7A5 \uC790\uB8CC\uB294 \uC6B4\uC601 \uC815\uBCF4\uC640 \uBCC4\uB3C4\uC778 \uCC38\uACE0 \uC790\uB8CC\uC785\uB2C8\uB2E4. \uD654\uBA74\uC5D0\uC11C \uCC98\uB9AC\uD558\uB294 \uAD00\uB9AC\uC790 \uC9C0\uC6D0\uACFC \uD6C4\uC18D \uC548\uB0B4\uB294 \uC678\uBD80 \uC54C\uB9BC\u00B7\uBB38\uC790\uB97C \uC804\uC1A1\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uC5C6\uC774 \uC774\uC6A9\uD558\uBA70, \uC608\uC57D \uB4F1\uB85D\u00B7\uBCC0\uACBD\uACFC \uC7AC\uACE0 \uB300\uC5EC\uB294 \uC81C\uACF5\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
+                    __React.createElement("p", null, "\uC608\uC57D\uACFC \uD654\uBA74 \uC0C1\uB2F4 \uAE30\uB85D\uC740 \uC0C8\uB85C\uACE0\uCE68\uD558\uBA74 \uCD08\uAE30\uD654\uB429\uB2C8\uB2E4. \uC2E4\uC2DC\uAC04 \uD1B5\uD654 \uAE30\uB85D\uC740 \uC11C\uBE44\uC2A4 \uC7AC\uC2DC\uC791 \uC804\uC758 \uC774\uB825\uC744 \uC870\uD68C\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uC678\uBD80 \uC800\uC7A5\uB41C \uC790\uB8CC\uB294 \uBCC4\uB3C4\uC785\uB2C8\uB2E4.")))),
+        modal === 'reset' && __React.createElement(Modal_1.Modal, { title: "\uD604\uC7AC \uD654\uBA74 \uAE30\uB85D\uC744 \uCD08\uAE30\uD654\uD560\uAE4C\uC694?", onClose: () => setModal(null) },
             __React.createElement("p", { className: "modal-lead" }, "\uD1B5\uD654 \uCD08\uC548\u00B7\uC0C1\uB2F4 \uACB0\uACFC\u00B7\uD1B5\uD654\uBCC4 \uC704\uD5D8 \uC774\uB825\u00B7\uC810\uC218 \uBC18\uC601 \uAE30\uB85D\u00B7\uC9C0\uC6D0 \uC774\uB825, \uC608\uC57D \uC0C1\uB2F4 \uC0C1\uD0DC\u00B7\uACB0\uACFC\u00B7\uC218\uC815 \uC774\uB825, \uBE0C\uB9AC\uD551 \uD655\uC778 \uC0C1\uD0DC\uC640 \uC608\uC57D \uAC80\uC0C9\u00B7\uD1B5\uD654 \uD544\uD130 \uC870\uAC74\uC774 \uCD08\uAE30 \uC0C1\uD0DC\uB85C \uB3CC\uC544\uAC11\uB2C8\uB2E4. \uC2E4\uC81C DB\uB098 \uB2E4\uB978 \uC11C\uBE44\uC2A4\uC5D0\uB294 \uC601\uD5A5\uC744 \uC8FC\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
             __React.createElement("div", { className: "modal-actions" },
                 __React.createElement("button", { className: "button button-secondary", onClick: () => setModal(null) }, "\uCDE8\uC18C"),
-                __React.createElement("button", { className: "button button-primary", onClick: reset }, "\uC0D8\uD50C \uCD08\uAE30\uD654"))),
+                __React.createElement("button", { className: "button button-primary", onClick: reset }, "\uD654\uBA74 \uCD08\uAE30\uD654"))),
         modal === 'details' && selected && __React.createElement(Modal_1.Modal, { title: `${selected.customerName} 고객 · 상담 상세`, onClose: () => setModal(null), wide: true },
             __React.createElement("div", { className: "detail-meta" },
                 __React.createElement("span", null, selected.id),
@@ -1492,19 +1547,14 @@ function App() {
                 __React.createElement("span", null,
                     selected.employee,
                     " \uC9C1\uC6D0")),
-            __React.createElement("h3", { className: "section-label" },
-                "\uC9C1\uC6D0 \uC0C1\uB2F4 \uACB0\uACFC ",
-                __React.createElement("span", { className: "small-badge" }, "\uC0D8\uD50C \uAE30\uB85D")),
+            __React.createElement("h3", { className: "section-label" }, "\uC9C1\uC6D0 \uC0C1\uB2F4 \uACB0\uACFC "),
             __React.createElement(ConsultationPanel_1.ConsultationResultView, { result: selected.consultation?.result }),
             __React.createElement("h3", { className: "section-label" }, "\uC0AC\uC804 \uBE0C\uB9AC\uD551"),
             __React.createElement("p", { className: "detail-summary" }, selected.briefing.summary),
-            __React.createElement("h3", { className: "section-label" },
-                "\uC0AC\uC804 \uC0C1\uB2F4 \uB0B4\uC6A9 ",
-                __React.createElement("span", { className: "small-badge" }, "\uAC00\uC0C1 \uB300\uD654")),
+            __React.createElement("h3", { className: "section-label" }, "\uC0AC\uC804 \uC0C1\uB2F4 \uB0B4\uC6A9 "),
             __React.createElement("div", { className: "transcript" }, selected.briefing.transcript.map((line, index) => __React.createElement("div", { className: `transcript-line ${line.speaker === '고객' ? 'customer' : ''}`, key: index },
                 __React.createElement("strong", null, line.speaker),
-                __React.createElement("p", null, line.text)))),
-            __React.createElement("p", { className: "muted-text" }, "\uB179\uC74C \uD30C\uC77C \uBC0F \uC2E4\uC81C \uBD84\uC11D \uACB0\uACFC\uB294 \uC5F0\uACB0\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.")),
+                __React.createElement("p", null, (0, uiText_1.uiText)(line.text)))))),
         editing && __React.createElement(ConsultationEditor_1.ConsultationEditor, { key: editing.id, appointment: editing, onClose: () => { guardRef.current = null; setEditorId(null); }, onSave: onSave, registerGuard: registerGuard }),
         toast && __React.createElement("div", { className: "toast", role: "status" },
             __React.createElement(Icon_1.Icon, { name: "check", size: 18 }),
@@ -1590,8 +1640,7 @@ function BriefingPanel({ appointment, onReview, onDetails }) {
             __React.createElement("div", { className: "title-with-icon" },
                 __React.createElement("span", { className: "small-icon red" },
                     __React.createElement(Icon_1.Icon, { name: "sparkles", size: 18 })),
-                __React.createElement("h2", null, "\uC0AC\uC804 \uBE0C\uB9AC\uD551")),
-            __React.createElement("span", { className: "small-badge" }, "\uC0D8\uD50C \uC694\uC57D")),
+                __React.createElement("h2", null, "\uC0AC\uC804 \uBE0C\uB9AC\uD551"))),
         !appointment ? __React.createElement("div", { className: "state-message" },
             __React.createElement(Icon_1.Icon, { name: "users", size: 32 }),
             __React.createElement("h3", null, "\uC608\uC57D\uC744 \uC120\uD0DD\uD574 \uC8FC\uC138\uC694"),
@@ -1645,11 +1694,13 @@ function BriefingPanel({ appointment, onReview, onDetails }) {
                     __React.createElement("button", { className: "button button-secondary", onClick: onDetails },
                         "\uC0C1\uC138 \uBCF4\uAE30",
                         __React.createElement(Icon_1.Icon, { name: "arrow", size: 16 }))),
-                __React.createElement("p", { className: "microcopy" }, "\uC0D8\uD50C \uC694\uC57D\uC785\uB2C8\uB2E4. \uD655\uC778 \uC0C1\uD0DC\uB294 \uC0C8\uB85C\uACE0\uCE68 \uC2DC \uCD08\uAE30\uD654\uB429\uB2C8\uB2E4.")) : __React.createElement("div", { className: `state-message briefing-state ${appointment.briefing.status}` },
+                __React.createElement("p", { className: "microcopy" }, "\uC0C1\uB2F4 \uC804\uC5D0 \uC694\uC57D\uACFC \uACE0\uAC1D \uC694\uCCAD\uC744 \uD655\uC778\uD574 \uC8FC\uC138\uC694.")) : __React.createElement("div", { className: `state-message briefing-state ${appointment.briefing.status}` },
                 __React.createElement(Icon_1.Icon, { name: appointment.briefing.status === 'processing' ? 'clock' : 'alert', size: 28 }),
-                __React.createElement("h3", null, appointment.briefing.status === 'processing' ? '브리핑을 준비하는 상태입니다' : '브리핑 확인이 필요한 상태입니다'),
-                __React.createElement("p", null, appointment.briefing.status === 'processing' ? '분석 중 화면을 보여주는 샘플입니다. 실제 작업이 실행 중인 것은 아닙니다.' : '실패 상태를 보여주는 샘플입니다. 재분석 기능은 n8n 연동 후 구현합니다.'),
-                __React.createElement("span", { className: "small-badge" }, "\uC0C1\uD0DC \uD45C\uC2DC \uC608\uC2DC"))));
+                __React.createElement("h3", null, appointment.briefing.status === 'processing' ? '브리핑 준비 중' : '브리핑 확인 필요'),
+                __React.createElement("p", null, appointment.briefing.status === 'processing' ? '현재 준비 상태에서는 요약을 확인할 수 없습니다. 예약 정보를 확인하고 상담을 시작할 수 있습니다.' : '요약 정보를 확인할 수 없습니다. 고객의 상담 목적과 요청 사항을 직접 확인해 주세요.'),
+                __React.createElement("button", { className: "button button-secondary", onClick: onDetails },
+                    "\uC608\uC57D \uC0C1\uC138 \uBCF4\uAE30",
+                    __React.createElement(Icon_1.Icon, { name: "arrow", size: 16 })))));
 }
 
 },
@@ -1663,15 +1714,15 @@ const CallSupportPanel_1 = require("./CallSupportPanel");
 const CallRiskDetails_1 = require("./CallRiskDetails");
 const CallResultPanel_1 = require("./CallResultPanel");
 const customerName_1 = require("../lib/customerName");
+const uiText_1 = require("../lib/uiText");
 function CallBriefing({ call, customer, calls, nextCall, onStart, onSupport, onDraft, onComplete, onNext, onOpen, onClose }) {
     const analyzed = call.analysis.status === 'completed';
-    return __React.createElement(Modal_1.Modal, { title: `${call.id} · ${call.status === 'completed' ? '완료 기록 보기' : call.status === 'staff_consulting' ? '상담 이어보기' : '직원 연결 전 사전 브리핑'}`, onClose: onClose, wide: true },
+    return __React.createElement(Modal_1.Modal, { title: `${call.id} · ${call.status === 'completed' ? '완료 기록 보기' : call.status === 'staff_consulting' ? '상담 이어보기' : '상담 사전 브리핑'}`, onClose: onClose, wide: true },
         __React.createElement("div", { className: "call-briefing" },
             __React.createElement("div", { className: "detail-meta" },
                 __React.createElement("span", null, (0, customerName_1.maskCustomerName)(call.customerLabel)),
-                __React.createElement("span", null, call.inquiryType),
+                __React.createElement("span", null, (0, uiText_1.uiText)(call.inquiryType)),
                 __React.createElement("span", null, callRisk_1.callStatusLabels[call.status])),
-            __React.createElement("p", { className: "call-demo-note" }, "\uB370\uBAA8 \uB370\uC774\uD130 \u00B7 \uD300 \uC784\uC2DC \uC704\uD5D8 \uC810\uC218 \uAE30\uC900 \u2014 \uBAA8\uB4E0 \uACE0\uAC1D\u00B7\uBC1C\uC5B8\u00B7\uC810\uC218\uB294 \uAC00\uC0C1\uC785\uB2C8\uB2E4."),
             __React.createElement("section", { className: "call-consultation", "aria-label": "\uD1B5\uD654 \uC0C1\uB2F4 \uC2DC\uC791 \uC815\uBCF4" },
                 __React.createElement("div", { role: "status" },
                     __React.createElement("h3", { className: "section-label" }, callRisk_1.callStatusLabels[call.status]),
@@ -1679,30 +1730,29 @@ function CallBriefing({ call, customer, calls, nextCall, onStart, onSupport, onD
                         "\uCD5C\uCD08 \uC0C1\uB2F4 \uC2DC\uC791 (\uD55C\uAD6D \uC2DC\uAC04): ",
                         __React.createElement("time", { dateTime: call.startedAt }, new Date(call.startedAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false })))),
                 __React.createElement("button", { className: `button ${call.status === 'waiting' ? 'button-primary' : 'button-secondary'}`, disabled: call.status !== 'waiting', "aria-describedby": "call-start-notice", onClick: () => onStart(call.id) }, call.status === 'staff_consulting' ? '상담 중' : '상담 시작'),
-                __React.createElement("p", { id: "call-start-notice", className: "muted-text" }, call.status === 'ai_responding' ? 'AI 응대 중에는 직원 상담을 시작할 수 없습니다.' : call.status === 'ended' || call.status === 'completed' ? '완료·종료된 통화는 다시 시작할 수 없습니다.' : call.status === 'staff_consulting' ? '최초 시작 시각을 유지하며 이 통화의 브리핑을 이어서 확인할 수 있습니다.' : '브리핑과 감지 신호를 확인한 뒤 상담을 시작하세요. 분석 결과와 관계없이 상담을 시작할 수 있습니다.'),
-                __React.createElement("p", { className: "muted-text" }, "\uB370\uBAA8 \uB3D9\uC791\uC774\uBA70 \uC2E4\uC81C \uC804\uD654\uAC00 \uC5F0\uACB0\uB418\uC9C0\uB294 \uC54A\uC2B5\uB2C8\uB2E4. \uD1B5\uD654 \uC0C1\uB2F4 \uC0C1\uD0DC\u00B7\uC2DC\uC791 \uC2DC\uAC01\uC740 \uC0C8\uB85C\uACE0\uCE68\uD558\uBA74 \uCD08\uAE30\uD654\uB429\uB2C8\uB2E4.")),
+                __React.createElement("p", { id: "call-start-notice", className: "muted-text" }, call.status === 'ai_responding' ? 'AI 응대 중에는 직원 상담을 시작할 수 없습니다.' : call.status === 'ended' || call.status === 'completed' ? '완료·종료된 통화는 다시 시작할 수 없습니다.' : call.status === 'staff_consulting' ? '최초 시작 시각을 유지하며 이 통화의 브리핑을 이어서 확인할 수 있습니다.' : '브리핑과 감지 신호를 확인한 뒤 상담을 시작하세요. 분석 결과와 관계없이 상담을 시작할 수 있습니다.')),
             __React.createElement("section", { "aria-label": "\uBB38\uC758 \uB0B4\uC6A9 \uC694\uC57D" },
                 __React.createElement("h3", { className: "section-label" }, "\uBB38\uC758 \uB0B4\uC6A9 \uC694\uC57D"),
-                __React.createElement("p", null, analyzed ? call.analysis.summary || '요약 정보가 없습니다.' : `${callRisk_1.analysisStatusLabels[call.analysis.status]} 상태로 요약이 아직 없습니다.`)),
+                __React.createElement("p", null, analyzed ? (0, uiText_1.uiText)(call.analysis.summary ?? '') || '요약 정보가 없습니다.' : `${callRisk_1.analysisStatusLabels[call.analysis.status]} 상태로 요약이 아직 없습니다.`)),
             __React.createElement(CallResultPanel_1.CallResultPanel, { call: call, onDraft: onDraft, onComplete: onComplete }),
             __React.createElement(CallRiskDetails_1.CallRiskDetails, { call: call, customer: customer, calls: calls }),
-            call.status === 'completed' && __React.createElement("section", { className: "support-simulation", "aria-label": "\uB3D9\uC77C \uACE0\uAC1D \uB2E4\uC74C \uD1B5\uD654 \uB370\uBAA8" },
-                __React.createElement("h3", { className: "section-label" }, "\uB3D9\uC77C \uACE0\uAC1D \uB2E4\uC74C \uD1B5\uD654 \uB370\uBAA8"),
-                __React.createElement("p", { className: "muted-text" }, "\uAC00\uC0C1 \uD1B5\uD654\uB9CC \uC0DD\uC131\uD558\uBA70 \uC2E4\uC81C \uC804\uD654\u00B7\uC608\uC57D\uC740 \uB9CC\uB4E4\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uB2E4\uC74C \uD1B5\uD654\uB294 \uB2E4\uC2DC 0\uC810\uC5D0\uC11C \uACC4\uC0B0\uD558\uBA70 \uC774\uC804 \uC644\uB8CC \uAE30\uB85D\uC744 \uBCF4\uC874\uD569\uB2C8\uB2E4. \uC0C8\uB85C\uACE0\uCE68 \uC2DC \uB370\uBAA8 \uC774\uB825\uC774 \uCD08\uAE30\uD654\uB429\uB2C8\uB2E4."),
+            call.status === 'completed' && __React.createElement("section", { className: "support-simulation", "aria-label": "\uB3D9\uC77C \uACE0\uAC1D \uD6C4\uC18D \uC0C1\uB2F4 \uAE30\uB85D" },
+                __React.createElement("h3", { className: "section-label" }, "\uB3D9\uC77C \uACE0\uAC1D \uD6C4\uC18D \uC0C1\uB2F4"),
+                __React.createElement("p", { className: "microcopy" }, "\uD6C4\uC18D \uBB38\uC758\uB97C \uC704\uD55C \uC0C1\uB2F4 \uAE30\uB85D\uC744 \uC900\uBE44\uD569\uB2C8\uB2E4. \uC2E4\uC81C \uC804\uD654 \uC5F0\uACB0\uC774\uB098 \uC608\uC57D\uC740 \uC0DD\uC131\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
                 nextCall ? __React.createElement(__React.Fragment, null,
                     __React.createElement("p", null,
-                        "\uAC19\uC740 \uACE0\uAC1D\uC758 \uD65C\uC131\u00B7\uBBF8\uBC18\uC601 \uB370\uBAA8 \uD1B5\uD654 ",
+                        "\uAC19\uC740 \uACE0\uAC1D\uC758 \uC9C4\uD589 \uC911\uC774\uAC70\uB098 \uC704\uD5D8\uB3C4 \uD655\uC778\uC774 \uD544\uC694\uD55C \uD1B5\uD654 ",
                         nextCall.id,
-                        "\uAC00 \uC788\uC2B5\uB2C8\uB2E4. \uC774 \uB370\uBAA8\uC5D0\uC11C\uB294 \uC21C\uCC28 \uC9C4\uD589\uD569\uB2C8\uB2E4."),
+                        "\uAC00 \uC788\uC2B5\uB2C8\uB2E4. \uD574\uB2F9 \uAE30\uB85D\uC744 \uBA3C\uC800 \uD655\uC778\uD574 \uC8FC\uC138\uC694."),
                     __React.createElement("button", { className: "button button-secondary", onClick: () => onOpen(nextCall.id) },
                         nextCall.id,
                         " \uD1B5\uD654 \uBCF4\uAE30")) : __React.createElement(__React.Fragment, null,
-                    __React.createElement("button", { className: "button button-secondary", disabled: !call.scoreRecord, onClick: () => onNext(call.id) }, "\uB3D9\uC77C \uACE0\uAC1D \uB2E4\uC74C \uD1B5\uD654 \uC0DD\uC131(\uB370\uBAA8)"),
-                    !call.scoreRecord && __React.createElement("p", { className: "muted-text" }, "\uC774 \uD1B5\uD654\uC758 \uC810\uC218 \uBC18\uC601 \uC644\uB8CC \uD6C4 \uC0DD\uC131\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."))),
+                    __React.createElement("button", { className: "button button-secondary", disabled: !call.scoreRecord, onClick: () => onNext(call.id) }, "\uD6C4\uC18D \uC0C1\uB2F4 \uAE30\uB85D \uC900\uBE44"),
+                    !call.scoreRecord && __React.createElement("p", { className: "muted-text" }, "\uD604\uC7AC \uD1B5\uD654\uC758 \uCD5C\uC885 \uC704\uD5D8\uB3C4\uAC00 \uD655\uC778\uB418\uBA74 \uC900\uBE44\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."))),
             __React.createElement(CallSupportPanel_1.CallSupportPanel, { call: call, onSupport: onSupport }),
             __React.createElement("section", { "aria-label": "\uD1B5\uD654 \uC704\uD5D8 \uC2E0\uD638 \uADFC\uAC70" },
                 __React.createElement("h3", { className: "section-label" }, "\uC2E0\uD638\uBCC4 \uADFC\uAC70"),
-                __React.createElement("p", { className: "muted-text" }, "\uD69F\uC218\uB97C \uC120\uD0DD\uD574 \uD1B5\uD654 \uC2DC\uC791 \uAE30\uC900 \uC2DC\uC810\uACFC \uADFC\uAC70\uB97C \uD655\uC778\uD558\uC138\uC694. \uACE0\uC131\uC740 \uC74C\uC131 \uAD6C\uAC04\uC758 \uAC00\uC0C1 \uC608\uC2DC\uC785\uB2C8\uB2E4. \uC695\uC124\uC740 \uAC00\uB9BC \uCC98\uB9AC\uB429\uB2C8\uB2E4."),
+                __React.createElement("p", { className: "muted-text" }, "\uD69F\uC218\uB97C \uC120\uD0DD\uD574 \uAC10\uC9C0 \uC2DC\uC810\uACFC \uADFC\uAC70\uB97C \uD655\uC778\uD558\uC138\uC694. \uC695\uC124\uC740 \uAC00\uB9BC \uCC98\uB9AC\uB429\uB2C8\uB2E4."),
                 Object.keys(callRisk_1.signalLabels).map(signal => {
                     const evidence = (0, callRisk_1.signalEvidence)(call.analysis, signal);
                     return __React.createElement("details", { className: "call-signal", key: signal },
@@ -1712,20 +1762,18 @@ function CallBriefing({ call, customer, calls, nextCall, onStart, onSupport, onD
                             __React.createElement("strong", null, evidence === null ? `— / ${callRisk_1.analysisStatusLabels[call.analysis.status]}` : `${evidence.length}회`)),
                         evidence === null ? __React.createElement("p", { className: "muted-text" }, analyzed ? '신호 분석 결과가 없습니다.' : `${callRisk_1.analysisStatusLabels[call.analysis.status]} 상태로 횟수와 근거를 표시할 수 없습니다.`) : evidence.length === 0 ? __React.createElement("p", { className: "muted-text" }, "\uD574\uB2F9 \uC2E0\uD638\uC758 \uADFC\uAC70 \uBC1C\uC5B8\uC774 \uC5C6\uC2B5\uB2C8\uB2E4 (0\uD68C).") : __React.createElement("ol", { className: "call-evidence" }, evidence.map((item, index) => __React.createElement("li", { key: `${item.atSeconds}-${index}` },
                             __React.createElement("time", null, (0, callRisk_1.callTime)(item.atSeconds)),
-                            __React.createElement("span", null, (0, callRisk_1.evidenceText)(signal, item))))));
+                            __React.createElement("span", null, (0, uiText_1.uiText)((0, callRisk_1.evidenceText)(signal, item)))))));
                 })),
             __React.createElement("section", null,
-                __React.createElement("h3", { className: "section-label" }, "AI\uAC00 \uC774\uBBF8 \uC548\uB0B4\u00B7\uCC98\uB9AC\uD55C \uB0B4\uC6A9"),
-                __React.createElement("ul", { className: "call-action-list" }, call.aiActions.map(action => __React.createElement("li", { key: action }, action)))),
+                __React.createElement("h3", { className: "section-label" }, "AI\uAC00 \uC548\uB0B4\u00B7\uCC98\uB9AC\uD55C \uB0B4\uC6A9"),
+                call.aiActions.length ? __React.createElement("ul", { className: "call-action-list" }, call.aiActions.map(action => __React.createElement("li", { key: action }, (0, uiText_1.uiText)(action)))) : __React.createElement("p", { className: "muted-text" }, "\uC548\uB0B4\u00B7\uCC98\uB9AC \uAE30\uB85D\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.")),
             __React.createElement("section", null,
-                __React.createElement("h3", { className: "section-label" },
-                    "\uC9C1\uC6D0 \uAD8C\uC7A5 \uB300\uC751 ",
-                    __React.createElement("span", { className: "small-badge" }, "\uB300\uC751 \uC608\uC2DC")),
+                __React.createElement("h3", { className: "section-label" }, "\uC9C1\uC6D0 \uAD8C\uC7A5 \uB300\uC751"),
                 analyzed && call.analysis.recommendedActions.length ? __React.createElement("ul", { className: "call-action-list" }, call.analysis.recommendedActions.map(action => __React.createElement("li", { key: action }, action))) : __React.createElement("p", { className: "muted-text" }, "\uAD8C\uC7A5 \uB300\uC751 \uBD84\uC11D \uACB0\uACFC\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.")),
             __React.createElement("section", null,
                 __React.createElement("h3", { className: "section-label" }, "\uAD8C\uC7A5 \uCCAB \uC751\uB300 \uBB38\uAD6C"),
                 __React.createElement("blockquote", { className: "call-opening" }, analyzed && call.analysis.openingLine ? `“${call.analysis.openingLine}”` : '응대 문구 분석 결과가 없습니다.')),
-            __React.createElement("p", { className: "microcopy" }, "\uC704\uD5D8 \uC810\uC218 \uAE30\uC900\uACFC \uAD8C\uC7A5 \uB300\uC751\uC740 KT \uACF5\uC2DD \uC815\uCC45\uC774\uB098 \uAC80\uC99D\uB41C \uBAA8\uB378 \uC131\uB2A5\uC774 \uC544\uB2D9\uB2C8\uB2E4. \uC2E4\uC81C \uBD84\uC11D\u00B7\uC5F0\uACB0\u00B7\uC54C\uB9BC\u00B7\uC74C\uC131 \uC7AC\uC0DD\uC740 \uC2E4\uD589\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
+            __React.createElement("p", { className: "microcopy" }, "\uC0C1\uB2F4 \uAE30\uB85D\uC740 \uC0C8\uB85C\uACE0\uCE68\uD558\uBA74 \uCD08\uAE30\uD654\uB418\uBA70 \uC774 \uD654\uBA74\uC5D0\uC11C \uC804\uD654 \uC5F0\uACB0\uC744 \uC81C\uC5B4\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
             __React.createElement("div", { className: "modal-actions" },
                 __React.createElement("button", { className: "button button-secondary", onClick: onClose }, "\uBE0C\uB9AC\uD551 \uB2EB\uAE30"))));
 }
@@ -1744,6 +1792,7 @@ const callWorkflow_1 = require("../lib/callWorkflow");
 const customerName_1 = require("../lib/customerName");
 const callPresentation_1 = require("../lib/callPresentation");
 const callPagination_1 = require("../lib/callPagination");
+const uiText_1 = require("../lib/uiText");
 function CallOverview({ state, onStart, onSupport, onDraft, onComplete, onNext }) {
     const calls = state.calls;
     const [status, setStatus] = (0, react_1.useState)('all');
@@ -1775,7 +1824,7 @@ function CallOverview({ state, onStart, onSupport, onDraft, onComplete, onNext }
                             __React.createElement("option", { value: "unavailable" }, "\uBBF8\uD655\uC815\u00B7\uD655\uC778 \uD544\uC694"))))),
             __React.createElement("div", { className: "table-scroll", role: "region", "aria-label": "\uD1B5\uD654 \uBAA9\uB85D \uD45C \u00B7 \uC881\uC740 \uD654\uBA74\uC5D0\uC11C \uC88C\uC6B0 \uC2A4\uD06C\uB864", tabIndex: 0 },
                 __React.createElement("table", { className: "appointment-table call-table" },
-                    __React.createElement("caption", { className: "sr-only" }, "KT \uC0C1\uB2F4 \uC804\uD654\uC758 \uD604\uC7AC \uC0C1\uD0DC\uC640 \uD1B5\uD654\uBCC4 \uCD5C\uC885 \uC704\uD5D8\uB3C4\uC640 \uD604\uC7AC \uC704\uD611 \uACBD\uACE0 \uC608\uC2DC"),
+                    __React.createElement("caption", { className: "sr-only" }, "KT \uC0C1\uB2F4 \uC804\uD654\uC758 \uD604\uC7AC \uC0C1\uD0DC\uC640 \uD1B5\uD654\uBCC4 \uCD5C\uC885 \uC704\uD5D8\uB3C4 \uBC0F \uC704\uD611 \uACBD\uACE0"),
                     __React.createElement("thead", null,
                         __React.createElement("tr", null,
                             __React.createElement("th", { scope: "col" }, "\uD1B5\uD654 ID"),
@@ -1794,7 +1843,7 @@ function CallOverview({ state, onStart, onSupport, onDraft, onComplete, onNext }
                             __React.createElement("td", null,
                                 __React.createElement("strong", null, call.id)),
                             __React.createElement("td", null, (0, customerName_1.maskCustomerName)(call.customerLabel)),
-                            __React.createElement("td", null, call.inquiryType),
+                            __React.createElement("td", null, (0, uiText_1.uiText)(call.inquiryType)),
                             __React.createElement("td", null,
                                 __React.createElement("span", { className: "status-pill neutral" }, callRisk_1.callStatusLabels[call.status])),
                             __React.createElement("td", null, support && __React.createElement("span", { className: "small-badge call-support-badge", "aria-label": `관리자 지원: ${callSupport_1.supportStatusLabels[support.status]}` }, callSupport_1.supportStatusLabels[support.status])),
@@ -1822,7 +1871,7 @@ function CallOverview({ state, onStart, onSupport, onDraft, onComplete, onNext }
                 __React.createElement("button", { type: "button", "aria-label": "\uB2E4\uC74C \uD1B5\uD654 \uD398\uC774\uC9C0", disabled: pagination.page === pagination.totalPages, onClick: () => setPage(pagination.page + 1) },
                     __React.createElement(Icon_1.Icon, { name: "chevron", size: 16 }))),
             __React.createElement("details", { className: "call-criteria" },
-                __React.createElement("summary", null, "\uC784\uC2DC \uC704\uD5D8 \uB4F1\uAE09 \uAE30\uC900"),
+                __React.createElement("summary", null, "\uC704\uD5D8 \uB4F1\uAE09 \uAE30\uC900"),
                 __React.createElement("p", null, callRisk_1.RISK_BANDS.map((band, index) => `${band.label}: ${band.min}점 이상 ${callRisk_1.RISK_BANDS[index + 1] ? `${callRisk_1.RISK_BANDS[index + 1].min}점 미만` : `${callRisk_1.RISK_SCORE_RANGE.max}점 이하`}`).join(' · ')),
                 __React.createElement("p", null, "\uD1B5\uD654 \uC911\uC5D0\uB294 \uBA85\uD655\uD55C \uC704\uD611\uB9CC \uB9E4\uC6B0 \uC704\uD5D8\uC73C\uB85C \uACBD\uACE0\uD569\uB2C8\uB2E4. \uC885\uD569 \uC810\uC218\uC640 \uB4F1\uAE09\uC740 \uD1B5\uD654 \uC885\uB8CC \uD6C4 \uD655\uC815\uD569\uB2C8\uB2E4. \uAC01 \uD1B5\uD654\uB294 0\uC810\uBD80\uD130 \uB3C5\uB9BD \uACC4\uC0B0\uD558\uBA70 \uACFC\uAC70 \uC810\uC218\uB97C \uD569\uC0B0\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."))),
         selected && __React.createElement(CallBriefing_1.CallBriefing, { key: selected.id, call: selected, calls: calls, customer: state.customers.find(customer => customer.id === selected.customerId), nextCall: (0, callWorkflow_1.nextCallBlocker)(calls, selected), onStart: onStart, onSupport: onSupport, onDraft: onDraft, onComplete: onComplete, onNext: onNext, onOpen: setSelectedId, onClose: () => setSelectedId(null) }));
@@ -1836,6 +1885,7 @@ exports.CallResultPanel = CallResultPanel;
 const react_1 = require("react");
 const callWorkflow_1 = require("../lib/callWorkflow");
 const callSupport_1 = require("../lib/callSupport");
+const uiText_1 = require("../lib/uiText");
 function CallResultPanel({ call, onDraft, onComplete }) {
     const [error, setError] = (0, react_1.useState)('');
     const [confirming, setConfirming] = (0, react_1.useState)(false);
@@ -1853,7 +1903,7 @@ function CallResultPanel({ call, onDraft, onComplete }) {
                     __React.createElement("dd", null, call.result?.followUp || '없음')),
                 __React.createElement("div", null,
                     __React.createElement("dt", null, "\uC791\uC131\uC790"),
-                    __React.createElement("dd", null, call.completedBy)),
+                    __React.createElement("dd", null, (0, uiText_1.uiText)(call.completedBy ?? ''))),
                 __React.createElement("div", null,
                     __React.createElement("dt", null, "\uCD5C\uCD08 \uC0C1\uB2F4 \uC644\uB8CC (\uD55C\uAD6D \uC2DC\uAC04)"),
                     __React.createElement("dd", null,
@@ -1866,7 +1916,7 @@ function CallResultPanel({ call, onDraft, onComplete }) {
     const missingStart = !call.startedAt || !Number.isFinite(Date.parse(call.startedAt));
     return __React.createElement("section", { "aria-label": "\uC0C1\uB2F4 \uACB0\uACFC \uAE30\uB85D" },
         __React.createElement("h3", { className: "section-label" }, "\uC0C1\uB2F4 \uACB0\uACFC \uAE30\uB85D"),
-        __React.createElement("p", { className: "muted-text" }, "\uCD08\uC548\uC740 \uC774 \uD1B5\uD654\uC5D0\uB9CC \uC720\uC9C0\uB429\uB2C8\uB2E4. \uC0C8\uB85C\uACE0\uCE68\uD558\uBA74 \uCD08\uC548\u00B7\uACB0\uACFC\u00B7\uC810\uC218\u00B7\uC9C0\uC6D0 \uC774\uB825\uC774 \uCD08\uAE30\uD654\uB429\uB2C8\uB2E4."),
+        __React.createElement("p", { className: "muted-text" }, "\uCC98\uB9AC \uACB0\uACFC\uC640 \uD6C4\uC18D \uC870\uCE58 \uB0B4\uC6A9\uC744 \uAE30\uB85D\uD574 \uC8FC\uC138\uC694."),
         missingStart && __React.createElement("p", { className: "field-error", role: "alert" }, "\uCD5C\uCD08 \uC9C1\uC6D0 \uC0C1\uB2F4 \uC2DC\uC791 \uC2DC\uAC01\uC774 \uC5C6\uC5B4 \uC644\uB8CC\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. \uD604\uC7AC \uC2DC\uAC01\uC73C\uB85C \uBCF4\uCDA9\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
         __React.createElement("form", { noValidate: true, onSubmit: event => { event.preventDefault(); const message = (0, callWorkflow_1.validateCallResult)(call.draft); setError(message); if (!message && !missingStart)
                 setConfirming(true); } },
@@ -1896,7 +1946,7 @@ function CallResultPanel({ call, onDraft, onComplete }) {
                             "/300\uC790")),
                     __React.createElement("textarea", { id: "call-follow-up", rows: 3, maxLength: 300, value: call.draft.followUp, onChange: event => { onDraft(call.id, 'followUp', event.target.value); setError(''); } })),
                 error && __React.createElement("p", { role: "alert", className: "field-error" }, error),
-                __React.createElement("button", { type: "submit", className: "button button-primary", disabled: missingStart }, "\uC0C1\uB2F4 \uC644\uB8CC(\uB370\uBAA8)"))),
+                __React.createElement("button", { type: "submit", className: "button button-primary", disabled: missingStart }, "\uC0C1\uB2F4 \uC644\uB8CC"))),
         confirming && __React.createElement("div", { className: "support-simulation", role: "group", "aria-label": "\uC0C1\uB2F4 \uC644\uB8CC \uCD5C\uC885 \uD655\uC778" },
             __React.createElement("h4", null,
                 "\uC0C1\uB2F4 \uC644\uB8CC \uD655\uC778 \u00B7 ",
@@ -1904,12 +1954,12 @@ function CallResultPanel({ call, onDraft, onComplete }) {
             __React.createElement("p", null,
                 "\uBB38\uC758 \uCC98\uB9AC \uACB0\uACFC: ",
                 call.draft.outcome && callWorkflow_1.callOutcomes[call.draft.outcome]),
-            __React.createElement("p", null, "\uB370\uBAA8 \uC0C1\uB2F4 \uAE30\uB85D\uC744 \uC644\uB8CC\uD558\uBA70 \uC2E4\uC81C \uC804\uD654\uB294 \uC885\uB8CC\uB418\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
-            __React.createElement("p", null, "\uC774\uBC88 \uB370\uBAA8\uC5D0\uC11C\uB294 \uC0C1\uB2F4 \uC644\uB8CC \uC2DC \uD1B5\uD654 \uC885\uB8CC\uB97C \uD568\uAED8 \uAC00\uC815\uD569\uB2C8\uB2E4. \uC720\uD6A8\uD55C \uCD5C\uC885 \uBD84\uC11D\uC774 \uC900\uBE44\uB418\uBA74 \uC810\uC218\uB97C \uD55C \uBC88 \uD655\uC815\uD558\uBA70, \uC5C6\uC73C\uBA74 \uBC18\uC601\uC744 \uBCF4\uB958\uD569\uB2C8\uB2E4."),
+            __React.createElement("p", null, "\uC785\uB825\uD55C \uACB0\uACFC\uB85C \uC0C1\uB2F4 \uAE30\uB85D\uC744 \uC644\uB8CC\uD569\uB2C8\uB2E4. \uCD5C\uC885 \uC704\uD5D8\uB3C4\uB294 \uBD84\uC11D \uACB0\uACFC\uAC00 \uC900\uBE44\uB418\uBA74 \uD655\uC815\uB418\uBA70, \uD655\uC778\uC774 \uD544\uC694\uD558\uBA74 \uB300\uAE30 \uC0C1\uD0DC\uB85C \uB0A8\uC2B5\uB2C8\uB2E4."),
+            __React.createElement("p", { className: "microcopy" }, "\uC774 \uD654\uBA74\uC758 \uC644\uB8CC \uCC98\uB9AC\uB294 \uC2E4\uC81C \uC804\uD654 \uC5F0\uACB0\uC744 \uC885\uB8CC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
             call.supportRequests.some(callSupport_1.isOpenSupport) && __React.createElement("p", null, "\uBBF8\uC644\uB8CC \uAD00\uB9AC\uC790 \uC9C0\uC6D0 \uC694\uCCAD\uC740 \uC0C1\uB2F4 \uC644\uB8CC \uD6C4\uC5D0\uB3C4 \uC720\uC9C0\uB418\uBA70 \uBCC4\uB3C4\uB85C \uCC98\uB9AC\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."),
             __React.createElement("div", { className: "support-actions" },
-                __React.createElement("button", { className: "button button-secondary", onClick: () => setConfirming(false) }, "\uC644\uB8CC \uD655\uC778 \uCDE8\uC18C"),
-                __React.createElement("button", { className: "button button-primary", onClick: () => onComplete(call.id) }, "\uC644\uB8CC \uD655\uC815(\uB370\uBAA8)"))));
+                __React.createElement("button", { className: "button button-secondary", onClick: () => setConfirming(false) }, "\uACC4\uC18D \uC791\uC131"),
+                __React.createElement("button", { className: "button button-primary", onClick: () => onComplete(call.id) }, "\uC644\uB8CC \uD655\uC815"))));
 }
 
 },
@@ -1986,7 +2036,7 @@ function CallRiskDetails({ call, customer, calls }) {
                 __React.createElement("time", { dateTime: record.completedAt }, new Date(record.completedAt).toLocaleString('ko-KR')),
                 " \u00B7 ",
                 (0, riskScoring_1.formatRiskScore)(record.risk_score)))) : __React.createElement("p", null, "\uD655\uC815\uB41C \uD1B5\uD654 \uC774\uB825\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.")),
-        __React.createElement("p", { className: "muted-text" }, "\uD300\uC758 \uD1B5\uD654\uBCC4 \uC704\uD5D8\uB3C4 \uC815\uCC45\uC785\uB2C8\uB2E4. \uACE0\uAC1D\uC758 \uACE0\uC815 \uC131\uACA9\u00B7\uC608\uCE21 \uD655\uB960\u00B7KT \uACF5\uC2DD \uC815\uCC45\uC744 \uB73B\uD558\uC9C0 \uC54A\uC73C\uBA70 \uC810\uC218\uB9CC\uC73C\uB85C \uD1B5\uD654\uB97C \uCC28\uB2E8\uD558\uAC70\uB098 \uC885\uB8CC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."));
+        __React.createElement("p", { className: "microcopy" }, "\uC704\uD5D8\uB3C4\uB294 \uC751\uB300 \uCC38\uACE0 \uC815\uBCF4\uC774\uBA70 \uC810\uC218\uB9CC\uC73C\uB85C \uD1B5\uD654\uB97C \uCC28\uB2E8\uD558\uAC70\uB098 \uC885\uB8CC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."));
 }
 
 },
@@ -1997,6 +2047,7 @@ exports.CallSupportPanel = CallSupportPanel;
 const react_1 = require("react");
 const workspaceMockData_1 = require("../data/workspaceMockData");
 const callSupport_1 = require("../lib/callSupport");
+const uiText_1 = require("../lib/uiText");
 function SupportRecord({ request }) {
     const times = [
         { label: '요청', at: request.requestedAt, actor: request.requestedBy },
@@ -2005,8 +2056,6 @@ function SupportRecord({ request }) {
     ];
     return __React.createElement("div", { className: "support-record" },
         __React.createElement("p", { className: "muted-text" },
-            request.id,
-            " \u00B7 ",
             request.callId,
             " \u00B7 ",
             callSupport_1.supportStatusLabels[request.status]),
@@ -2016,7 +2065,7 @@ function SupportRecord({ request }) {
                 __React.createElement("dd", null, callSupport_1.supportReasons[request.reason])),
             __React.createElement("div", null,
                 __React.createElement("dt", null, "\uCD94\uAC00 \uBA54\uBAA8"),
-                __React.createElement("dd", null, request.memo || '없음')),
+                __React.createElement("dd", null, (request.id === 'DEMO-S-C004-1' ? (0, uiText_1.uiText)(request.memo) : request.memo) || '없음')),
             request.content !== null && __React.createElement("div", null,
                 __React.createElement("dt", null, "\uAD00\uB9AC\uC790 \uC9C0\uC6D0 \uB0B4\uC6A9"),
                 __React.createElement("dd", null, request.content))),
@@ -2025,7 +2074,7 @@ function SupportRecord({ request }) {
             ": ",
             __React.createElement("time", { dateTime: item.at }, new Date(item.at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false })),
             " (\uD55C\uAD6D \uC2DC\uAC04) \u00B7 ",
-            item.actor))));
+            (0, uiText_1.uiText)(item.actor ?? '')))));
 }
 function SupportCompletion({ callId, request, onSupport }) {
     const [content, setContent] = (0, react_1.useState)('');
@@ -2049,7 +2098,7 @@ function SupportCompletion({ callId, request, onSupport }) {
             __React.createElement("textarea", { id: "support-content", rows: 3, required: true, maxLength: callSupport_1.SUPPORT_TEXT_LIMIT, value: content, onChange: event => setContent(event.target.value), "aria-invalid": Boolean(error), "aria-describedby": error ? 'support-content-error' : 'support-content-notice' }),
             error && __React.createElement("p", { id: "support-content-error", className: "field-error", role: "alert" }, error)),
         __React.createElement("p", { id: "support-content-notice", className: "muted-text" }, "\uAD00\uB9AC\uC790 \uC9C0\uC6D0 \uAE30\uB85D\uC785\uB2C8\uB2E4. \uACE0\uAC1D \uC0C1\uB2F4 \uACB0\uACFC\uB098 \uC0C1\uB2F4 \uC644\uB8CC\uB85C \uBC18\uC601\uB418\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
-        __React.createElement("button", { className: "button button-secondary", type: "submit" }, "\uC9C0\uC6D0 \uC644\uB8CC \uCC98\uB9AC(\uB370\uBAA8)"));
+        __React.createElement("button", { className: "button button-secondary", type: "submit" }, "\uC9C0\uC6D0 \uC644\uB8CC"));
 }
 function CallSupportPanel({ call, onSupport }) {
     const [editing, setEditing] = (0, react_1.useState)(false);
@@ -2065,8 +2114,8 @@ function CallSupportPanel({ call, onSupport }) {
             __React.createElement("h3", { className: "section-label" }, "\uAD00\uB9AC\uC790 \uC9C0\uC6D0"),
             __React.createElement("span", { className: "small-badge", role: "status" }, callSupport_1.supportStatusLabels[current?.status ?? 'none'])),
         current && __React.createElement(SupportRecord, { request: current }),
-        current?.status === 'pending' && __React.createElement("p", { className: "support-notice", role: "status" }, "\uB370\uBAA8 \uC9C0\uC6D0 \uC694\uCCAD\uC774 \uB4F1\uB85D\uB418\uC5C8\uC2B5\uB2C8\uB2E4"),
-        current?.status === 'completed' && __React.createElement("p", { className: "support-notice", role: "status" }, "\uB370\uBAA8 \uC9C0\uC6D0\uC744 \uC644\uB8CC\uD588\uC2B5\uB2C8\uB2E4. \uACE0\uAC1D \uC0C1\uB2F4 \uC0C1\uD0DC\uB294 \uC720\uC9C0\uB429\uB2C8\uB2E4."),
+        current?.status === 'pending' && __React.createElement("p", { className: "support-notice", role: "status" }, "\uC9C0\uC6D0 \uC694\uCCAD\uC774 \uB4F1\uB85D\uB418\uC5C8\uC2B5\uB2C8\uB2E4."),
+        current?.status === 'completed' && __React.createElement("p", { className: "support-notice", role: "status" }, "\uC9C0\uC6D0\uC774 \uC644\uB8CC\uB418\uC5C8\uC2B5\uB2C8\uB2E4."),
         open ? __React.createElement("p", { className: "muted-text" }, "\uBBF8\uC644\uB8CC \uC694\uCCAD\uC774 \uC788\uC2B5\uB2C8\uB2E4. \uC9C0\uC6D0 \uC644\uB8CC \uC804\uC5D0\uB294 \uCD94\uAC00 \uC694\uCCAD\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.") : editing && eligible ? __React.createElement("form", { className: "support-request-form", noValidate: true, onSubmit: event => {
                 event.preventDefault();
                 const message = (0, callSupport_1.validateSupportRequest)(reason, memo);
@@ -2095,13 +2144,12 @@ function CallSupportPanel({ call, onSupport }) {
                 __React.createElement("textarea", { id: "support-memo", rows: 3, maxLength: callSupport_1.SUPPORT_TEXT_LIMIT, value: memo, onChange: event => setMemo(event.target.value) })),
             error && __React.createElement("p", { id: "support-request-error", className: "field-error", role: "alert" }, error),
             __React.createElement("div", { className: "support-actions" },
-                __React.createElement("button", { className: "button button-secondary", type: "button", onClick: () => { setEditing(false); setError(''); } }, "\uC694\uCCAD \uC785\uB825 \uCDE8\uC18C"),
-                __React.createElement("button", { className: "button button-primary", type: "submit" }, "\uB370\uBAA8 \uC9C0\uC6D0 \uC694\uCCAD \uB4F1\uB85D"))) : __React.createElement("button", { className: "button button-secondary", disabled: !eligible, "aria-describedby": "support-availability", onClick: () => { setReason(''); setMemo(''); setError(''); setEditing(true); } }, current?.status === 'completed' ? '다시 지원 요청' : '관리자 지원 요청'),
+                __React.createElement("button", { className: "button button-secondary", type: "button", onClick: () => { setEditing(false); setError(''); } }, "\uCDE8\uC18C"),
+                __React.createElement("button", { className: "button button-primary", type: "submit" }, "\uC9C0\uC6D0 \uC694\uCCAD \uB4F1\uB85D"))) : __React.createElement("button", { className: "button button-secondary", disabled: !eligible, "aria-describedby": "support-availability", onClick: () => { setReason(''); setMemo(''); setError(''); setEditing(true); } }, current?.status === 'completed' ? '다시 지원 요청' : '관리자 지원 요청'),
         __React.createElement("p", { id: "support-availability", className: "muted-text" }, call.status === 'ai_responding' ? '직원 연결 대기 이후 요청할 수 있습니다' : call.status === 'completed' || call.status === 'ended' ? '완료·종료된 통화에는 새 지원 요청·재요청을 할 수 없습니다. 기존 미완료 요청은 계속 처리할 수 있습니다.' : '위험 등급이나 분석 결과와 관계없이 직원 판단으로 요청할 수 있습니다.'),
-        current && (0, callSupport_1.isOpenSupport)(current) && __React.createElement("div", { className: "support-simulation", "aria-label": "\uAD00\uB9AC\uC790 \uCC98\uB9AC \uC2DC\uBBAC\uB808\uC774\uC158" },
-            __React.createElement("h4", null, "\uAD00\uB9AC\uC790 \uCC98\uB9AC \uC2DC\uBBAC\uB808\uC774\uC158"),
-            __React.createElement("p", { className: "muted-text" }, "\uC2E4\uC81C \uAD00\uB9AC\uC790\uC5D0\uAC8C \uC804\uC1A1\uB418\uC9C0 \uC54A\uB294 \uB370\uBAA8\uC785\uB2C8\uB2E4. \uB370\uBAA8 \uAD00\uB9AC\uC790 \uC5ED\uD560\uB85C \uCC98\uB9AC\uD558\uBA70 \uC2E4\uC81C \uAD00\uB9AC\uC790 \uACC4\uC815\u00B7\uAD8C\uD55C \uAC80\uC99D\uC740 \uC5C6\uC2B5\uB2C8\uB2E4."),
-            current.status === 'pending' ? __React.createElement("button", { className: "button button-secondary", onClick: () => onSupport(call.id, { type: 'acknowledge', requestId: current.id, actor: '데모 관리자' }) }, "\uAD00\uB9AC\uC790 \uD655\uC778(\uB370\uBAA8)") : __React.createElement(SupportCompletion, { key: current.id, callId: call.id, request: current, onSupport: onSupport })),
+        current && (0, callSupport_1.isOpenSupport)(current) && __React.createElement("div", { className: "support-simulation", "aria-label": "\uAD00\uB9AC\uC790 \uC9C0\uC6D0 \uCC98\uB9AC" },
+            __React.createElement("h4", null, "\uAD00\uB9AC\uC790 \uC9C0\uC6D0 \uCC98\uB9AC"),
+            current.status === 'pending' ? __React.createElement("button", { className: "button button-secondary", onClick: () => onSupport(call.id, { type: 'acknowledge', requestId: current.id, actor: '데모 관리자' }) }, "\uAD00\uB9AC\uC790 \uD655\uC778") : __React.createElement(SupportCompletion, { key: current.id, callId: call.id, request: current, onSupport: onSupport })),
         previous.length > 0 && __React.createElement("details", { className: "consultation-history" },
             __React.createElement("summary", null,
                 "\uC774\uC804 \uC9C0\uC6D0 \uC644\uB8CC \uC774\uB825 (",
@@ -2109,7 +2157,7 @@ function CallSupportPanel({ call, onSupport }) {
                 "\uAC74)"),
             __React.createElement("ol", null, previous.map(request => __React.createElement("li", { key: request.id },
                 __React.createElement(SupportRecord, { request: request }))))),
-        __React.createElement("p", { className: "muted-text" }, "\uC9C0\uC6D0 \uC694\uCCAD\u00B7\uCC98\uB9AC \uAE30\uB85D\uC740 \uD604\uC7AC \uC571 \uC2E4\uD589 \uC911\uC5D0\uB9CC \uC720\uC9C0\uB418\uBA70 \uC0C8\uB85C\uACE0\uCE68\uD558\uBA74 \uCD08\uAE30\uD654\uB429\uB2C8\uB2E4. \uC2E4\uC81C \uC54C\uB9BC\uC740 \uBC1C\uC1A1\uB418\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."));
+        __React.createElement("p", { className: "microcopy" }, "\uC9C0\uC6D0 \uCC98\uB9AC \uAE30\uB85D\uC740 \uC0C8\uB85C\uACE0\uCE68\uD558\uBA74 \uCD08\uAE30\uD654\uB418\uBA70 \uC2E4\uC81C \uAD00\uB9AC\uC790 \uC54C\uB9BC\uC740 \uBCF4\uB0B4\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."));
 }
 
 },
@@ -2182,7 +2230,7 @@ function ConsultationEditor({ appointment, onClose, onSave, registerGuard }) {
         __React.createElement("div", { className: "modal-actions" },
             __React.createElement("button", { ref: continueRef, className: "button button-secondary", onClick: continueEditing }, "\uACC4\uC18D \uC791\uC131"),
             __React.createElement("button", { className: "button button-primary", onClick: () => { const leave = leaveRef.current; leaveRef.current = null; leave?.(); } }, "\uBCC0\uACBD \uBC84\uB9AC\uAE30"))) : __React.createElement("form", { className: "consultation-form", ref: formRef, noValidate: true, onSubmit: event => { event.preventDefault(); save(completed ? 'amend' : 'complete'); } },
-        __React.createElement("p", { className: "muted-text" }, completed ? `완료 상태·건수와 최초 완료 시각(${(0, consultation_1.consultationTime)(appointment.consultation?.completedAt)})은 유지됩니다.` : '요약과 결과 구분은 상담 완료 시 필수입니다. 미완성 내용은 임시 반영할 수 있습니다.'),
+        __React.createElement("p", { className: "muted-text" }, completed ? `최초 완료 시각은 ${(0, consultation_1.consultationTime)(appointment.consultation?.completedAt)}입니다. 수정 내용은 이력에 남습니다.` : '상담 요약과 결과 구분을 입력해 주세요. 작성 중인 내용은 초안으로 저장할 수 있습니다.'),
         __React.createElement("div", { className: "consultation-field" },
             __React.createElement("label", { htmlFor: "consultation-summary" },
                 "\uC0C1\uB2F4 \uC694\uC57D ",
@@ -2214,10 +2262,10 @@ function ConsultationEditor({ appointment, onClose, onSave, registerGuard }) {
             __React.createElement("textarea", { id: "consultation-memo", rows: 2, value: result.followUpMemo, onChange: event => change('followUpMemo', event.target.value), "aria-invalid": !!errors.followUpMemo, "aria-describedby": errors.followUpMemo ? 'memo-error' : undefined }),
             errors.followUpMemo && __React.createElement("p", { id: "memo-error", className: "field-error", role: "alert" }, errors.followUpMemo)),
         notice && __React.createElement("p", { className: "field-error", role: "alert" }, notice),
-        __React.createElement("p", { className: "microcopy" }, "\uC0D8\uD50C \uC0AC\uC6A9\uC790 \uAE30\uC900\uC73C\uB85C \uBC18\uC601\uD569\uB2C8\uB2E4. \uC2E4\uC81C \uC5F0\uB77D\uC740 \uBC1C\uC1A1\uB418\uC9C0 \uC54A\uC73C\uBA70, \uC0C8\uB85C\uACE0\uCE68\uD558\uBA74 \uAE30\uB85D\uACFC \uC774\uB825\uC774 \uC0AC\uB77C\uC9D1\uB2C8\uB2E4."),
+        __React.createElement("p", { className: "microcopy" }, "\uC0C1\uB2F4 \uAE30\uB85D\uC740 \uC0C8\uB85C\uACE0\uCE68\uD558\uBA74 \uCD08\uAE30\uD654\uB418\uBA70 \uACE0\uAC1D\uC5D0\uAC8C \uC5F0\uB77D\uC744 \uBCF4\uB0B4\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
         __React.createElement("div", { className: "modal-actions" },
             __React.createElement("button", { type: "button", className: "button button-secondary", onClick: () => requestLeave(onClose) }, "\uCDE8\uC18C"),
-            !completed && __React.createElement("button", { type: "button", className: "button button-secondary", onClick: () => save('draft') }, "\uACB0\uACFC \uC784\uC2DC \uBC18\uC601"),
+            !completed && __React.createElement("button", { type: "button", className: "button button-secondary", onClick: () => save('draft') }, "\uCD08\uC548 \uC800\uC7A5"),
             __React.createElement("button", { type: "submit", className: "button button-primary" }, completed ? '수정 내용 반영' : '상담 완료'))));
 }
 
@@ -2286,7 +2334,6 @@ function ConsultationPanel({ appointment, starting, onStart, onEdit }) {
                         entry.actor.name,
                         " ",
                         entry.actor.position,
-                        " (\uC0D8\uD50C \uC0AC\uC6A9\uC790)",
                         __React.createElement("br", null),
                         __React.createElement("time", { dateTime: entry.at }, (0, consultation_1.consultationTime)(entry.at))),
                     __React.createElement("details", null,
@@ -2295,7 +2342,7 @@ function ConsultationPanel({ appointment, starting, onStart, onEdit }) {
                         __React.createElement(ConsultationResultView, { result: entry.before }),
                         __React.createElement("h3", null, "\uBCC0\uACBD \uD6C4"),
                         __React.createElement(ConsultationResultView, { result: entry.after })))))),
-            __React.createElement("p", { className: "microcopy" }, "\uC0D8\uD50C \uAE30\uB85D\uC740 \uC774 \uD0ED\uC5D0\uC11C\uB9CC \uC720\uC9C0\uB429\uB2C8\uB2E4. \uC0C8\uB85C\uACE0\uCE68\u00B7\uD0ED \uB2EB\uAE30\u00B7\uC0D8\uD50C \uCD08\uAE30\uD654 \uC2DC \uC0AC\uB77C\uC9D1\uB2C8\uB2E4.")));
+            __React.createElement("p", { className: "microcopy" }, "\uC0C1\uB2F4 \uAE30\uB85D\uACFC \uC218\uC815 \uC774\uB825\uC740 \uD604\uC7AC \uD654\uBA74\uC5D0\uC11C \uC720\uC9C0\uB418\uBA70 \uC0C8\uB85C\uACE0\uCE68\uD558\uBA74 \uCD08\uAE30\uD654\uB429\uB2C8\uB2E4.")));
 }
 
 },
@@ -2377,6 +2424,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryPanel = InventoryPanel;
 const domain_1 = require("../lib/domain");
 const Icon_1 = require("./Icon");
+const uiText_1 = require("../lib/uiText");
 function InventoryPanel({ data, expanded = false, onOpen }) {
     return __React.createElement("section", { className: "card inventory-card" },
         __React.createElement("div", { className: "card-heading" },
@@ -2410,14 +2458,14 @@ function InventoryPanel({ data, expanded = false, onOpen }) {
                     "\uB300 ",
                     __React.createElement("span", null, "\uBC18\uB0A9 \uC608\uC815")),
                 __React.createElement("p", null,
-                    loan.store,
+                    (0, uiText_1.uiText)(loan.store),
                     " ",
                     __React.createElement("span", null, "\u00B7"),
                     " ",
                     loan.deadline,
                     "\uAE4C\uC9C0")),
             __React.createElement("span", { className: "loan-tag" }, "D-day")))),
-        __React.createElement("p", { className: "panel-note" }, "\uC2DC\uC5F0 \uAE30\uC900: \uAC00\uC6A9 \uC7AC\uACE0 2\uB300 \uC774\uD558 \uD45C\uC2DC \u00B7 \uC2E4\uC81C \uB300\uC5EC\u00B7\uBC18\uB0A9 \uCC98\uB9AC \uC5C6\uC74C"));
+        __React.createElement("p", { className: "panel-note" }, "\uC218\uB7C9\uC740 \uCC38\uACE0 \uC790\uB8CC\uC774\uBA70, \uB300\uC5EC\u00B7\uBC18\uB0A9\uC740 \uB2F4\uB2F9\uC790 \uD655\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4."));
 }
 
 },
@@ -2491,28 +2539,24 @@ function Layout({ data, page, navigate, children }) {
                         __React.createElement(Icon_1.Icon, { name: "store", size: 17 }),
                         __React.createElement("span", null, store)),
                     __React.createElement("div", { className: "notification-wrap" },
-                        __React.createElement("button", { className: `icon-button notification-button ${notifications ? 'is-active' : ''}`, "aria-label": "\uC0D8\uD50C \uC54C\uB9BC \uBCF4\uAE30", "aria-expanded": notifications, onClick: () => { setProfileOpen(false); setNotifications(!notifications); } },
+                        __React.createElement("button", { className: `icon-button notification-button ${notifications ? 'is-active' : ''}`, "aria-label": "\uC54C\uB9BC \uBCF4\uAE30", "aria-expanded": notifications, onClick: () => { setProfileOpen(false); setNotifications(!notifications); } },
                             __React.createElement(Icon_1.Icon, { name: "bell" }),
                             __React.createElement("span", { className: "notification-dot" })),
                         notifications && __React.createElement("div", { className: "notification-panel" },
-                            __React.createElement("strong", null,
-                                "\uD655\uC778\uD560 \uC0AC\uD56D ",
-                                __React.createElement("span", { className: "small-badge" }, "\uC0D8\uD50C")),
+                            __React.createElement("strong", null, "\uD655\uC778\uD560 \uC0AC\uD56D"),
                             __React.createElement("button", { onClick: () => { navigate('inventory'); setNotifications(false); } },
                                 __React.createElement(Icon_1.Icon, { name: "box" }),
                                 __React.createElement("span", null,
                                     "\uC7AC\uACE0\uC640 \uBC18\uB0A9 \uC608\uC815 \uB0B4\uC5ED \uD655\uC778",
                                     __React.createElement("small", null, "\uC2A4\uB9C8\uD2B8 \uC7AC\uACE0 \uD654\uBA74\uC73C\uB85C \uC774\uB3D9")),
-                                __React.createElement(Icon_1.Icon, { name: "chevron", size: 14 })),
-                            __React.createElement("p", null, "\uC2E4\uC2DC\uAC04 \uC54C\uB9BC \uC218\uC2E0 \uAE30\uB2A5\uC740 \uC544\uC9C1 \uC5F0\uACB0 \uC804\uC785\uB2C8\uB2E4."))),
+                                __React.createElement(Icon_1.Icon, { name: "chevron", size: 14 })))),
                     __React.createElement(ProfileMenu_1.ProfileMenu, { employee: employee, store: store, open: profileOpen, onOpenChange: handleProfileOpen }))),
             __React.createElement("main", { id: "main-content", className: "main-content", tabIndex: -1 }, children),
             __React.createElement("footer", { className: "app-footer" },
                 __React.createElement("span", null,
                     "KCM ",
                     __React.createElement("b", null, "\u00B7"),
-                    " \uC608\uC57D\uBD80\uD130 \uC0AC\uD6C4\uAD00\uB9AC\uAE4C\uC9C0"),
-                __React.createElement("span", null, "\uC608\uC57D\u00B7\uC7AC\uACE0 \uC608\uC2DC\uB294 \uAC00\uC0C1 \uB370\uC774\uD130\uC774\uBA70, \uC2E4\uC2DC\uAC04 AI \uC0C1\uB2F4 \uAE30\uB85D\uC740 \uBCC4\uB3C4\uB85C \uD45C\uC2DC\uD569\uB2C8\uB2E4."))),
+                    " \uC608\uC57D\uBD80\uD130 \uC0AC\uD6C4\uAD00\uB9AC\uAE4C\uC9C0"))),
         mobileOpen && __React.createElement(Modal_1.Modal, { title: "\uBA54\uB274", onClose: () => setMobileOpen(false) }, nav));
 }
 
@@ -2523,7 +2567,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Modal = Modal;
 const react_1 = require("react");
 const Icon_1 = require("./Icon");
-function Modal({ title, onClose, children, wide = false, eyebrow = 'KCM · 샘플 화면' }) {
+function Modal({ title, onClose, children, wide = false, eyebrow = 'KCM' }) {
     const ref = (0, react_1.useRef)(null);
     (0, react_1.useEffect)(() => {
         const dialog = ref.current;
@@ -2643,8 +2687,8 @@ function ProfileMenu({ employee, store, open, onOpenChange }) {
                         "\uB85C\uADF8\uC544\uC6C3",
                         __React.createElement(Icon_1.Icon, { name: "chevron", size: 13 }))))),
         logoutNotice && __React.createElement(Modal_1.Modal, { title: "\uB85C\uADF8\uC544\uC6C3 \uC548\uB0B4", onClose: () => setLogoutNotice(false) },
-            __React.createElement("p", { className: "modal-lead" }, "\uD604\uC7AC \uB85C\uADF8\uC544\uC6C3 \uBC84\uD2BC\uC740 \uD654\uBA74 \uB3D9\uC791\uC744 \uD655\uC778\uD558\uAE30 \uC704\uD55C \uC608\uC2DC\uC785\uB2C8\uB2E4."),
-            __React.createElement("p", { className: "muted-text" }, "\uC2E4\uC81C \uB85C\uADF8\uC778\u00B7\uC778\uC99D\uC774 \uC5F0\uACB0\uB418\uC9C0 \uC54A\uC544 \uC885\uB8CC\uD560 \uC138\uC158\uC774 \uC5C6\uC2B5\uB2C8\uB2E4. \uC778\uC99D \uC5F0\uB3D9 \uC2DC \uB85C\uADF8\uC544\uC6C3 \uCC98\uB9AC\uC640 \uB85C\uADF8\uC778 \uD654\uBA74 \uC774\uB3D9\uC744 \uC5F0\uACB0\uD560 \uC608\uC815\uC785\uB2C8\uB2E4."),
+            __React.createElement("p", { className: "modal-lead" }, "\uD604\uC7AC\uB294 \uBCC4\uB3C4\uC758 \uB85C\uADF8\uC778 \uC5C6\uC774 \uC774\uC6A9\uD558\uB294 \uD654\uBA74\uC785\uB2C8\uB2E4."),
+            __React.createElement("p", { className: "muted-text" }, "\uC885\uB8CC\uD560 \uB85C\uADF8\uC778 \uC138\uC158\uC774 \uC5C6\uC2B5\uB2C8\uB2E4. \uC774\uC6A9\uC744 \uB9C8\uCE58\uB824\uBA74 \uBE0C\uB77C\uC6B0\uC800 \uD0ED\uC744 \uB2EB\uC544 \uC8FC\uC138\uC694."),
             __React.createElement("div", { className: "modal-actions" },
                 __React.createElement("button", { className: "button button-primary", onClick: () => setLogoutNotice(false) }, "\uD655\uC778"))));
 }
@@ -2870,6 +2914,87 @@ function createMockData(date = new Intl.DateTimeFormat('en-CA', {
 }
 
 },
+"src/data/productCatalog":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.productReferenceNote = void 0;
+exports.formatProductPrice = formatProductPrice;
+exports.createProductCatalog = createProductCatalog;
+exports.productReferenceNote = '공식 상품정보가 아닌 상담 비교 자료입니다. 가입·구매 전 요금·조건·사양을 별도로 확인하세요.';
+function formatProductPrice(value) { return `${value.toLocaleString('ko-KR')}원`; }
+// Read-only consultation reference values. They do not represent official offers.
+function plan(id, name, summary, terms) {
+    return {
+        id, tab: 'plans', name, summary, tag: terms.carrier === 'own' ? '자사' : '타사', plan: terms,
+        sections: [
+            { title: '요금제 기본 정보', fields: [{ label: '요금제명', value: name }, { label: '구분', value: terms.carrier === 'own' ? '자사' : '타사' }, { label: '월정액', value: formatProductPrice(terms.monthlyFee) }] },
+            { title: '이용 조건', fields: [{ label: '데이터 제공량', value: terms.data }, { label: '음성', value: terms.voice }, { label: '문자', value: terms.messages }, { label: '가입 조건', value: terms.condition }] },
+            { title: '제공 혜택', fields: [{ label: '혜택 확인', value: terms.benefit }, { label: '안내 기준', value: '약정·결합 할인 전 월정액' }, { label: '상담 확인사항', value: '사용량, 할인 자격, 초과 이용 조건 확인' }] },
+        ],
+    };
+}
+const referenceItems = [
+    plan('PLAN-OWN-20', '데이터 기본 20', '월 데이터 사용량이 적은 고객의 비용 비교', { carrier: 'own', monthlyFee: 45000, data: '20GB', voice: '300분', messages: '100건', condition: '휴대전화 회선 · 가입 자격 별도 확인', benefit: '가족결합 적용 여부 확인' }),
+    plan('PLAN-OWN-60', '데이터 충분 60', '영상과 음악을 자주 이용하는 고객의 사용량 비교', { carrier: 'own', monthlyFee: 59000, data: '60GB', voice: '500분', messages: '200건', condition: '휴대전화 회선 · 가입 자격 별도 확인', benefit: '결합 할인과 추가 데이터 조건 확인' }),
+    plan('PLAN-OWN-100', '데이터 중심 100', '데이터 사용량이 많은 고객의 월 부담 비교', { carrier: 'own', monthlyFee: 69000, data: '100GB', voice: '500분', messages: '200건', condition: '휴대전화 회선 · 가입 자격 별도 확인', benefit: '공유 데이터와 콘텐츠 혜택 조건 확인' }),
+    plan('PLAN-OTHER-30', '데이터 균형 30', '데이터 제공량과 월정액을 함께 비교', { carrier: 'other', monthlyFee: 42000, data: '30GB', voice: '300분', messages: '100건', condition: '번호이동 시 가입 자격 별도 확인', benefit: '번호이동 혜택과 결합 가능 여부 확인' }),
+    plan('PLAN-OTHER-70', '데이터 여유 70', '중간 사용량 구간의 데이터와 비용 비교', { carrier: 'other', monthlyFee: 57000, data: '70GB', voice: '500분', messages: '200건', condition: '번호이동 시 가입 자격 별도 확인', benefit: '약정과 콘텐츠 혜택 조건 확인' }),
+    plan('PLAN-OTHER-110', '데이터 집중 110', '높은 데이터 사용량 구간의 조건 비교', { carrier: 'other', monthlyFee: 67000, data: '110GB', voice: '500분', messages: '200건', condition: '번호이동 시 가입 자격 별도 확인', benefit: '데이터 공유와 인터넷 결합 조건 확인' }),
+    {
+        id: 'BUNDLE-FAMILY', tab: 'bundles', name: '가족 회선 결합', summary: '가족의 휴대전화 회선을 함께 확인', tag: '휴대전화',
+        sections: [
+            { title: '결합 기본 정보', fields: [{ label: '결합 대상', value: '가족 휴대전화 회선' }, { label: '회선 수', value: '2회선 이상 비교' }] },
+            { title: '결합 조건', fields: [{ label: '필요 확인', value: '가족관계, 명의, 현재 결합 여부' }, { label: '적용 조건', value: '회선별 요금제와 할인 자격 확인' }] },
+            { title: '결합 혜택', fields: [{ label: '할인 안내', value: '회선 구성에 따라 개별 확인' }, { label: '유의 사항', value: '기존 할인과 중복 적용 여부 확인' }] },
+        ],
+    },
+    {
+        id: 'BUNDLE-INTERNET', tab: 'bundles', name: '인터넷·휴대전화 결합', summary: '유무선 요금을 묶어 월 부담 확인', tag: '유무선',
+        sections: [
+            { title: '결합 기본 정보', fields: [{ label: '결합 대상', value: '인터넷 + 휴대전화' }, { label: '회선 수', value: '인터넷 1회선 · 휴대전화 1회선 이상' }] },
+            { title: '결합 조건', fields: [{ label: '필요 확인', value: '설치 주소, 이용 속도, 명의' }, { label: '적용 조건', value: '인터넷 및 휴대전화의 결합 자격 확인' }] },
+            { title: '결합 혜택', fields: [{ label: '할인 안내', value: '속도와 회선 구성별 할인 확인' }, { label: '유의 사항', value: '약정 기간과 해지 조건 별도 확인' }] },
+        ],
+    },
+    {
+        id: 'BUNDLE-TV', tab: 'bundles', name: '인터넷·TV 결합', summary: '인터넷 속도와 TV 구성을 함께 비교', tag: '인터넷·TV',
+        sections: [
+            { title: '결합 기본 정보', fields: [{ label: '결합 대상', value: '인터넷 + TV' }, { label: '회선 수', value: '인터넷 1회선 · TV 1대 이상' }] },
+            { title: '결합 조건', fields: [{ label: '필요 확인', value: '설치 가능 여부, 채널, 셋톱박스' }, { label: '적용 조건', value: '설치 주소와 상품 구성별 확인' }] },
+            { title: '결합 혜택', fields: [{ label: '할인 안내', value: '속도·채널·약정별 월요금 확인' }, { label: '유의 사항', value: '설치비와 장비 비용 구분 안내' }] },
+        ],
+    },
+    {
+        id: 'BENEFIT-FAMILY', tab: 'benefits', name: '가족결합 혜택 확인', summary: '가족 회선에 적용할 수 있는 할인 확인', tag: '결합 할인',
+        sections: [
+            { title: '혜택 기본 정보', fields: [{ label: '혜택 유형', value: '회선 결합 할인' }, { label: '혜택 내용', value: '가족 전체 월요금과 할인 내역 비교' }] },
+            { title: '적용 조건', fields: [{ label: '대상 고객', value: '가족 회선을 함께 이용하는 고객' }, { label: '필요 확인', value: '가족관계와 회선별 가입 조건' }, { label: '유의 사항', value: '다른 할인과 중복 가능 여부 확인' }] },
+            { title: '제공 기간', fields: [{ label: '적용 기간', value: '결합 유지 및 가입 조건에 따라 확인' }, { label: '종료 조건', value: '회선 변경·해지 시 할인 변동 확인' }] },
+        ],
+    },
+    {
+        id: 'BENEFIT-CONTENT', tab: 'benefits', name: '콘텐츠 혜택 확인', summary: '요금제에 포함된 콘텐츠 이용 조건 확인', tag: '콘텐츠',
+        sections: [
+            { title: '혜택 기본 정보', fields: [{ label: '혜택 유형', value: '콘텐츠 이용 혜택' }, { label: '혜택 내용', value: '선택한 요금제의 콘텐츠 포함 여부 확인' }] },
+            { title: '적용 조건', fields: [{ label: '대상 고객', value: '해당 혜택이 포함된 요금제 이용 고객' }, { label: '필요 확인', value: '이용권 등록과 계정 연결 방법' }, { label: '유의 사항', value: '별도 구독의 중복 결제 여부 확인' }] },
+            { title: '제공 기간', fields: [{ label: '적용 기간', value: '요금제별 제공 기간 확인' }, { label: '종료 조건', value: '혜택 종료 후 유료 전환 여부 확인' }] },
+        ],
+    },
+];
+/** Model and variant are projected from the same inventory records as the stock screen. */
+function createProductCatalog(inventory) {
+    const devices = inventory.map(item => ({
+        id: `DEVICE-${item.id}`, tab: 'devices', name: item.name, summary: item.variant, tag: '스마트폰',
+        sections: [
+            { title: '제품 기본 정보', fields: [{ label: '제품명', value: item.name }, { label: '제품 구분', value: '스마트폰' }, { label: '세부 모델', value: '정확한 모델 번호 확인 후 안내' }] },
+            { title: '제품 사양', fields: [{ label: '용량·색상', value: item.variant }, { label: '주요 사양', value: '세부 모델별 제조사 안내 확인' }] },
+            { title: '판매 정보', fields: [{ label: '가격 안내', value: '모델·가입 조건별 확인' }, { label: '재고 확인', value: '스마트 재고에서 조회' }, { label: '상담 확인사항', value: '단말기 비용과 통신요금 구분 안내' }] },
+        ],
+    }));
+    return [...referenceItems, ...devices];
+}
+
+},
 "src/data/workspaceMockData":function(module,exports,require){const __React=require('react');
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -3039,6 +3164,24 @@ function createAuxMicController(notify, environment = browserEnvironment) {
                 release(run);
         },
     };
+}
+
+},
+"src/dev/customerCopy":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.customerCallNotice = customerCallNotice;
+/** Translate existing controller notices for customers without changing call handling. */
+function customerCallNotice(message) {
+    if (!message)
+        return '';
+    if (/권한|허용/.test(message))
+        return '마이크 사용 권한이 필요합니다. 주소창의 사이트 권한에서 마이크를 허용한 뒤 다시 시작해 주세요.';
+    if (/마이크/.test(message))
+        return '마이크를 사용할 수 없습니다. 장치 연결과 다른 앱의 마이크 사용 상태를 확인해 주세요.';
+    if (/종료 처리/.test(message))
+        return '통화 종료를 확인하지 못했습니다. 이 탭을 닫아 마이크 연결을 해제해 주세요.';
+    return '상담을 연결하지 못했습니다. 네트워크를 확인한 뒤 잠시 후 다시 시도해 주세요.';
 }
 
 },
@@ -3282,6 +3425,7 @@ const liveAudioReporter_1 = require("./liveAudioReporter");
 const shouting_1 = require("./shouting");
 const Icon_1 = require("../components/Icon");
 const workspaceMockData_1 = require("../data/workspaceMockData");
+const customerCopy_1 = require("./customerCopy");
 require("./retell-test.css");
 const labels = {
     idle: '대기', connecting: '연결 중', live: '통화 중', ending: '종료 중', ended: '통화 종료',
@@ -3399,7 +3543,7 @@ function RetellTestPage() {
                         "\uC0C1\uB2F4\uC774 \uC885\uB8CC\uB418\uC5C8\uC2B5\uB2C8\uB2E4.",
                         __React.createElement("br", null),
                         "\uD544\uC694\uD558\uC2DC\uBA74 \uB2E4\uC2DC \uC0C1\uB2F4\uD558\uC2E4 \uC218 \uC788\uC2B5\uB2C8\uB2E4.")),
-                (loadError || view.error || micView.error) && __React.createElement("p", { className: "retell-test-error", role: "alert" }, loadError ? '상담 연결을 준비하지 못했습니다. 잠시 후 페이지를 새로고침해 주세요.' : view.error || micView.error),
+                (loadError || view.error || micView.error) && __React.createElement("p", { className: "retell-test-error", role: "alert" }, loadError ? '상담 연결을 준비하지 못했습니다. 잠시 후 페이지를 새로고침해 주세요.' : (0, customerCopy_1.customerCallNotice)(view.error || micView.error)),
                 __React.createElement("div", { className: "retell-call-controls" },
                     !busy ? __React.createElement("button", { type: "button", className: "retell-call-button retell-call-start", "aria-label": view.status === 'ended' ? '다시 상담' : '상담 시작', disabled: !ready || busy, onClick: () => { void auxMic.current?.start(); controller.current?.start(); } },
                         __React.createElement(Icon_1.Icon, { name: "phone", size: 30 }))
@@ -3410,7 +3554,7 @@ function RetellTestPage() {
                 __React.createElement("p", { className: "retell-customer-permission" },
                     __React.createElement(Icon_1.Icon, { name: "phone", size: 15 }),
                     "\uD1B5\uD654\uB97C \uC704\uD574 \uB9C8\uC774\uD06C \uC0AC\uC6A9\uC744 \uD5C8\uC6A9\uD574 \uC8FC\uC138\uC694.")),
-            __React.createElement("details", { className: "retell-test-details" },
+            __React.createElement("details", { className: "retell-test-details", hidden: true, "aria-hidden": "true" },
                 __React.createElement("summary", null, "\uD14C\uC2A4\uD2B8 \uC815\uBCF4"),
                 __React.createElement("p", { className: "retell-test-setup" }, setup),
                 view.callId && __React.createElement("code", null,
@@ -4147,6 +4291,39 @@ function pageCategory(page) {
 }
 
 },
+"src/lib/productLookup":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.maxComparedPlans = void 0;
+exports.filterProducts = filterProducts;
+exports.selectedProduct = selectedProduct;
+exports.toggleComparedPlan = toggleComparedPlan;
+function normalized(value) { return value.normalize('NFKC').toLocaleLowerCase('ko-KR').trim(); }
+function filterProducts(items, tab, query, carrier) {
+    const terms = normalized(query).split(/\s+/).filter(Boolean);
+    return items.filter(item => {
+        if (item.tab !== tab || (tab === 'plans' && item.plan?.carrier !== carrier))
+            return false;
+        const searchable = normalized([item.name, item.summary, item.tag, ...item.sections.flatMap(section => [section.title, ...section.fields.flatMap(field => [field.label, field.value])])].join(' '));
+        return terms.every(term => searchable.includes(term));
+    });
+}
+/** Selection always belongs to the visible list; empty search results have no stale detail. */
+function selectedProduct(items, id) {
+    return items.find(item => item.id === id) ?? items[0];
+}
+exports.maxComparedPlans = 3;
+/** Returns unchanged selection for non-plans and a full comparison. Never mutates the input. */
+function toggleComparedPlan(items, selectedIds, id) {
+    const validIds = [...new Set(selectedIds)].filter(selected => items.some(item => item.id === selected && item.tab === 'plans' && item.plan));
+    if (validIds.includes(id))
+        return validIds.filter(selected => selected !== id);
+    if (validIds.length >= exports.maxComparedPlans || !items.some(item => item.id === id && item.tab === 'plans' && item.plan))
+        return validIds;
+    return [...validIds, id];
+}
+
+},
 "src/lib/profile":function(module,exports,require){const __React=require('react');
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -4256,6 +4433,25 @@ function calculateRisk(input) {
 function formatRiskScore(score) {
     const band = (0, riskPolicy_js_1.riskBand)(score);
     return band ? `${score}점 / ${band.label} / ${band.level}단계` : '— / 점수 확인 필요';
+}
+
+},
+"src/lib/uiText":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.uiText = uiText;
+/** Presentation only: preserve the original records and their identifiers. */
+function uiText(value) {
+    return value
+        .replace('어떤 상담을 도와드릴까요? 이 대화는 화면 검토용 가상 예시입니다.', '어떤 상담을 도와드릴까요?')
+        .replace('동일 고객의 다음 통화 가상 샘플입니다. ', '')
+        .replace('관리자 지원 요청이 미처리 상태인 가상 예시입니다.', '관리자 지원 요청을 기다리고 있습니다.')
+        .replace(/\s*\((?:데모 직원|데모|가상 샘플|가상 주소|고성 예시|예시)\)/g, '')
+        .replace(/샘플 고객/g, '고객')
+        .replace(/데모 직원/g, '직원')
+        .replace(/데모 관리자/g, '지원 담당')
+        .replace(/\s*데모점/g, '점')
+        .trim();
 }
 
 },
@@ -4425,12 +4621,12 @@ function LiveConversation({ call, connection, onClose }) {
         else
             setUnread(true);
     }, [call.messages]);
-    return __React.createElement(Modal_1.Modal, { title: "\uC2E4\uC2DC\uAC04 AI \uC0C1\uB2F4", eyebrow: "KCM \u00B7 Retell \uC2E4\uC2DC\uAC04 \uD1B5\uD654", onClose: onClose, wide: true },
+    return __React.createElement(Modal_1.Modal, { title: "\uC2E4\uC2DC\uAC04 AI \uC0C1\uB2F4", eyebrow: "KCM \u00B7 \uD1B5\uD654 \uAE30\uB85D", onClose: onClose, wide: true },
         __React.createElement("div", { className: "live-conversation" },
             __React.createElement("div", { className: "live-conversation-meta" },
                 __React.createElement("strong", null, call.customer_id || '고객 확인 전'),
                 __React.createElement("span", { className: `live-badge ${call.status}` }, liveCalls_1.liveStatusLabels[call.status]),
-                __React.createElement("span", null, call.status === 'live' ? '통화 진행 중' : call.status === 'ended' ? '통화 종료' : call.status === 'error' ? '통화 상태 확인 필요' : 'Monitor 연결을 기다리고 있습니다.')),
+                __React.createElement("span", null, call.status === 'live' ? '통화 진행 중' : call.status === 'ended' ? '통화 종료' : call.status === 'error' ? '통화 상태 확인 필요' : '통화 연결을 기다리고 있습니다.')),
             __React.createElement("p", { className: "live-small" },
                 "\uC2DC\uC791 ",
                 __React.createElement("time", { dateTime: call.started_at ?? undefined }, clock(call.started_at)),
@@ -4469,7 +4665,9 @@ function LiveConversation({ call, connection, onClose }) {
                 message.role === 'user' && __React.createElement(LiveRiskSignals_1.LiveTurnBadges, { analysis: call.risk_analysis?.analysisByTurn[message.turn_id] })))),
             unread && __React.createElement("button", { className: "button button-secondary live-new-message", onClick: () => { following.current = true; if (scrollRef.current)
                     scrollRef.current.scrollTop = scrollRef.current.scrollHeight; setUnread(false); } }, "\uCD5C\uC2E0 \uB300\uD654 \uBCF4\uAE30"),
-            __React.createElement("p", { className: "live-small" }, "\uD654\uBA74\uC758 \uB300\uD654\uB294 \uD604\uC7AC \uC11C\uBC84 \uBA54\uBAA8\uB9AC\uC5D0\uC11C \uC870\uD68C\uD569\uB2C8\uB2E4. \uC11C\uBC84 \uC7AC\uC2DC\uC791 \uC2DC \uD654\uBA74 \uC774\uB825\uC740 \uC0AC\uB77C\uC9C0\uBA70, \uC678\uBD80 \uC800\uC7A5 \uACB0\uACFC\uB294 n8n\uC5D0\uC11C \uBCC4\uB3C4\uB85C \uD655\uC778\uD569\uB2C8\uB2E4."),
+            __React.createElement("details", { className: "live-call-id" },
+                __React.createElement("summary", null, "\uAE30\uB85D \uBCF4\uAD00 \uC548\uB0B4"),
+                __React.createElement("p", { className: "live-small" }, "\uD604\uC7AC \uC218\uC2E0\uD55C \uAE30\uB85D\uC744 \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uC11C\uBE44\uC2A4 \uC7AC\uC2DC\uC791 \uC804\uC758 \uC774\uB825\uC740 \uC774 \uD654\uBA74\uC5D0\uC11C \uC870\uD68C\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uC678\uBD80 \uC800\uC7A5 \uC5EC\uBD80\uB294 \uBCC4\uB3C4 \uD655\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.")),
             __React.createElement("div", { className: "modal-actions" },
                 __React.createElement("button", { className: "button button-secondary", onClick: onClose }, "\uC2E4\uC2DC\uAC04 \uC0C1\uB2F4 \uB2EB\uAE30"))));
 }
@@ -4504,9 +4702,7 @@ function LiveConsultations({ view = 'intake' }) {
             __React.createElement("button", { className: "text-button", onClick: () => setReconnectVersion(value => value + 1) }, "\uB2E4\uC2DC \uC5F0\uACB0")),
         view === 'history' && __React.createElement("section", { className: "card live-customer-history", "aria-label": "\uACE0\uAC1D\uBCC4 \uC2E4\uC2DC\uAC04 \uD1B5\uD654 \uC774\uB825" },
             __React.createElement("div", { className: "card-heading" },
-                __React.createElement("h2", null, "\uACE0\uAC1D\uBCC4 \uD1B5\uD654 \uC774\uB825"),
-                __React.createElement("span", { className: "small-badge" }, "\uD604\uC7AC \uC11C\uBC84 \uC218\uC2E0 \uAE30\uB85D")),
-            __React.createElement("p", { className: "live-small" }, "\uACE0\uAC1D ID\uB85C \uD1B5\uD654\uB97C \uAD6C\uBD84\uD569\uB2C8\uB2E4. \uC774\uB984\u00B7\uC5F0\uB77D\uCC98\uC640 \uC11C\uBC84 \uC7AC\uC2DC\uC791 \uC774\uC804\uC758 DB \uC774\uB825\uC740 \uC544\uC9C1 \uC870\uD68C\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uAC01 \uD1B5\uD654 \uC704\uD5D8\uB3C4\uB294 \uB3C5\uB9BD \uAE30\uB85D\uC774\uBA70 \uD569\uC0B0\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
+                __React.createElement("h2", null, "\uACE0\uAC1D\uBCC4 \uD1B5\uD654 \uC774\uB825")),
             calls.length === 0 && __React.createElement("div", { className: "live-empty", role: "status" },
                 __React.createElement("strong", null, "\uD604\uC7AC \uC218\uC2E0\uD55C \uD1B5\uD654 \uC774\uB825\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."),
                 __React.createElement("p", null, "\uACE0\uAC1D\uC6A9 AI \uC0C1\uB2F4\uC774 \uC5F0\uACB0\uB418\uBA74 \uACE0\uAC1D ID\uC640 \uD1B5\uD654\uBCC4 \uAE30\uB85D\uC744 \uC5EC\uAE30\uC5D0\uC11C \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.")),
@@ -4528,7 +4724,10 @@ function LiveConsultations({ view = 'intake' }) {
                         "\uD1B5\uD654 \uAE30\uB85D \uBCF4\uAE30",
                         __React.createElement("span", { className: "sr-only" },
                             " ",
-                            call.call_id))))))),
+                            call.call_id)))))),
+            __React.createElement("details", { className: "live-call-id" },
+                __React.createElement("summary", null, "\uC870\uD68C \uBC94\uC704"),
+                __React.createElement("p", { className: "live-small" }, "\uD604\uC7AC \uC218\uC2E0\uD55C \uAE30\uB85D\uC744 \uACE0\uAC1D ID\uB85C \uAD6C\uBD84\uD569\uB2C8\uB2E4. \uC11C\uBE44\uC2A4 \uC7AC\uC2DC\uC791 \uC804\uC758 \uC774\uB825\uC740 \uC774 \uD654\uBA74\uC5D0\uC11C \uC870\uD68C\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uAC01 \uD1B5\uD654 \uC704\uD5D8\uB3C4\uB294 \uB3C5\uB9BD \uAE30\uB85D\uC774\uBA70 \uD569\uC0B0\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."))),
         view === 'intake' && displayed.length > 0 && __React.createElement("section", { className: "card live-intake", "aria-label": "\uC2E4\uC2DC\uAC04 AI \uC0C1\uB2F4 \uC778\uC785" },
             __React.createElement("div", { className: "card-heading" },
                 __React.createElement("div", { className: "title-with-icon" },
@@ -4607,8 +4806,7 @@ function LiveRiskSignals({ call }) {
     const analysis = call.risk_analysis, audio = call.audio_signal, final = call.final_result;
     return __React.createElement("section", { className: "live-risk-signals", "aria-label": "\uD604\uC7AC \uAC10\uC9C0 \uC2E0\uD638" },
         __React.createElement("div", { className: "live-risk-heading" },
-            __React.createElement("h3", null, call.status === 'ended' ? '통화 종료 신호' : '현재 감지 신호'),
-            __React.createElement("span", null, "\uD14D\uC2A4\uD2B8 \uADDC\uCE59\u00B7\uC74C\uC131 \uB808\uBCA8 \u00B7 \uC2DC\uD5D8 \uAE30\uC900")),
+            __React.createElement("h3", null, call.status === 'ended' ? '통화 종료 신호' : '현재 감지 신호')),
         __React.createElement("dl", { className: "live-risk-counts" },
             __React.createElement("div", null,
                 __React.createElement("dt", null, "\uC695\uC124"),
@@ -4630,7 +4828,7 @@ function LiveRiskSignals({ call }) {
         analysis?.threatDetected && call.status !== 'ended' && __React.createElement("div", { className: "live-threat-warning", role: "alert" },
             __React.createElement("span", null, "\uD604\uC7AC \uD1B5\uD654 \uB300\uC751 \uACBD\uACE0"),
             __React.createElement("strong", null, "\uB9E4\uC6B0 \uC704\uD5D8 / 5\uB2E8\uACC4")),
-        !analysis && __React.createElement("p", { className: "live-risk-note", role: "status" }, "\uD14D\uC2A4\uD2B8 \uBD84\uC11D \uC815\uBCF4 \uB300\uAE30 \u00B7 \uB300\uD654\uB294 \uACC4\uC18D \uD45C\uC2DC\uB429\uB2C8\uB2E4. \uBC31\uC5D4\uB4DC\uAC00 \uCD5C\uC2E0 \uCF54\uB4DC\uB85C \uC2E4\uD589 \uC911\uC778\uC9C0 \uD655\uC778\uD558\uC138\uC694."),
+        !analysis && __React.createElement("p", { className: "live-risk-note", role: "status" }, "\uBD84\uC11D \uC815\uBCF4\uB97C \uAE30\uB2E4\uB9AC\uACE0 \uC788\uC2B5\uB2C8\uB2E4. \uB300\uD654\uB294 \uACC4\uC18D \uD45C\uC2DC\uB429\uB2C8\uB2E4."),
         audio && !audio.coverage_complete && __React.createElement("p", { className: "live-risk-note" }, "\uC77C\uBD80 \uC74C\uC131 \uAD6C\uAC04 \uBBF8\uCE21\uC815 \u00B7 \uACE0\uC131\uC740 \uAD00\uCE21\uB41C \uAD6C\uAC04\uB9CC \uBC18\uC601\uD558\uBA70 \uCD5C\uC885 \uC810\uC218\uB294 \uBCF4\uB958\uD569\uB2C8\uB2E4."),
         call.status === 'ended' ? final ? __React.createElement("div", { className: "live-final-risk" },
             __React.createElement("h3", null, "\uC774 \uD1B5\uD654 \uCD5C\uC885 \uC704\uD5D8\uB3C4"),
@@ -4646,12 +4844,9 @@ function LiveRiskSignals({ call }) {
                 __React.createElement("dd", null,
                     final.scores[(key + '_score')],
                     "\uC810")))),
-            __React.createElement("details", null,
+            __React.createElement("details", { hidden: true, "aria-hidden": "true" },
                 __React.createElement("summary", null, "\uD655\uC815 \uC704\uD5D8 \uACB0\uACFC"),
-                __React.createElement("pre", null, JSON.stringify(final, null, 2))),
-            __React.createElement("p", { className: "live-risk-note" },
-                "\uD1B5\uD654\uBCC4 \uB3C5\uB9BD \uAE30\uB85D \u00B7 ",
-                final.rule_version)) : __React.createElement("p", { className: "live-risk-note", role: "status" }, call.finalization_reason || '최종 위험도 정보 대기 · 최신 백엔드를 확인하세요.')
+                __React.createElement("pre", null, JSON.stringify(final, null, 2)))) : __React.createElement("p", { className: "live-risk-note", role: "status" }, call.finalization_reason || '최종 위험도 정보를 기다리고 있습니다.')
             : __React.createElement("p", { className: "live-risk-note" }, "\uC218\uC2E0\uB41C \uACE0\uAC1D \uBC1C\uD654\uB294 \uC815\uC815\uB420 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uC885\uD569 \uC810\uC218\uB294 \uD1B5\uD654 \uC885\uB8CC\uC640 \uACE0\uC131 \uCD5C\uC885 \uC218\uC2E0 \uD6C4 \uD655\uC815\uD569\uB2C8\uB2E4."),
         call.status === 'ended' && __React.createElement("p", { className: "live-delivery-state", role: "status" },
             (0, livePresentation_1.deliveryLabel)(call),
@@ -4700,16 +4895,17 @@ const Icon_1 = require("../components/Icon");
 const consultation_1 = require("../lib/consultation");
 const customerName_1 = require("../lib/customerName");
 const aftercare_1 = require("../lib/aftercare");
+const uiText_1 = require("../lib/uiText");
+const recommendedMessage = (item, store) => (0, aftercare_1.recommendedAftercareMessage)({ ...item, inquiryType: (0, uiText_1.uiText)(item.inquiryType) }, store);
 function MarketingPage({ items, records, store, onReview, onSend, onSupport }) {
     const [selectedId, setSelectedId] = (0, react_1.useState)(null);
     const selected = items.find(item => item.id === selectedId);
     return __React.createElement(__React.Fragment, null,
         __React.createElement("div", { className: "page-heading" },
             __React.createElement("div", null,
-                __React.createElement("span", { className: "eyebrow" }, "\uACE0\uAC1D\uAD00\uB9AC"),
+                __React.createElement("span", { className: "eyebrow" }, "\uB9E4\uC7A5\uAD00\uB9AC"),
                 __React.createElement("h1", null, "\uB9C8\uCF00\uD305"),
-                __React.createElement("p", null, "\uC644\uB8CC \uC0C1\uB2F4\uC744 \uBC14\uD0D5\uC73C\uB85C \uACE0\uAC1D \uC0AC\uD6C4 \uC548\uB0B4\uB97C \uD655\uC778\uD558\uACE0 \uBC1C\uC1A1 \uCC98\uB9AC\uD558\uC138\uC694.")),
-            __React.createElement("span", { className: "small-badge" }, "\uC0AC\uD6C4\uAD00\uB9AC \uB370\uBAA8")),
+                __React.createElement("p", null, "\uC644\uB8CC \uC0C1\uB2F4\uC744 \uBC14\uD0D5\uC73C\uB85C \uD6C4\uC18D \uC548\uB0B4 \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uCC98\uB9AC \uAE30\uB85D\uC744 \uAD00\uB9AC\uD558\uC138\uC694."))),
         __React.createElement("section", { className: "card appointments-card", "aria-label": "\uC0C1\uB2F4 \uD6C4 \uACE0\uAC1D \uC0AC\uD6C4\uAD00\uB9AC" },
             __React.createElement("div", { className: "card-heading" },
                 __React.createElement("div", { className: "title-with-icon" },
@@ -4722,7 +4918,7 @@ function MarketingPage({ items, records, store, onReview, onSend, onSupport }) {
                         items.length,
                         "\uAC74"),
                     __React.createElement("span", { className: "small-badge" },
-                        "\uBC1C\uC1A1 \uC644\uB8CC ",
+                        "\uCC98\uB9AC \uC644\uB8CC ",
                         items.filter(item => records[item.id]?.status === 'sent').length,
                         "\uAC74"))),
             __React.createElement("div", { className: "table-scroll", role: "region", "aria-label": "\uC0AC\uD6C4\uAD00\uB9AC \uBAA9\uB85D \u00B7 \uC88C\uC6B0 \uC2A4\uD06C\uB864", tabIndex: 0 },
@@ -4735,8 +4931,8 @@ function MarketingPage({ items, records, store, onReview, onSend, onSupport }) {
                             __React.createElement("th", { scope: "col" }, "\uC5F0\uB77D\u00B7\uC548\uB0B4 \uB3D9\uC758"),
                             __React.createElement("th", { scope: "col" }, "\uD6C4\uC18D \uC548\uB0B4"),
                             __React.createElement("th", { scope: "col" }, "\uCD94\uCC9C \uD6C4\uC18D \uBA54\uC2DC\uC9C0"),
-                            __React.createElement("th", { scope: "col" }, "\uBC1C\uC1A1 \uC0C1\uD0DC"),
-                            __React.createElement("th", { scope: "col" }, "\uBA54\uC2DC\uC9C0 \uD655\uC778"))),
+                            __React.createElement("th", { scope: "col" }, "\uCC98\uB9AC \uC0C1\uD0DC"),
+                            __React.createElement("th", { scope: "col" }, "\uC548\uB0B4 \uD655\uC778"))),
                     __React.createElement("tbody", null, items.map(item => {
                         const record = records[item.id], sent = record?.status === 'sent', blocker = (0, aftercare_1.aftercareBlocker)(item);
                         return __React.createElement("tr", { key: item.id },
@@ -4748,20 +4944,20 @@ function MarketingPage({ items, records, store, onReview, onSend, onSupport }) {
                                     item.source)),
                             __React.createElement("td", null,
                                 __React.createElement("span", { className: "aftercare-message-preview" }, item.summary || '상담 결과 기록 없음'),
-                                __React.createElement("small", { className: "muted-text" }, item.inquiryType)),
+                                __React.createElement("small", { className: "muted-text" }, (0, uiText_1.uiText)(item.inquiryType))),
                             __React.createElement("td", null, item.outcome),
                             __React.createElement("td", null,
                                 __React.createElement("span", { className: `status-pill ${item.consent === 'granted' ? 'available' : 'neutral'}` }, aftercare_1.consentLabels[item.consent])),
                             __React.createElement("td", null,
                                 __React.createElement("span", { className: "small-badge" }, consultation_1.followUpLabels[item.followUp])),
                             __React.createElement("td", null,
-                                __React.createElement("span", { className: "aftercare-message-preview" }, sent ? record.message : (0, aftercare_1.recommendedAftercareMessage)(item, store) || '—')),
+                                __React.createElement("span", { className: "aftercare-message-preview" }, sent ? record.message : recommendedMessage(item, store) || '—')),
                             __React.createElement("td", null,
-                                __React.createElement("span", { className: `status-pill ${sent ? 'available' : 'neutral'}` }, sent ? '완료' : '대기'),
-                                !sent && (0, aftercare_1.aftercareReviewed)(item, record) && __React.createElement("small", { className: "muted-text" }, "\uBA54\uC2DC\uC9C0 \uD655\uC778\uB428")),
+                                __React.createElement("span", { className: `status-pill ${sent ? 'available' : 'neutral'}` }, sent ? '처리 완료' : blocker ? '확인 필요' : '처리 대기'),
+                                !sent && (0, aftercare_1.aftercareReviewed)(item, record) && __React.createElement("small", { className: "muted-text" }, "\uC548\uB0B4 \uB0B4\uC6A9 \uD655\uC778\uB428")),
                             __React.createElement("td", null,
-                                __React.createElement("button", { className: "text-button", "aria-label": `${item.sourceId} ${sent ? '발송 기록 보기' : '메시지 확인'}`, onClick: () => setSelectedId(item.id) },
-                                    sent ? '발송 기록' : '메시지 확인',
+                                __React.createElement("button", { className: "text-button", "aria-label": `${item.sourceId} ${sent ? '처리 기록 보기' : '후속 안내 확인'}`, onClick: () => setSelectedId(item.id) },
+                                    sent ? '처리 기록' : '후속 안내 확인',
                                     __React.createElement(Icon_1.Icon, { name: "chevron", size: 13 })),
                                 !sent && blocker && __React.createElement("small", { className: "aftercare-blocker" }, blocker)));
                     })))),
@@ -4771,16 +4967,16 @@ function MarketingPage({ items, records, store, onReview, onSend, onSupport }) {
                 __React.createElement("button", { className: "button button-secondary", onClick: onSupport }, "\uC0C1\uB2F4\uC9C0\uC6D0 \uBCF4\uAE30")),
             __React.createElement("div", { className: "aftercare-notice" },
                 __React.createElement(Icon_1.Icon, { name: "help", size: 17 }),
-                __React.createElement("p", null, "\uD1B5\uD654\u00B7\uBC29\uBB38 \uC608\uC57D\uC758 \uC644\uB8CC \uACB0\uACFC\uB97C \uC0AC\uC6A9\uD569\uB2C8\uB2E4. \uC5F0\uB77D \uB3D9\uC758\uB294 \uAC00\uC0C1 \uC2DC\uC5F0 \uC124\uC815\uC774\uBA70, \uCD94\uCC9C \uBA54\uC2DC\uC9C0\uB294 \uD6C4\uC18D \uBA54\uBAA8\uB97C \uD65C\uC6A9\uD55C \uD15C\uD50C\uB9BF\uC785\uB2C8\uB2E4. \uC2E4\uC81C \uBB38\uC790 \uBC1C\uC1A1\uC740 \uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uD655\uC778\u00B7\uBC1C\uC1A1 \uAE30\uB85D\uC740 \uD604\uC7AC \uC571 \uC2E4\uD589 \uC911\uC5D0\uB9CC \uC720\uC9C0\uB418\uBA70 \uC0C8\uB85C\uACE0\uCE68 \uC2DC \uCD08\uAE30\uD654\uB429\uB2C8\uB2E4."))),
+                __React.createElement("p", null, "\uC548\uB0B4 \uB0B4\uC6A9\uACFC \uCC98\uB9AC \uC0C1\uD0DC\uB97C \uAE30\uB85D\uD558\uB294 \uAE30\uB2A5\uC774\uBA70 \uACE0\uAC1D\uC5D0\uAC8C \uBB38\uC790\uB97C \uBCF4\uB0B4\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uCC98\uB9AC \uAE30\uB85D\uC740 \uC0C8\uB85C\uACE0\uCE68\uD558\uBA74 \uCD08\uAE30\uD654\uB429\uB2C8\uB2E4."))),
         selected && __React.createElement(AftercareMessage, { key: selected.id, item: selected, record: records[selected.id], store: store, onReview: message => onReview(selected.id, message), onSend: () => onSend(selected.id), onClose: () => setSelectedId(null) }));
 }
 function AftercareMessage({ item, record, store, onReview, onSend, onClose }) {
-    const [message, setMessage] = (0, react_1.useState)(() => record?.message ?? (0, aftercare_1.recommendedAftercareMessage)(item, store));
+    const [message, setMessage] = (0, react_1.useState)(() => record?.message ?? recommendedMessage(item, store));
     const sent = record?.status === 'sent';
     const blocker = (0, aftercare_1.aftercareBlocker)(item);
     const messageError = !message.trim() ? '안내 메시지를 입력해 주세요.' : message.length > 1000 ? '안내 메시지는 1,000자 이내로 입력해 주세요.' : '';
     const reviewed = (0, aftercare_1.aftercareReviewed)(item, record) && record?.message === message.trim();
-    return __React.createElement(Modal_1.Modal, { title: sent ? '사후 안내 발송 기록' : '사후 안내 메시지 확인', onClose: onClose },
+    return __React.createElement(Modal_1.Modal, { title: sent ? '후속 안내 처리 기록' : '후속 안내 확인', onClose: onClose },
         __React.createElement("div", { className: "detail-meta" },
             __React.createElement("span", null, item.sourceId),
             __React.createElement("span", null, (0, customerName_1.maskCustomerName)(item.customerName)),
@@ -4794,40 +4990,38 @@ function AftercareMessage({ item, record, store, onReview, onSend, onClose }) {
                 __React.createElement("dd", null, item.followUpMemo || consultation_1.followUpLabels[item.followUp])),
             __React.createElement("div", null,
                 __React.createElement("dt", null, "\uC5F0\uB77D\u00B7\uC548\uB0B4 \uB3D9\uC758"),
-                __React.createElement("dd", null,
-                    aftercare_1.consentLabels[item.consent],
-                    " \u00B7 \uAC00\uC0C1 \uC2DC\uC5F0 \uC124\uC815"))),
+                __React.createElement("dd", null, aftercare_1.consentLabels[item.consent]))),
         sent ? __React.createElement(__React.Fragment, null,
-            __React.createElement("h3", { className: "section-label" }, "\uBC1C\uC1A1 \uCC98\uB9AC\uD55C \uBA54\uC2DC\uC9C0"),
+            __React.createElement("h3", { className: "section-label" }, "\uCC98\uB9AC\uD55C \uC548\uB0B4 \uB0B4\uC6A9"),
             __React.createElement("p", { className: "call-opening aftercare-sent-message" }, record.message),
             __React.createElement("p", { className: "aftercare-success", role: "status" },
                 __React.createElement(Icon_1.Icon, { name: "check", size: 18 }),
-                "\uB370\uBAA8 \uBC1C\uC1A1 \uCC98\uB9AC\uAC00 \uC644\uB8CC\uB418\uC5C8\uC2B5\uB2C8\uB2E4."),
+                "\uD6C4\uC18D \uC548\uB0B4 \uCC98\uB9AC\uAC00 \uC644\uB8CC\uB418\uC5C8\uC2B5\uB2C8\uB2E4."),
             __React.createElement("p", { className: "muted-text" },
-                "\uBA54\uC2DC\uC9C0 \uD655\uC778: ",
+                "\uC548\uB0B4 \uD655\uC778: ",
                 (0, consultation_1.consultationTime)(record.reviewedAt),
                 " \u00B7 ",
-                record.reviewedBy,
+                (0, uiText_1.uiText)(record.reviewedBy),
                 __React.createElement("br", null),
-                "\uBC1C\uC1A1 \uCC98\uB9AC: ",
+                "\uC548\uB0B4 \uCC98\uB9AC: ",
                 (0, consultation_1.consultationTime)(record.sentAt),
                 " \u00B7 ",
-                record.sentBy)) : __React.createElement(__React.Fragment, null,
+                (0, uiText_1.uiText)(record.sentBy ?? ''))) : __React.createElement(__React.Fragment, null,
             __React.createElement("div", { className: "consultation-field" },
                 __React.createElement("label", { htmlFor: "aftercare-message" }, "\uCD94\uCC9C \uD6C4\uC18D \uBA54\uC2DC\uC9C0"),
                 __React.createElement("textarea", { id: "aftercare-message", value: message, maxLength: 1000, rows: 5, disabled: Boolean(blocker), onChange: event => setMessage(event.target.value), "aria-describedby": "aftercare-message-help" })),
             __React.createElement("p", { id: "aftercare-message-help", className: "microcopy" },
                 message.length,
-                " / 1,000\uC790 \u00B7 \uB0B4\uC6A9\uC744 \uD655\uC778\uD55C \uB4A4 \uB370\uBAA8 \uBC1C\uC1A1 \uCC98\uB9AC\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."),
-            blocker ? __React.createElement("p", { className: "notice-inline", role: "status" }, blocker) : messageError ? __React.createElement("p", { className: "field-error" }, messageError) : __React.createElement("p", { className: "microcopy", role: "status" }, reviewed ? '메시지 확인 완료 · 발송 처리할 수 있습니다.' : '발송 전에 메시지 확인을 완료해 주세요.'),
+                " / 1,000\uC790 \u00B7 \uC548\uB0B4\uD560 \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uAC70\uB098 \uC218\uC815\uD574 \uC8FC\uC138\uC694."),
+            blocker ? __React.createElement("p", { className: "notice-inline", role: "status" }, blocker) : messageError ? __React.createElement("p", { className: "field-error" }, messageError) : __React.createElement("p", { className: "microcopy", role: "status" }, reviewed ? '안내 내용 확인 완료 · 처리 기록을 남길 수 있습니다.' : '안내 처리 전에 내용을 확인해 주세요.'),
             __React.createElement("div", { className: "modal-actions" },
                 __React.createElement("button", { className: "button button-secondary", onClick: () => onReview(message), disabled: Boolean(blocker || messageError) || reviewed },
                     __React.createElement(Icon_1.Icon, { name: "check", size: 16 }),
-                    "\uBA54\uC2DC\uC9C0 \uD655\uC778 \uC644\uB8CC"),
+                    "\uC548\uB0B4 \uB0B4\uC6A9 \uD655\uC778 \uC644\uB8CC"),
                 __React.createElement("button", { className: "button button-primary", disabled: !reviewed, onClick: onSend },
-                    "\uBC1C\uC1A1 \uCC98\uB9AC(\uB370\uBAA8)",
+                    "\uC548\uB0B4 \uCC98\uB9AC",
                     __React.createElement(Icon_1.Icon, { name: "arrow", size: 16 })))),
-        __React.createElement("p", { className: "microcopy aftercare-modal-note" }, "\uC2E4\uC81C \uACE0\uAC1D\uC5D0\uAC8C \uBB38\uC790\uB97C \uBCF4\uB0B4\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uC0C8\uB85C\uACE0\uCE68\uD558\uBA74 \uB370\uBAA8 \uBC1C\uC1A1 \uAE30\uB85D\uC740 \uCD08\uAE30\uD654\uB429\uB2C8\uB2E4."));
+        __React.createElement("p", { className: "microcopy aftercare-modal-note" }, "\uC774 \uD654\uBA74\uC5D0\uC11C\uB294 \uCC98\uB9AC \uAE30\uB85D\uB9CC \uB0A8\uAE30\uBA70 \uACE0\uAC1D\uC5D0\uAC8C \uBB38\uC790\uB97C \uBCF4\uB0B4\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."));
 }
 
 },
@@ -4838,52 +5032,87 @@ exports.ProductsPage = ProductsPage;
 const react_1 = require("react");
 const Icon_1 = require("../components/Icon");
 const Tabs_1 = require("../components/Tabs");
+const productCatalog_1 = require("../data/productCatalog");
 const navigation_1 = require("../lib/navigation");
-const sections = {
-    plans: [
-        { title: '요금제 기본 정보', icon: 'file', fields: ['요금제명', '통신사 / 통신망', '월정액'] },
-        { title: '이용 조건', icon: 'phone', fields: ['데이터 제공량', '음성 / 문자', '가입 조건'] },
-        { title: '제공 혜택', icon: 'sparkles', fields: ['포함 혜택', '적용 조건', '정보 갱신일'] },
-    ],
-    bundles: [
-        { title: '결합 기본 정보', icon: 'file', fields: ['결합 상품명', '통신사', '유무선 구분'] },
-        { title: '결합 조건', icon: 'users', fields: ['결합 대상', '필요 회선 수', '적용 조건'] },
-        { title: '결합 혜택', icon: 'sparkles', fields: ['할인 안내', '유의 사항', '정보 갱신일'] },
-    ],
-    benefits: [
-        { title: '혜택 기본 정보', icon: 'sparkles', fields: ['혜택명', '혜택 유형', '혜택 내용'] },
-        { title: '적용 조건', icon: 'users', fields: ['대상 고객', '적용 조건', '유의 사항'] },
-        { title: '제공 기간', icon: 'calendar', fields: ['시작일', '종료일', '정보 갱신일'] },
-    ],
-    devices: [
-        { title: '제품 기본 정보', icon: 'box', fields: ['제품명', '제조사', '제품 구분'] },
-        { title: '제품 사양', icon: 'file', fields: ['저장용량', '색상', '주요 사양'] },
-        { title: '판매 정보', icon: 'store', fields: ['출고가', '판매 상태', '정보 갱신일'] },
-    ],
-};
+const productLookup_1 = require("../lib/productLookup");
 const descriptions = {
-    plans: '자사와 타사 요금제를 구분해 확인하는 화면입니다.',
-    bundles: '결합 상품과 적용 조건, 할인 내용을 확인하는 화면입니다.',
-    benefits: '고객에게 안내할 혜택과 적용 조건, 제공 기간을 확인하는 화면입니다.',
-    devices: '제품 사양과 판매 정보를 확인하는 화면입니다. 재고 수량은 스마트 재고에서 다룹니다.',
+    plans: '이용 조건을 확인하고 최대 3개 요금제를 함께 비교하세요.',
+    bundles: '회선 구성에 맞는 결합 조건과 확인사항을 살펴보세요.',
+    benefits: '고객에게 안내할 혜택의 대상과 적용 조건을 확인하세요.',
+    devices: '제품별 용량과 색상을 확인하세요. 재고 수량은 스마트 재고에서 조회합니다.',
 };
-// Fictional catalog for read-only presentation; not KT offers or a DB schema.
-const examples = {
-    plans: [['시연 요금제 A', '가상 통신사', '45,000원 (가상)'], ['20GB (가상)', '통화 300분 · 문자 100건 (가상)', '시연용 조건'], ['가족 혜택 예시', '실제 가입 불가', '가상 상품 자료']],
-    bundles: [['시연 가족결합', '가상 통신사', '휴대폰 + 인터넷 예시'], ['가상 가족 고객', '2회선 예시', '실제 가입 조건 아님'], ['결합 할인 안내 예시', '실제 할인 적용 불가', '가상 상품 자료']],
-    benefits: [['시연 상담 혜택', '안내 예시', '혜택 비교용 샘플'], ['가상 상담 고객', '실제 제공되지 않음', '공식 프로모션 아님'], ['시연 시작일', '시연 종료일', '실제 제공 기간 아님']],
-    devices: [['시연 단말 A', '가상 제조사', '스마트폰 예시'], ['256GB (가상)', '블랙 (가상)', '제품 비교용 샘플'], ['900,000원 (가상)', '조회 예시 · 구매 불가', '가상 상품 자료']],
-};
-function ProductsPage() {
+const icons = { plans: 'phone', bundles: 'users', benefits: 'sparkles', devices: 'box' };
+function ProductDetail({ item, compared, full, onCompare }) {
+    return __React.createElement("section", { className: "card product-detail", "aria-label": "\uC120\uD0DD\uD55C \uC0C1\uD488 \uC0C1\uC138", "aria-live": "polite" },
+        __React.createElement("div", { className: "product-detail-heading" },
+            __React.createElement("div", null,
+                __React.createElement("span", { className: "small-badge" }, item.tag),
+                __React.createElement("h2", null, item.name),
+                __React.createElement("p", null, item.summary)),
+            item.plan && __React.createElement("button", { type: "button", className: `button ${compared ? 'button-secondary' : 'button-primary'}`, disabled: !compared && full, onClick: () => onCompare(item.id) },
+                __React.createElement(Icon_1.Icon, { name: compared ? 'check' : 'file', size: 15 }),
+                compared ? '비교에서 제외' : full ? '비교 목록이 가득 찼습니다' : '비교에 추가')),
+        __React.createElement("div", { className: "product-detail-sections" }, item.sections.map(section => __React.createElement("section", { key: section.title },
+            __React.createElement("h3", null, section.title),
+            __React.createElement("dl", { className: "product-detail-fields" }, section.fields.map(field => __React.createElement("div", { key: field.label },
+                __React.createElement("dt", null, field.label),
+                __React.createElement("dd", null, field.value))))))));
+}
+function PlanComparison({ items, onRemove, onClear }) {
+    const rows = [
+        { label: '구분', value: item => item.tag },
+        { label: '월정액', value: item => (0, productCatalog_1.formatProductPrice)(item.plan.monthlyFee) },
+        { label: '데이터', value: item => item.plan.data },
+        { label: '음성', value: item => item.plan.voice },
+        { label: '문자', value: item => item.plan.messages },
+        { label: '가입 조건', value: item => item.plan.condition },
+        { label: '혜택 확인', value: item => item.plan.benefit },
+    ];
+    return __React.createElement("section", { className: "card product-comparison", "aria-label": "\uC694\uAE08\uC81C \uBE44\uAD50" },
+        __React.createElement("div", { className: "card-heading" },
+            __React.createElement("div", null,
+                __React.createElement("h2", null,
+                    "\uC694\uAE08\uC81C \uBE44\uAD50 ",
+                    __React.createElement("span", { className: "muted-count" },
+                        items.length,
+                        "/",
+                        productLookup_1.maxComparedPlans)),
+                __React.createElement("p", { className: "product-comparison-note", "aria-live": "polite" }, items.length < 2 ? '자사·타사에서 요금제를 추가하면 조건을 나란히 비교할 수 있습니다.' : '약정·결합 할인 전 월정액 기준입니다.')),
+            items.length > 0 && __React.createElement("button", { type: "button", className: "text-button", onClick: onClear }, "\uC804\uCCB4 \uC81C\uC678")),
+        items.length > 0 ? __React.createElement("div", { className: "table-scroll product-comparison-scroll", tabIndex: 0, "aria-label": "\uC120\uD0DD\uD55C \uC694\uAE08\uC81C \uBE44\uAD50\uD45C" },
+            __React.createElement("table", { className: "product-comparison-table" },
+                __React.createElement("caption", { className: "sr-only" }, "\uC120\uD0DD\uD55C \uC694\uAE08\uC81C\uC758 \uC6D4\uC815\uC561, \uC81C\uACF5\uB7C9, \uAC00\uC785 \uC870\uAC74\uACFC \uD61C\uD0DD"),
+                __React.createElement("thead", null,
+                    __React.createElement("tr", null,
+                        __React.createElement("th", { scope: "col" }, "\uBE44\uAD50 \uD56D\uBAA9"),
+                        items.map(item => __React.createElement("th", { key: item.id, scope: "col" },
+                            __React.createElement("strong", null, item.name),
+                            __React.createElement("button", { className: "text-button", type: "button", onClick: () => onRemove(item.id), "aria-label": `${item.name} 비교에서 제외` },
+                                __React.createElement(Icon_1.Icon, { name: "close", size: 14 })))))),
+                __React.createElement("tbody", null, rows.map(row => __React.createElement("tr", { key: row.label },
+                    __React.createElement("th", { scope: "row" }, row.label),
+                    items.map(item => __React.createElement("td", { key: item.id }, row.value(item)))))))) : __React.createElement("div", { className: "product-comparison-empty" },
+            __React.createElement(Icon_1.Icon, { name: "file", size: 20 }),
+            __React.createElement("span", null, "\uC0C1\uD488 \uC0C1\uC138\uC5D0\uC11C \u2018\uBE44\uAD50\uC5D0 \uCD94\uAC00\u2019\uB97C \uC120\uD0DD\uD558\uC138\uC694.")));
+}
+function ProductsPage({ data }) {
     const [active, setActive] = (0, react_1.useState)('plans');
     const [carrier, setCarrier] = (0, react_1.useState)('own');
+    const [queries, setQueries] = (0, react_1.useState)({ plans: '', bundles: '', benefits: '', devices: '' });
+    const [selectedIds, setSelectedIds] = (0, react_1.useState)({});
+    const [comparedIds, setComparedIds] = (0, react_1.useState)([]);
+    const catalog = (0, react_1.useMemo)(() => (0, productCatalog_1.createProductCatalog)(data.inventory), [data.inventory]);
+    const visibleItems = (0, productLookup_1.filterProducts)(catalog, active, queries[active], carrier);
+    const selectionKey = active === 'plans' ? `${active}-${carrier}` : active;
+    const selected = (0, productLookup_1.selectedProduct)(visibleItems, selectedIds[selectionKey]);
+    const compared = catalog.filter(item => comparedIds.includes(item.id) && item.plan).sort((a, b) => comparedIds.indexOf(a.id) - comparedIds.indexOf(b.id));
+    const onCompare = (id) => setComparedIds(previous => (0, productLookup_1.toggleComparedPlan)(catalog, previous, id));
     return __React.createElement(__React.Fragment, null,
         __React.createElement("div", { className: "page-heading" },
             __React.createElement("div", null,
                 __React.createElement("span", { className: "eyebrow" }, "\uC0C1\uB2F4\uC5C5\uBB34"),
                 __React.createElement("h1", null, "\uC0C1\uD488\uAD00\uB9AC"),
-                __React.createElement("p", null, "\uC694\uAE08\uC81C\uBD80\uD130 \uC81C\uD488\uAE4C\uC9C0, \uC0C1\uB2F4\uC5D0 \uD544\uC694\uD55C \uC815\uBCF4\uB97C \uD55C\uACF3\uC5D0\uC11C \uD655\uC778\uD558\uC138\uC694.")),
-            __React.createElement("span", { className: "small-badge" }, "\uAC00\uC0C1 \uC0C1\uD488 \u00B7 \uC870\uD68C \uC2DC\uC5F0")),
+                __React.createElement("p", null, "\uC694\uAE08\uC81C\uBD80\uD130 \uC81C\uD488\uAE4C\uC9C0, \uC0C1\uB2F4\uC5D0 \uD544\uC694\uD55C \uC815\uBCF4\uB97C \uD55C\uACF3\uC5D0\uC11C \uD655\uC778\uD558\uC138\uC694."))),
         __React.createElement(Tabs_1.Tabs, { id: "products", label: "\uC0C1\uD488\uAD00\uB9AC \uD0ED", tabs: navigation_1.productTabs, active: active, onChange: setActive }),
         navigation_1.productTabs.map(tab => __React.createElement("section", { key: tab.id, role: "tabpanel", hidden: active !== tab.id, id: `products-panel-${tab.id}`, "aria-labelledby": `products-tab-${tab.id}`, tabIndex: 0 }, active === tab.id && __React.createElement(__React.Fragment, null,
             __React.createElement("div", { className: "section-intro" },
@@ -4893,21 +5122,37 @@ function ProductsPage() {
                 active === 'plans' && __React.createElement("div", { className: "carrier-toggle", role: "group", "aria-label": "\uC694\uAE08\uC81C \uAD6C\uBD84" },
                     __React.createElement("button", { type: "button", "aria-pressed": carrier === 'own', onClick: () => setCarrier('own') }, "\uC790\uC0AC"),
                     __React.createElement("button", { type: "button", "aria-pressed": carrier === 'other', onClick: () => setCarrier('other') }, "\uD0C0\uC0AC"))),
-            __React.createElement("div", { className: "product-outline-grid" }, sections[active].map((section, sectionIndex) => __React.createElement("section", { className: "card product-outline-card", key: section.title },
-                __React.createElement("span", { className: "small-icon gray" },
-                    __React.createElement(Icon_1.Icon, { name: section.icon })),
-                __React.createElement("h3", null, section.title),
-                __React.createElement("span", { className: "outline-caption" }, "\uAC00\uC0C1 \uC815\uBCF4"),
-                __React.createElement("dl", { className: "outline-fields" }, section.fields.map((field, fieldIndex) => __React.createElement("div", { key: field },
-                    __React.createElement("dt", null, field),
-                    __React.createElement("dd", null, active === 'plans' && sectionIndex === 0 && fieldIndex === 0 ? `${carrier === 'own' ? '자사' : '타사'} 시연 요금제 A` : examples[active][sectionIndex][fieldIndex]))))))),
-            __React.createElement("div", { className: "card structure-note" },
-                __React.createElement("span", { className: "small-icon red" },
-                    __React.createElement(Icon_1.Icon, { name: "file" })),
-                __React.createElement("div", null,
-                    __React.createElement("h3", null, "\uC0C1\uB2F4 \uCC38\uACE0\uC6A9 \uAC00\uC0C1 \uC0C1\uD488\uC785\uB2C8\uB2E4."),
-                    __React.createElement("p", null, "\uAE08\uC561\u00B7\uC870\uAC74\u00B7\uD61C\uD0DD\u00B7\uC0AC\uC591\uC740 \uC2DC\uC5F0\uC6A9 \uC608\uC2DC\uC774\uBA70 \uC2E4\uC81C KT \uC0C1\uD488\uC774 \uC544\uB2D9\uB2C8\uB2E4. \uAC00\uC785\u00B7\uAD6C\uB9E4\u00B7\uC218\uC815 \uAE30\uB2A5\uC740 \uC81C\uACF5\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.")),
-                __React.createElement("span", { className: "status-pill neutral" }, "\uC870\uD68C \uC608\uC2DC"))))));
+            __React.createElement("div", { className: "directory-grid product-catalog-grid" },
+                __React.createElement("section", { className: "card directory-list product-catalog-list" },
+                    __React.createElement("div", { className: "card-heading" },
+                        __React.createElement("h2", null, active === 'plans' ? '요금제 목록' : '상품 목록'),
+                        __React.createElement("span", { className: "muted-count", "aria-live": "polite" },
+                            visibleItems.length,
+                            "\uAC1C")),
+                    __React.createElement("div", { className: "product-search-row" },
+                        __React.createElement("label", { className: "search-field" },
+                            __React.createElement(Icon_1.Icon, { name: "search", size: 16 }),
+                            __React.createElement("input", { value: queries[active], onChange: event => setQueries(previous => ({ ...previous, [active]: event.target.value })), "aria-label": `${tab.label} 검색`, placeholder: "\uC0C1\uD488\uBA85\u00B7\uC870\uAC74 \uAC80\uC0C9" })),
+                        queries[active] && __React.createElement("button", { type: "button", className: "text-button", "aria-label": "\uC0C1\uD488 \uAC80\uC0C9 \uCD08\uAE30\uD654", onClick: () => setQueries(previous => ({ ...previous, [active]: '' })) },
+                            __React.createElement(Icon_1.Icon, { name: "close", size: 15 }))),
+                    __React.createElement("div", { className: "directory-options", role: "group", "aria-label": `${tab.label} 선택` }, visibleItems.map(item => __React.createElement("button", { type: "button", key: item.id, "aria-pressed": selected?.id === item.id, className: `directory-option ${selected?.id === item.id ? 'selected' : ''}`, onClick: () => setSelectedIds(previous => ({ ...previous, [selectionKey]: item.id })) },
+                        __React.createElement("span", { className: `small-icon ${selected?.id === item.id ? 'red' : 'gray'}` },
+                            __React.createElement(Icon_1.Icon, { name: icons[active], size: 18 })),
+                        __React.createElement("span", { className: "directory-option-text" },
+                            __React.createElement("strong", null, item.name),
+                            __React.createElement("small", null,
+                                item.plan ? `${(0, productCatalog_1.formatProductPrice)(item.plan.monthlyFee)} / 월 · ${item.plan.data}` : item.summary,
+                                comparedIds.includes(item.id) && __React.createElement("span", { className: "home-store-badge" }, "\uBE44\uAD50 \uC911"))),
+                        __React.createElement(Icon_1.Icon, { name: "chevron", size: 14 })))),
+                    visibleItems.length === 0 && __React.createElement("div", { className: "product-search-empty" },
+                        __React.createElement("strong", null, "\uAC80\uC0C9 \uACB0\uACFC\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4."),
+                        __React.createElement("p", null, "\uC0C1\uD488\uBA85\uC774\uB098 \uC870\uAC74\uC744 \uBC14\uAFD4 \uAC80\uC0C9\uD558\uC138\uC694."))),
+                selected ? __React.createElement(ProductDetail, { item: selected, compared: comparedIds.includes(selected.id), full: compared.length >= productLookup_1.maxComparedPlans, onCompare: onCompare }) : __React.createElement("section", { className: "card product-detail product-search-empty" },
+                    __React.createElement(Icon_1.Icon, { name: "search", size: 24 }),
+                    __React.createElement("h2", null, "\uC870\uD68C\uD560 \uC0C1\uD488\uC744 \uC120\uD0DD\uD558\uC138\uC694."),
+                    __React.createElement("p", null, "\uAC80\uC0C9\uC5B4\uB97C \uC9C0\uC6B0\uBA74 \uC0C1\uD488 \uBAA9\uB85D\uC744 \uB2E4\uC2DC \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."))),
+            active === 'plans' && __React.createElement(PlanComparison, { items: compared, onRemove: onCompare, onClear: () => setComparedIds([]) }),
+            __React.createElement("p", { className: "product-reference-note" }, productCatalog_1.productReferenceNote)))));
 }
 
 },
@@ -4928,18 +5173,18 @@ function SecondaryPages({ page, data }) {
                 __React.createElement("div", null,
                     __React.createElement("span", { className: "eyebrow" }, "\uB9E4\uC7A5\uAD00\uB9AC"),
                     __React.createElement("h1", null, "\uC2A4\uB9C8\uD2B8 \uC7AC\uACE0"),
-                    __React.createElement("p", null, "\uB9E4\uC7A5 \uC7AC\uACE0\uC640 \uB300\uC5EC\u00B7\uBC18\uB0A9 \uD750\uB984\uC744 \uD655\uC778\uD558\uB294 \uC0D8\uD50C \uD654\uBA74\uC785\uB2C8\uB2E4.")),
-                __React.createElement("span", { className: "small-badge" }, "\uC870\uD68C \uC2DC\uC5F0")),
+                    __React.createElement("p", null, "\uB9E4\uC7A5 \uC7AC\uACE0\uC640 \uBC18\uB0A9 \uC608\uC815 \uB0B4\uC5ED\uC744 \uD655\uC778\uD558\uC138\uC694.")),
+                __React.createElement("span", { className: "small-badge" }, "\uC7AC\uACE0 \uD604\uD669")),
             __React.createElement("div", { className: "inventory-page" },
                 __React.createElement(InventoryPanel_1.InventoryPanel, { data: data, expanded: true }),
                 __React.createElement("div", { className: "card planned-card" },
                     __React.createElement("span", { className: "small-icon red" },
                         __React.createElement(Icon_1.Icon, { name: "truck" })),
-                    __React.createElement("h2", null, "\uB9E4\uC7A5 \uAC04 \uC7AC\uACE0 \uC5F0\uACB0"),
+                    __React.createElement("h2", null, "\uB9E4\uC7A5 \uAC04 \uB300\uC5EC\u00B7\uBC18\uB0A9"),
                     __React.createElement("p", null,
-                        "\uC694\uCCAD \u2192 \uC2B9\uC778 \u2192 \uBC30\uC1A1 \u2192 \uBC18\uB0A9 \uD750\uB984\uC744",
+                        "\uC7AC\uACE0 \uC774\uB3D9\uC740 \uC694\uCCAD, \uC2B9\uC778\u00B7\uBC30\uC1A1,",
                         __React.createElement("br", null),
-                        "\uB2E4\uC74C \uAC1C\uBC1C \uB2E8\uACC4\uC5D0\uC11C \uC5F0\uACB0\uD569\uB2C8\uB2E4."),
+                        "\uBC18\uB0A9 \uC21C\uC11C\uB85C \uC9C4\uD589\uD569\uB2C8\uB2E4."),
                     __React.createElement("div", { className: "flow-steps" },
                         __React.createElement("span", null, "\uB300\uC5EC \uC694\uCCAD"),
                         __React.createElement(Icon_1.Icon, { name: "chevron", size: 14 }),
@@ -4948,9 +5193,9 @@ function SecondaryPages({ page, data }) {
                         __React.createElement("span", null, "\uBC18\uB0A9")),
                     __React.createElement("div", { className: "notice-inline" },
                         __React.createElement(Icon_1.Icon, { name: "help", size: 17 }),
-                        __React.createElement("span", null, "\uD604\uC7AC \uC218\uB7C9\uC740 \uC0D8\uD50C\uC774\uBA70 \uC2E4\uC81C \uC7AC\uACE0 \uBCC0\uACBD\uC774\uB098 \uC54C\uB9BC \uBC1C\uC1A1\uC740 \uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.")))));
+                        __React.createElement("span", null, "\uC870\uD68C\uC6A9 \uC790\uB8CC\uC785\uB2C8\uB2E4. \uC218\uB7C9 \uBCC0\uACBD\u00B7\uC54C\uB9BC \uBC1C\uC1A1\uC740 \uC81C\uACF5\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.")))));
     if (page === 'products')
-        return __React.createElement(ProductsPage_1.ProductsPage, null);
+        return __React.createElement(ProductsPage_1.ProductsPage, { data: data });
     if (page === 'stores')
         return __React.createElement(StoreManagementPage_1.StoreManagementPage, { data: data });
     if (page === 'customers')
@@ -4959,13 +5204,13 @@ function SecondaryPages({ page, data }) {
                 __React.createElement("div", null,
                     __React.createElement("span", { className: "eyebrow" }, "\uACE0\uAC1D\uAD00\uB9AC"),
                     __React.createElement("h1", null, "\uACE0\uAC1D\uAD00\uB9AC"),
-                    __React.createElement("p", null, "\uACE0\uAC1D \uC2DD\uBCC4 \uC815\uBCF4\uC640 \uD1B5\uD654\uBCC4 \uC0C1\uB2F4\u00B7\uC704\uD5D8 \uC774\uB825\uC744 \uD655\uC778\uD558\uC138\uC694.")),
+                    __React.createElement("p", null, "\uACE0\uAC1D\uBCC4 \uD1B5\uD654 \uC774\uB825\uACFC \uBC29\uBB38 \uC608\uC57D \uC815\uBCF4\uB97C \uD655\uC778\uD558\uC138\uC694.")),
                 __React.createElement("span", { className: "small-badge" }, "\uC870\uD68C")),
             __React.createElement(LiveConsultations_1.LiveConsultations, { view: "history" }),
-            __React.createElement("section", { className: "card appointments-card", "aria-label": "\uBC29\uBB38 \uC608\uC57D \uACE0\uAC1D \uC608\uC2DC" },
+            __React.createElement("section", { className: "card appointments-card", "aria-label": "\uBC29\uBB38 \uC608\uC57D \uACE0\uAC1D" },
                 __React.createElement("div", { className: "card-heading" },
                     __React.createElement("h2", null, "\uBC29\uBB38 \uC608\uC57D \uACE0\uAC1D"),
-                    __React.createElement("span", { className: "small-badge" }, "\uAC00\uC0C1 \uC608\uC57D \u00B7 \uC2E4\uC81C \uD1B5\uD654\uC640 \uBCC4\uB3C4")),
+                    __React.createElement("span", { className: "small-badge" }, "\uC608\uC57D \uBAA9\uB85D")),
                 __React.createElement("div", { className: "table-scroll", role: "region", "aria-label": "\uBC29\uBB38 \uC608\uC57D \uACE0\uAC1D \uBAA9\uB85D", tabIndex: 0 },
                     __React.createElement("table", { className: "appointment-table" },
                         __React.createElement("thead", null,
@@ -4978,7 +5223,8 @@ function SecondaryPages({ page, data }) {
                             __React.createElement("td", null, item.id),
                             __React.createElement("td", null, (0, customerName_1.maskCustomerName)(item.customerName)),
                             __React.createElement("td", null, item.purpose),
-                            __React.createElement("td", null, item.time))))))));
+                            __React.createElement("td", null, item.time)))))),
+                __React.createElement("p", { className: "panel-note" }, "\uBC29\uBB38 \uC608\uC57D \uC815\uBCF4\uB294 \uC0C1\uB2F4 \uC900\uBE44\uC6A9 \uCC38\uACE0 \uC790\uB8CC\uC785\uB2C8\uB2E4.")));
     return null;
 }
 
@@ -4992,6 +5238,7 @@ const Icon_1 = require("../components/Icon");
 const Tabs_1 = require("../components/Tabs");
 const navigation_1 = require("../lib/navigation");
 const directoryMockData_1 = require("../data/directoryMockData");
+const uiText_1 = require("../lib/uiText");
 function ReviewSamples({ items, title }) {
     return __React.createElement("section", { className: "card review-samples" },
         __React.createElement("div", { className: "card-heading" },
@@ -4999,12 +5246,12 @@ function ReviewSamples({ items, title }) {
                 __React.createElement(Icon_1.Icon, { name: "message", size: 18 }),
                 __React.createElement("h2", null, title)),
             __React.createElement("span", { className: "small-badge" },
-                "\uAC00\uC0C1 \uB9AC\uBDF0 ",
+                "\uB9AC\uBDF0 ",
                 items.length,
                 "\uAC74")),
         __React.createElement("div", { className: "reviews-body" }, items.map(review => __React.createElement("article", { className: "review-sample", key: review.id },
             __React.createElement("div", null,
-                __React.createElement("strong", null, review.author),
+                __React.createElement("strong", null, (0, uiText_1.uiText)(review.author)),
                 __React.createElement("span", { className: "review-score", "aria-label": `${review.score}점 / 5점` },
                     __React.createElement("span", { "aria-hidden": "true" }, "\u2605"),
                     " ",
@@ -5027,19 +5274,18 @@ function StoreManagementPage({ data }) {
             __React.createElement("div", null,
                 __React.createElement("span", { className: "eyebrow" }, "\uB9E4\uC7A5\uAD00\uB9AC"),
                 __React.createElement("h1", null, "\uB9E4\uC7A5\uAD00\uB9AC"),
-                __React.createElement("p", null, "\uB9E4\uC7A5\uACFC \uC9C1\uC6D0\uC758 \uAE30\uBCF8 \uC815\uBCF4, \uC0C1\uB2F4 \uC131\uD5A5\uACFC \uB9AC\uBDF0\uB97C \uD655\uC778\uD558\uC138\uC694.")),
-            __React.createElement("span", { className: "small-badge" }, "\uD654\uBA74 \uAD6C\uC131 \uB2E8\uACC4")),
+                __React.createElement("p", null, "\uB9E4\uC7A5\uACFC \uC9C1\uC6D0\uC758 \uAE30\uBCF8 \uC815\uBCF4, \uC0C1\uB2F4 \uC131\uD5A5\uACFC \uB9AC\uBDF0\uB97C \uD655\uC778\uD558\uC138\uC694."))),
         __React.createElement(Tabs_1.Tabs, { id: "stores", label: "\uB9E4\uC7A5\uAD00\uB9AC \uD0ED", tabs: navigation_1.storeTabs, active: tab, onChange: setTab }),
         __React.createElement("div", { className: "directory-demo-note" },
             __React.createElement(Icon_1.Icon, { name: "shield", size: 16 }),
-            __React.createElement("span", null, "\uB9E4\uC7A5\u00B7\uC8FC\uC18C\u00B7\uC9C1\uC6D0\u00B7\uC131\uD5A5\u00B7\uD3C9\uC810\u00B7\uB9AC\uBDF0\uB294 \uBAA8\uB450 \uD654\uBA74 \uAC80\uD1A0\uC6A9 \uAC00\uC0C1 \uC608\uC2DC\uC785\uB2C8\uB2E4. \uC2E4\uC81C \uC870\uD68C\u00B7\uD3B8\uC9D1 \uAE30\uB2A5\uC740 \uC5F0\uACB0 \uC804\uC785\uB2C8\uB2E4.")),
+            __React.createElement("span", null, "\uB9E4\uC7A5\u00B7\uC9C1\uC6D0 \uC815\uBCF4\uC640 \uB9AC\uBDF0\uB294 \uCC38\uACE0 \uC790\uB8CC\uC785\uB2C8\uB2E4. \uBC29\uBB38\u00B7\uC0C1\uB2F4 \uC804 \uB9E4\uC7A5\uC5D0 \uD655\uC778\uD574 \uC8FC\uC138\uC694.")),
         navigation_1.storeTabs.map(item => __React.createElement("section", { key: item.id, role: "tabpanel", hidden: tab !== item.id, id: `stores-panel-${item.id}`, "aria-labelledby": `stores-tab-${item.id}`, tabIndex: 0 }, tab === item.id && (tab === 'store-info' ? __React.createElement(__React.Fragment, null,
             __React.createElement("div", { className: "section-intro" },
                 __React.createElement("div", null,
                     __React.createElement("h2", null, "\uB9E4\uC7A5\uC815\uBCF4"),
-                    __React.createElement("p", null, "\uC6B0\uB9AC \uB9E4\uC7A5 1\uACF3\uACFC \uB2E4\uB978 \uB9E4\uC7A5 4\uACF3\uC758 \uC815\uBCF4 \uBC30\uCE58\uB97C \uD655\uC778\uD569\uB2C8\uB2E4.")),
+                    __React.createElement("p", null, "\uB9E4\uC7A5\uC744 \uC120\uD0DD\uD574 \uC8FC\uC18C\uC640 \uC601\uC5C5\uC2DC\uAC04, \uB9AC\uBDF0\uB97C \uD655\uC778\uD558\uC138\uC694.")),
                 __React.createElement("span", { className: "small-badge" },
-                    "\uC608\uC2DC \uB9E4\uC7A5 ",
+                    "\uB9E4\uC7A5 ",
                     stores.length,
                     "\uACF3")),
             __React.createElement("div", { className: "directory-grid" },
@@ -5047,11 +5293,11 @@ function StoreManagementPage({ data }) {
                     __React.createElement("div", { className: "card-heading" },
                         __React.createElement("h2", null, "\uB9E4\uC7A5 \uBAA9\uB85D"),
                         __React.createElement("span", { className: "muted-count" }, stores.length)),
-                    __React.createElement("div", { className: "directory-options", role: "group", "aria-label": "\uC0D8\uD50C \uB9E4\uC7A5 \uC120\uD0DD" }, stores.map(item => __React.createElement("button", { type: "button", key: item.id, "aria-pressed": storeId === item.id, className: `directory-option ${storeId === item.id ? 'selected' : ''}`, onClick: () => setStoreId(item.id) },
+                    __React.createElement("div", { className: "directory-options", role: "group", "aria-label": "\uB9E4\uC7A5 \uC120\uD0DD" }, stores.map(item => __React.createElement("button", { type: "button", key: item.id, "aria-pressed": storeId === item.id, className: `directory-option ${storeId === item.id ? 'selected' : ''}`, onClick: () => setStoreId(item.id) },
                         __React.createElement("span", { className: `small-icon ${item.isHome ? 'red' : 'gray'}` },
                             __React.createElement(Icon_1.Icon, { name: "store", size: 18 })),
                         __React.createElement("span", { className: "directory-option-text" },
-                            __React.createElement("strong", null, item.name),
+                            __React.createElement("strong", null, (0, uiText_1.uiText)(item.name)),
                             __React.createElement("small", null,
                                 item.area,
                                 item.isHome && __React.createElement("span", { className: "home-store-badge" }, "\uC6B0\uB9AC \uB9E4\uC7A5"))),
@@ -5063,37 +5309,32 @@ function StoreManagementPage({ data }) {
                             __React.createElement("span", { className: "directory-emblem" },
                                 __React.createElement(Icon_1.Icon, { name: "store", size: 25 })),
                             __React.createElement("div", null,
-                                __React.createElement("div", { className: "directory-detail-kicker" },
-                                    store.isHome ? '우리 매장' : '다른 매장',
-                                    " ",
-                                    __React.createElement("span", null, "\u00B7 \uAC00\uC0C1 \uC608\uC2DC")),
-                                __React.createElement("h2", null, store.name)),
+                                __React.createElement("div", { className: "directory-detail-kicker" }, store.isHome ? '우리 매장' : '다른 매장'),
+                                __React.createElement("h2", null, (0, uiText_1.uiText)(store.name))),
                             __React.createElement("span", { className: "directory-rating" },
                                 __React.createElement("span", { "aria-hidden": "true" }, "\u2605"),
                                 " ",
                                 (0, directoryMockData_1.averageReviewScore)(store.reviews),
                                 __React.createElement("small", null,
-                                    "\uC0D8\uD50C \uD3C9\uC810 \u00B7 ",
+                                    "\uB9AC\uBDF0 ",
                                     store.reviews.length,
                                     "\uAC74"))),
                         __React.createElement("dl", { className: "directory-facts" },
                             __React.createElement("div", null,
                                 __React.createElement("dt", null, "\uC8FC\uC18C"),
-                                __React.createElement("dd", null, store.address)),
+                                __React.createElement("dd", null, (0, uiText_1.uiText)(store.address))),
                             __React.createElement("div", null,
                                 __React.createElement("dt", null, "\uC601\uC5C5\uC2DC\uAC04"),
-                                __React.createElement("dd", null, store.hours)),
+                                __React.createElement("dd", null, (0, uiText_1.uiText)(store.hours))),
                             __React.createElement("div", null,
                                 __React.createElement("dt", null, "\uB9E4\uC7A5 \uAD6C\uBD84"),
-                                __React.createElement("dd", null,
-                                    store.isHome ? '우리 매장' : '다른 매장',
-                                    " \u00B7 \uD504\uB85C\uD1A0\uD0C0\uC785 \uC608\uC2DC")))),
+                                __React.createElement("dd", null, store.isHome ? '우리 매장' : '다른 매장')))),
                     __React.createElement(ReviewSamples, { items: store.reviews, title: "\uB9E4\uC7A5 \uB9AC\uBDF0" })))) : __React.createElement(__React.Fragment, null,
             __React.createElement("div", { className: "section-intro" },
                 __React.createElement("div", null,
                     __React.createElement("h2", null, "\uC9C1\uC6D0\uC815\uBCF4"),
                     __React.createElement("p", null,
-                        data.store,
+                        (0, uiText_1.uiText)(data.store),
                         " \uC18C\uC18D \uC9C1\uC6D0\uC758 \uD504\uB85C\uD544\uACFC \uC0C1\uB2F4 \uC131\uD5A5\uC744 \uD655\uC778\uD569\uB2C8\uB2E4.")),
                 __React.createElement("span", { className: "small-badge" },
                     "\uC6B0\uB9AC \uB9E4\uC7A5 \uC9C1\uC6D0 ",
@@ -5104,7 +5345,7 @@ function StoreManagementPage({ data }) {
                     __React.createElement("div", { className: "card-heading" },
                         __React.createElement("h2", null, "\uC6B0\uB9AC \uB9E4\uC7A5 \uC9C1\uC6D0"),
                         __React.createElement("span", { className: "muted-count" }, employees.length)),
-                    __React.createElement("div", { className: "directory-options", role: "group", "aria-label": "\uC0D8\uD50C \uC9C1\uC6D0 \uC120\uD0DD" }, employees.map(item => __React.createElement("button", { type: "button", key: item.id, "aria-pressed": staffId === item.id, className: `directory-option ${staffId === item.id ? 'selected' : ''}`, onClick: () => setStaffId(item.id) },
+                    __React.createElement("div", { className: "directory-options", role: "group", "aria-label": "\uC9C1\uC6D0 \uC120\uD0DD" }, employees.map(item => __React.createElement("button", { type: "button", key: item.id, "aria-pressed": staffId === item.id, className: `directory-option ${staffId === item.id ? 'selected' : ''}`, onClick: () => setStaffId(item.id) },
                         __React.createElement("span", { className: "avatar directory-avatar" }, item.name.charAt(0)),
                         __React.createElement("span", { className: "directory-option-text" },
                             __React.createElement("strong", null,
@@ -5118,10 +5359,7 @@ function StoreManagementPage({ data }) {
                         __React.createElement("div", { className: "directory-detail-title" },
                             __React.createElement("span", { className: "avatar directory-profile-avatar" }, employee.name.charAt(0)),
                             __React.createElement("div", null,
-                                __React.createElement("div", { className: "directory-detail-kicker" },
-                                    data.store,
-                                    " ",
-                                    __React.createElement("span", null, "\u00B7 \uAC00\uC0C1 \uC9C1\uC6D0")),
+                                __React.createElement("div", { className: "directory-detail-kicker" }, (0, uiText_1.uiText)(data.store)),
                                 __React.createElement("h2", null,
                                     employee.name,
                                     __React.createElement("span", { className: "directory-role" }, employee.role))),
@@ -5130,7 +5368,7 @@ function StoreManagementPage({ data }) {
                                 " ",
                                 (0, directoryMockData_1.averageReviewScore)(employee.reviews),
                                 __React.createElement("small", null,
-                                    "\uC0D8\uD50C \uD3C9\uC810 \u00B7 ",
+                                    "\uB9AC\uBDF0 ",
                                     employee.reviews.length,
                                     "\uAC74"))),
                         __React.createElement("dl", { className: "directory-facts" },
@@ -5144,7 +5382,7 @@ function StoreManagementPage({ data }) {
                                 __React.createElement("dt", null, "\uC790\uAE30\uC18C\uAC1C"),
                                 __React.createElement("dd", null, employee.introduction))),
                         __React.createElement("div", { className: "staff-traits" }, employee.traits.map(trait => __React.createElement("span", { key: trait }, trait))),
-                        __React.createElement("p", { className: "directory-subnote" }, "\uC9C1\uC6D0 \uC18C\uAC1C\uC6A9 \uC0D8\uD50C \uD0DC\uADF8\uC785\uB2C8\uB2E4. \uACE0\uAC1D \uC131\uD5A5 \uBD84\uB958\uB098 \uC790\uB3D9 \uC9C1\uC6D0 \uBC30\uC815\uC5D0\uB294 \uC0AC\uC6A9\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.")),
+                        __React.createElement("p", { className: "directory-subnote" }, "\uC804\uBB38\uBD84\uC57C\uC640 \uC0C1\uB2F4 \uC131\uD5A5\uC744 \uD655\uC778\uD55C \uB4A4 \uC0C1\uB2F4\uC5D0 \uCC38\uACE0\uD558\uC138\uC694.")),
                     __React.createElement(ReviewSamples, { items: employee.reviews, title: "\uC9C1\uC6D0 \uB9AC\uBDF0" }))))))));
 }
 
@@ -5161,6 +5399,7 @@ const callRisk_1 = require("../lib/callRisk");
 const callSupport_1 = require("../lib/callSupport");
 const callWorkflow_1 = require("../lib/callWorkflow");
 const customerName_1 = require("../lib/customerName");
+const uiText_1 = require("../lib/uiText");
 function SupportPage({ state, onStart, onSupport, onDraft, onComplete, onNext }) {
     const [filter, setFilter] = (0, react_1.useState)('all');
     const [selectedId, setSelectedId] = (0, react_1.useState)(() => state.calls.find(call => call.supportRequests.some(callSupport_1.isOpenSupport))?.id ?? state.calls[0]?.id);
@@ -5175,8 +5414,7 @@ function SupportPage({ state, onStart, onSupport, onDraft, onComplete, onNext })
             __React.createElement("div", null,
                 __React.createElement("span", { className: "eyebrow" }, "\uC0C1\uB2F4\uC5C5\uBB34"),
                 __React.createElement("h1", null, "\uC0C1\uB2F4\uC9C0\uC6D0"),
-                __React.createElement("p", null, "\uD1B5\uD654 \uC704\uD5D8 \uC2E0\uD638\uC640 \uB300\uC751 \uAC00\uC774\uB4DC\uB97C \uD655\uC778\uD558\uACE0 \uAD00\uB9AC\uC790 \uC9C0\uC6D0\uC744 \uC694\uCCAD\uD558\uC138\uC694.")),
-            __React.createElement("span", { className: "small-badge" }, "\uD1B5\uD654 \uB370\uBAA8")),
+                __React.createElement("p", null, "\uD1B5\uD654 \uC704\uD5D8 \uC2E0\uD638\uC640 \uB300\uC751 \uAC00\uC774\uB4DC\uB97C \uD655\uC778\uD558\uACE0 \uAD00\uB9AC\uC790 \uC9C0\uC6D0\uC744 \uC694\uCCAD\uD558\uC138\uC694."))),
         __React.createElement("section", { className: "card appointments-card", "aria-label": "\uC0C1\uB2F4\uC9C0\uC6D0 \uD1B5\uD654 \uBAA9\uB85D" },
             __React.createElement("div", { className: "card-heading" },
                 __React.createElement("div", { className: "title-with-icon" },
@@ -5207,7 +5445,7 @@ function SupportPage({ state, onStart, onSupport, onDraft, onComplete, onNext })
                             __React.createElement("td", null,
                                 __React.createElement("strong", null, (0, customerName_1.maskCustomerName)(call.customerLabel)),
                                 __React.createElement("small", { className: "muted-text" }, call.id)),
-                            __React.createElement("td", null, call.inquiryType),
+                            __React.createElement("td", null, (0, uiText_1.uiText)(call.inquiryType)),
                             __React.createElement("td", null,
                                 __React.createElement("span", { className: "status-pill neutral" }, callRisk_1.callStatusLabels[call.status]),
                                 __React.createElement("small", { className: "muted-text" }, callRisk_1.analysisStatusLabels[call.analysis.status])),
@@ -5238,21 +5476,19 @@ function SupportPage({ state, onStart, onSupport, onDraft, onComplete, onNext })
                         selected.id,
                         " \uB300\uC751 \uAC00\uC774\uB4DC"),
                     __React.createElement("p", { className: "muted-text" },
-                        selected.inquiryType,
+                        (0, uiText_1.uiText)(selected.inquiryType),
                         " \u00B7 ",
                         callRisk_1.callStatusLabels[selected.status])),
                 __React.createElement("button", { className: "button button-secondary", onClick: () => setDetailId(selected.id) }, "\uC120\uD0DD \uD1B5\uD654 \uC0C1\uC138 \uBCF4\uAE30")),
             __React.createElement("div", { className: "support-guide-grid" },
                 __React.createElement("section", { "aria-label": "AI \uAD8C\uC7A5 \uB300\uC751 \uAC00\uC774\uB4DC" },
-                    __React.createElement("h3", { className: "section-label" },
-                        "AI \uAD8C\uC7A5 \uB300\uC751 \uAC00\uC774\uB4DC ",
-                        __React.createElement("span", { className: "small-badge" }, "\uAC00\uC0C1 \uBD84\uC11D \uC608\uC2DC")),
+                    __React.createElement("h3", { className: "section-label" }, "AI \uAD8C\uC7A5 \uB300\uC751 \uAC00\uC774\uB4DC"),
                     selected.analysis.status === 'completed' && selected.analysis.recommendedActions.length ? __React.createElement("ul", { className: "call-action-list" }, selected.analysis.recommendedActions.map(action => __React.createElement("li", { key: action }, action))) : __React.createElement("p", { className: "muted-text" },
                         callRisk_1.analysisStatusLabels[selected.analysis.status],
                         " \u00B7 \uB300\uC751 \uAC00\uC774\uB4DC\uAC00 \uC544\uC9C1 \uC5C6\uC2B5\uB2C8\uB2E4."),
                     __React.createElement("h3", { className: "section-label" }, "\uAD8C\uC7A5 \uCCAB \uC751\uB300"),
                     __React.createElement("blockquote", { className: "call-opening" }, selected.analysis.status === 'completed' && selected.analysis.openingLine || '첫 응대 문구 분석 결과를 기다리고 있습니다.'),
-                    __React.createElement("p", { className: "microcopy" }, "\uD300 \uC2DC\uC5F0\uC6A9 \uB300\uC751 \uC608\uC2DC\uC774\uBA70 KT \uACF5\uC2DD \uB9E4\uB274\uC5BC\uC774 \uC544\uB2D9\uB2C8\uB2E4. \uC2E4\uC81C Retell \uD1B5\uD654\uC640\uB294 \uBCC4\uB3C4\uC758 \uC0D8\uD50C \uC0C1\uB2F4\uC785\uB2C8\uB2E4.")),
+                    __React.createElement("p", { className: "microcopy" }, "\uB300\uC751 \uAC00\uC774\uB4DC\uB294 \uC9C1\uC6D0 \uD310\uB2E8\uC744 \uB3D5\uAE30 \uC704\uD55C \uCC38\uACE0 \uC815\uBCF4\uC785\uB2C8\uB2E4.")),
                 __React.createElement("div", null, !detail && __React.createElement(CallSupportPanel_1.CallSupportPanel, { key: selected.id, call: selected, onSupport: onSupport })))),
         detail && __React.createElement(CallBriefing_1.CallBriefing, { key: detail.id, call: detail, calls: state.calls, customer: state.customers.find(customer => customer.id === detail.customerId), nextCall: (0, callWorkflow_1.nextCallBlocker)(state.calls, detail), onStart: onStart, onSupport: onSupport, onDraft: onDraft, onComplete: onComplete, onNext: onNext, onOpen: setDetailId, onClose: () => setDetailId(null) }));
 }

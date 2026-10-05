@@ -1,5 +1,6 @@
 .live-intake { margin-bottom: 24px; }
 .live-intake .card-heading { margin-bottom: 4px; }
+.live-intake > .live-intake-row, .live-intake > .live-call-id { margin-inline: 20px; }
 .live-intake-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; }
 .live-intake-row + .live-intake-row { border-top: 1px solid var(--line); }
 .live-intake-row strong { font-size: 12px; margin-right: 10px; }

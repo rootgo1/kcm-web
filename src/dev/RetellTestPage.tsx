@@ -5,6 +5,7 @@ import { createLiveAudioReporter, type AudioReportView } from './liveAudioReport
 import { SHOUT_SETTINGS } from './shouting';
 import { Icon } from '../components/Icon';
 import { workspaceMock } from '../data/workspaceMockData';
+import { customerCallNotice } from './customerCopy';
 import './retell-test.css';
 
 const labels: Record<CallView['status'], string> = {
@@ -99,7 +100,7 @@ export default function RetellTestPage() {
           {view.status === 'ending' && <p>상담을 마무리하고 있습니다.</p>}
           {view.status === 'ended' && <p>상담이 종료되었습니다.<br/>필요하시면 다시 상담하실 수 있습니다.</p>}
         </div>
-        {(loadError || view.error || micView.error) && <p className="retell-test-error" role="alert">{loadError ? '상담 연결을 준비하지 못했습니다. 잠시 후 페이지를 새로고침해 주세요.' : view.error || micView.error}</p>}
+        {(loadError || view.error || micView.error) && <p className="retell-test-error" role="alert">{loadError ? '상담 연결을 준비하지 못했습니다. 잠시 후 페이지를 새로고침해 주세요.' : customerCallNotice(view.error || micView.error)}</p>}
         <div className="retell-call-controls">
           {!busy ? <button type="button" className="retell-call-button retell-call-start" aria-label={view.status === 'ended' ? '다시 상담' : '상담 시작'} disabled={!ready || busy} onClick={() => { void auxMic.current?.start(); controller.current?.start(); }}><Icon name="phone" size={30}/></button>
             : <button type="button" className="retell-call-button retell-call-end" aria-label={view.status === 'connecting' ? '연결 취소' : '통화 종료'} disabled={!busy || view.status === 'ending'} onClick={() => { void (async () => { await reporter.current?.finish(); auxMic.current?.stop(); await controller.current?.end(); })(); }}><Icon name="phone" size={30}/></button>}
@@ -108,7 +109,8 @@ export default function RetellTestPage() {
         </div>
         <p className="retell-customer-permission"><Icon name="phone" size={15}/>통화를 위해 마이크 사용을 허용해 주세요.</p>
       </div>
-      <details className="retell-test-details">
+      {/* Keep diagnostic controls available in source without exposing them in the customer UI. */}
+      <details className="retell-test-details" hidden aria-hidden="true">
       <summary>테스트 정보</summary>
       <p className="retell-test-setup">{setup}</p>
       {view.callId && <code>call_id: {view.callId}</code>}

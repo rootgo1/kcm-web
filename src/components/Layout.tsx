@@ -52,14 +52,14 @@ export function Layout({ data, page, navigate, children }: {
         <div className="topbar-trailing">
           <a className="store-label" href="#/stores" aria-label={`${store} 매장정보 보기`} onClick={event => { if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return; event.preventDefault(); navigate('stores', true); setNotifications(false); setProfileOpen(false); }}><Icon name="store" size={17}/><span>{store}</span></a>
           <div className="notification-wrap">
-            <button className={`icon-button notification-button ${notifications ? 'is-active' : ''}`} aria-label="샘플 알림 보기" aria-expanded={notifications} onClick={() => { setProfileOpen(false); setNotifications(!notifications); }}><Icon name="bell"/><span className="notification-dot"/></button>
-            {notifications && <div className="notification-panel"><strong>확인할 사항 <span className="small-badge">샘플</span></strong><button onClick={() => { navigate('inventory'); setNotifications(false); }}><Icon name="box"/><span>재고와 반납 예정 내역 확인<small>스마트 재고 화면으로 이동</small></span><Icon name="chevron" size={14}/></button><p>실시간 알림 수신 기능은 아직 연결 전입니다.</p></div>}
+            <button className={`icon-button notification-button ${notifications ? 'is-active' : ''}`} aria-label="알림 보기" aria-expanded={notifications} onClick={() => { setProfileOpen(false); setNotifications(!notifications); }}><Icon name="bell"/><span className="notification-dot"/></button>
+            {notifications && <div className="notification-panel"><strong>확인할 사항</strong><button onClick={() => { navigate('inventory'); setNotifications(false); }}><Icon name="box"/><span>재고와 반납 예정 내역 확인<small>스마트 재고 화면으로 이동</small></span><Icon name="chevron" size={14}/></button></div>}
           </div>
           <ProfileMenu employee={employee} store={store} open={profileOpen} onOpenChange={handleProfileOpen}/>
         </div>
       </header>
       <main id="main-content" className="main-content" tabIndex={-1}>{children}</main>
-      <footer className="app-footer"><span>KCM <b>·</b> 예약부터 사후관리까지</span><span>예약·재고 예시는 가상 데이터이며, 실시간 AI 상담 기록은 별도로 표시합니다.</span></footer>
+      <footer className="app-footer"><span>KCM <b>·</b> 예약부터 사후관리까지</span></footer>
     </div>
     {mobileOpen && <Modal title="메뉴" onClose={() => setMobileOpen(false)}>{nav}</Modal>}
   </div>;

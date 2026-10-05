@@ -31,11 +31,11 @@ export function ConsultationPanel({ appointment, starting, onStart, onEdit }: {
       {!!record?.history.length && <details className="consultation-history"><summary>결과 반영·수정 이력 ({record.history.length}건)</summary><ol>
         {record.history.map(entry => <li key={entry.id}>
           <strong>{entry.kind === 'completed' ? '최초 상담 완료' : '완료 기록 수정'}</strong>
-          <p>{entry.actor.name} {entry.actor.position} (샘플 사용자)<br/><time dateTime={entry.at}>{consultationTime(entry.at)}</time></p>
+          <p>{entry.actor.name} {entry.actor.position}<br/><time dateTime={entry.at}>{consultationTime(entry.at)}</time></p>
           <details><summary>변경 전후 내용</summary><h3>변경 전</h3><ConsultationResultView result={entry.before}/><h3>변경 후</h3><ConsultationResultView result={entry.after}/></details>
         </li>)}
       </ol></details>}
-      <p className="microcopy">샘플 기록은 이 탭에서만 유지됩니다. 새로고침·탭 닫기·샘플 초기화 시 사라집니다.</p>
+      <p className="microcopy">상담 기록과 수정 이력은 현재 화면에서 유지되며 새로고침하면 초기화됩니다.</p>
     </div>
   </section>;
 }
