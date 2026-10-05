@@ -68,3 +68,31 @@
   .retell-status-dot { animation: none !important; }
   .retell-aux-mic-meter > span { transition: none; }
 }
+/* The call controls fit short viewports; errors remain readable and may scroll. */
+.retell-test { padding-block: 20px; }
+.retell-test-card { min-height: min(720px, calc(100dvh - 40px)); }
+.retell-customer-header { padding-block: 22px; }
+.retell-customer-main { padding-top: 36px; }
+.retell-customer-avatar { margin-block: 28px 20px; }
+.retell-customer-message { min-height: 82px; }
+.retell-call-controls { padding-top: 18px; }
+.retell-customer-permission { margin-top: 20px; }
+@media(max-width: 480px) {
+  .retell-test { padding: 0; }
+  .retell-test-card { min-height: 100dvh; }
+}
+@media(max-height: 780px) {
+  .retell-customer-header { padding-block: 16px; }
+  .retell-customer-main { padding-top: 24px; }
+  .retell-customer-avatar { width: 92px; height: 92px; margin-block: 22px 18px; }
+  .retell-customer-message { min-height: 76px; }
+  .retell-call-controls { padding-top: 14px; }
+  .retell-customer-permission { margin-top: 18px; }
+}
+@media(max-height: 650px) {
+  .retell-customer-main { padding-top: 16px; }
+  .retell-customer-avatar { width: 72px; height: 72px; margin-block: 14px 12px; }
+  .retell-customer-message { min-height: 66px; }
+  .retell-call-controls { padding-top: 10px; }
+  .retell-customer-permission { margin-top: 14px; }
+}

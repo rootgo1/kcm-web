@@ -33,3 +33,9 @@ test('고객 오류 표시는 설정 이름을 노출하지 않고 권한·장�
   assert.match(customerCallNotice('사용 가능한 마이크가 없습니다.'), /장치 연결/);
   assert.match(customerCallNotice('종료 처리에 실패했습니다. 이 테스트 탭을 닫아'), /탭을 닫아/);
 });
+test('서버 인증·일반 연결 오류를 마이크 권한 거부로 오안내하지 않는다', () => {
+  const auth = customerCallNotice('Retell 인증에 실패했습니다. 백엔드의 API 키와 Agent 접근 권한을 확인하세요.');
+  assert.match(auth, /네트워크/);
+  assert.doesNotMatch(auth, /마이크|Retell|API|Agent/);
+  assert.match(customerCallNotice('통화를 연결하지 못했습니다. 백엔드 실행 상태, Retell 설정, 네트워크와 마이크 권한을 확인한 뒤 다시 시도하세요.'), /네트워크/);
+});

@@ -22,7 +22,7 @@ function ProductDetail({ item, compared, full, onCompare }: { item: CatalogItem;
       </button>}
     </div>
     <div className="product-detail-sections">{item.sections.map(section => <section key={section.title}><h3>{section.title}</h3>
-      <dl className="product-detail-fields">{section.fields.map(field => <div key={field.label}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl>
+      <dl className="product-detail-fields">{section.fields.map(field => <div key={field.label}><dt>{field.label}</dt><dd className={field.label === '월정액' ? 'product-monthly-price' : undefined}>{field.value}</dd></div>)}</dl>
     </section>)}</div>
   </section>;
 }
@@ -44,7 +44,7 @@ function PlanComparison({ items, onRemove, onClear }: { items: CatalogItem[]; on
     {items.length > 0 ? <div className="table-scroll product-comparison-scroll" tabIndex={0} aria-label="선택한 요금제 비교표">
       <table className="product-comparison-table"><caption className="sr-only">선택한 요금제의 월정액, 제공량, 가입 조건과 혜택</caption>
         <thead><tr><th scope="col">비교 항목</th>{items.map(item => <th key={item.id} scope="col"><strong>{item.name}</strong><button className="text-button" type="button" onClick={() => onRemove(item.id)} aria-label={`${item.name} 비교에서 제외`}><Icon name="close" size={14}/></button></th>)}</tr></thead>
-        <tbody>{rows.map(row => <tr key={row.label}><th scope="row">{row.label}</th>{items.map(item => <td key={item.id}>{row.value(item)}</td>)}</tr>)}</tbody>
+        <tbody>{rows.map(row => <tr key={row.label} className={row.label === '월정액' ? 'product-price-row' : undefined}><th scope="row">{row.label}</th>{items.map(item => <td key={item.id}>{row.value(item)}</td>)}</tr>)}</tbody>
       </table>
     </div> : <div className="product-comparison-empty"><Icon name="file" size={20}/><span>상품 상세에서 ‘비교에 추가’를 선택하세요.</span></div>}
   </section>;
@@ -76,7 +76,7 @@ export function ProductsPage({ data }: { data: Pick<DashboardData, 'inventory'> 
               {queries[active] && <button type="button" className="text-button" aria-label="상품 검색 초기화" onClick={() => setQueries(previous => ({ ...previous, [active]: '' }))}><Icon name="close" size={15}/></button>}
             </div>
             <div className="directory-options" role="group" aria-label={`${tab.label} 선택`}>{visibleItems.map(item => <button type="button" key={item.id} aria-pressed={selected?.id === item.id} className={`directory-option ${selected?.id === item.id ? 'selected' : ''}`} onClick={() => setSelectedIds(previous => ({ ...previous, [selectionKey]: item.id }))}>
-              <span className={`small-icon ${selected?.id === item.id ? 'red' : 'gray'}`}><Icon name={icons[active]} size={18}/></span><span className="directory-option-text"><strong>{item.name}</strong><small>{item.plan ? `${formatProductPrice(item.plan.monthlyFee)} / 월 · ${item.plan.data}` : item.summary}{comparedIds.includes(item.id) && <span className="home-store-badge">비교 중</span>}</small></span><Icon name="chevron" size={14}/>
+              <span className={`small-icon ${selected?.id === item.id ? 'red' : 'gray'}`}><Icon name={icons[active]} size={18}/></span><span className="directory-option-text"><strong>{item.name}</strong><small>{item.plan ? <span><span className="product-monthly-price">{formatProductPrice(item.plan.monthlyFee)}</span> / 월 · {item.plan.data}</span> : item.summary}{comparedIds.includes(item.id) && <span className="home-store-badge">비교 중</span>}</small></span><Icon name="chevron" size={14}/>
             </button>)}</div>
             {visibleItems.length === 0 && <div className="product-search-empty"><strong>검색 결과가 없습니다.</strong><p>상품명이나 조건을 바꿔 검색하세요.</p></div>}
           </section>

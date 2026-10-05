@@ -1,6 +1,7 @@
 import type { LiveCall, LiveTextRisk } from './types';
 import { formatRiskScore } from '../lib/riskScoring';
 import { deliveryLabel } from './livePresentation';
+import { liveFinalizationNotice } from './liveNotices';
 
 /** Server results only. No combined numeric score is presented during a live call. */
 export function LiveRiskSignals({ call }: { call: LiveCall }) {
@@ -22,7 +23,7 @@ export function LiveRiskSignals({ call }: { call: LiveCall }) {
       <p className="live-risk-note">항목 합계 {final.raw_score}점 · 위협 보정 {final.threat_floor ? '최소 ' + final.threat_floor + '점' : '없음'}{final.adjusted_score > 99 && ' · 99점 상한 적용'}</p>
       <dl className="live-risk-counts">{(['profanity', 'threat', 'blame', 'sexual', 'shouting'] as const).map((key, index) => <div key={key}><dt>{['욕설', '위협 발언', '비난 표현', '선정적 표현', '고성'][index]}</dt><dd>{final.scores[(key + '_score') as keyof typeof final.scores]}점</dd></div>)}</dl>
       <details hidden aria-hidden="true"><summary>확정 위험 결과</summary><pre>{JSON.stringify(final, null, 2)}</pre></details>
-    </div> : <p className="live-risk-note" role="status">{call.finalization_reason || '최종 위험도 정보를 기다리고 있습니다.'}</p>
+    </div> : <p className="live-risk-note" role="status">{liveFinalizationNotice(call.finalization_reason)}</p>
       : <p className="live-risk-note">수신된 고객 발화는 정정될 수 있습니다. 종합 점수는 통화 종료와 고성 최종 수신 후 확정합니다.</p>}
     {call.status === 'ended' && <p className="live-delivery-state" role="status">{deliveryLabel(call)}{call.webhook_delivery?.status === 'failed' && ' · 서버 환경설정과 n8n 실행 내역을 확인해 주세요. 자동 재전송은 하지 않습니다.'}</p>}
   </section>;

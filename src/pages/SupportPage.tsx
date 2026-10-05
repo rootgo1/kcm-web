@@ -22,7 +22,7 @@ export function SupportPage({ state, onStart, onSupport, onDraft, onComplete, on
   const choose = (id: string) => { setSelectedId(id); guideRef.current?.focus(); };
   return <>
     <div className="page-heading"><div><span className="eyebrow">상담업무</span><h1>상담지원</h1><p>통화 위험 신호와 대응 가이드를 확인하고 관리자 지원을 요청하세요.</p></div></div>
-    <section className="card appointments-card" aria-label="상담지원 통화 목록">
+    <section className="card appointments-card support-list-card" aria-label="상담지원 통화 목록">
       <div className="card-heading"><div className="title-with-icon"><span className="small-icon red"><Icon name="shield" size={18}/></span><h2>현재·최근 통화</h2></div>
         <div className="call-filters"><label htmlFor="support-filter">통화 범위</label><select id="support-filter" value={filter} onChange={event => setFilter(event.target.value as typeof filter)}><option value="all">전체 통화</option><option value="active">현재 통화</option><option value="recent">완료·종료 통화</option><option value="support">미완료 지원 요청</option></select></div>
       </div>

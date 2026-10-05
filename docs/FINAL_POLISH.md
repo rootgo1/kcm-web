@@ -3,6 +3,8 @@
 작업 브랜치: `release/kcm-final-polish`. 기준 main: `4808bc135c4efb6d3234afefbf273306ee4f594f`.
 시작 시 working tree는 clean이었고, 기존 345개 테스트가 통과했다. 이번 변경은 이 브랜치에만 반영하며 main·Render·환경변수는 변경하지 않는다.
 
+추가 Typography·밀도·실패 안전성 요구는 기존 polish commit `c1aaba0`를 보존해 이어서 반영했다. **최신 검증은357개 테스트 통과**이며 아래353개/기존 높이는 첫 polish 검증 시점의 기록이다. 최신4크기 화면·밀도 비교·비밀값 검사·추가 변경 파일은 [RELEASE_HARDENING.md](RELEASE_HARDENING.md)에 기록한다.
+
 ## 전체 메뉴 상태
 
 | 화면 | 경로 | 최종 상태 | 확인 범위 |

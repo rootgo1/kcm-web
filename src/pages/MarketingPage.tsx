@@ -13,7 +13,7 @@ export function MarketingPage({ items, records, store, onReview, onSend, onSuppo
   const selected = items.find(item => item.id === selectedId);
   return <>
     <div className="page-heading"><div><span className="eyebrow">매장관리</span><h1>마케팅</h1><p>완료 상담을 바탕으로 후속 안내 내용을 확인하고 처리 기록을 관리하세요.</p></div></div>
-    <section className="card appointments-card" aria-label="상담 후 고객 사후관리">
+    <section className="card appointments-card aftercare-card" aria-label="상담 후 고객 사후관리">
       <div className="card-heading"><div className="title-with-icon"><span className="small-icon red"><Icon name="megaphone" size={18}/></span><h2>완료 상담 고객</h2></div><div className="support-actions"><span className="small-badge">전체 {items.length}건</span><span className="small-badge">처리 완료 {items.filter(item => records[item.id]?.status === 'sent').length}건</span></div></div>
       <div className="table-scroll" role="region" aria-label="사후관리 목록 · 좌우 스크롤" tabIndex={0}><table className="appointment-table aftercare-table"><thead><tr><th scope="col">고객 / 상담</th><th scope="col">상담 요약</th><th scope="col">상담 결과</th><th scope="col">연락·안내 동의</th><th scope="col">후속 안내</th><th scope="col">추천 후속 메시지</th><th scope="col">처리 상태</th><th scope="col">안내 확인</th></tr></thead><tbody>
         {items.map(item => { const record = records[item.id], sent = record?.status === 'sent', blocker = aftercareBlocker(item); return <tr key={item.id}>
@@ -39,6 +39,7 @@ function AftercareMessage({ item, record, store, onReview, onSend, onClose }: { 
   const messageError = !message.trim() ? '안내 메시지를 입력해 주세요.' : message.length > 1000 ? '안내 메시지는 1,000자 이내로 입력해 주세요.' : '';
   const reviewed = aftercareReviewed(item, record) && record?.message === message.trim();
   return <Modal title={sent ? '후속 안내 처리 기록' : '후속 안내 확인'} onClose={onClose}>
+    <div className="aftercare-modal">
     <div className="detail-meta"><span>{item.sourceId}</span><span>{maskCustomerName(item.customerName)}</span><span>{item.outcome}</span></div>
     <dl className="consultation-result"><div><dt>상담 요약</dt><dd>{item.summary || '결과 기록 없음'}</dd></div><div><dt>후속 조치</dt><dd>{item.followUpMemo || followUpLabels[item.followUp]}</dd></div><div><dt>연락·안내 동의</dt><dd>{consentLabels[item.consent]}</dd></div></dl>
     {sent ? <><h3 className="section-label">처리한 안내 내용</h3><p className="call-opening aftercare-sent-message">{record.message}</p><p className="aftercare-success" role="status"><Icon name="check" size={18}/>후속 안내 처리가 완료되었습니다.</p><p className="muted-text">안내 확인: {consultationTime(record.reviewedAt)} · {uiText(record.reviewedBy)}<br/>안내 처리: {consultationTime(record.sentAt)} · {uiText(record.sentBy ?? '')}</p></> : <>
@@ -48,5 +49,6 @@ function AftercareMessage({ item, record, store, onReview, onSend, onClose }: { 
       <div className="modal-actions"><button className="button button-secondary" onClick={() => onReview(message)} disabled={Boolean(blocker || messageError) || reviewed}><Icon name="check" size={16}/>안내 내용 확인 완료</button><button className="button button-primary" disabled={!reviewed} onClick={onSend}>안내 처리<Icon name="arrow" size={16}/></button></div>
     </>}
     <p className="microcopy aftercare-modal-note">이 화면에서는 처리 기록만 남기며 고객에게 문자를 보내지 않습니다.</p>
+    </div>
   </Modal>;
 }
