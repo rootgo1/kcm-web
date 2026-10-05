@@ -747,11 +747,19 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
 .topbar-leading { min-width: 0; }
 .topbar-trailing { flex-shrink: 0; }
 .call-overview { margin-bottom: 24px; }
-.call-overview .card-heading { flex-wrap: wrap; }
-.call-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 0 20px 16px; }
-.call-filters label { display: grid; gap: 6px; color: #59616d; font-size: 11px; }
+.call-overview .card-heading { flex-wrap: wrap; padding-block: 14px; gap: 12px 20px; }
+.call-filters { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px 16px; margin-left: auto; }
+.call-filters label { display: flex; align-items: center; gap: 8px; color: #59616d; font-size: 11px; }
 .call-filters select { max-width: 100%; min-height: 34px; padding: 6px 28px 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: white; color: var(--ink); font: inherit; }
 .call-table { min-width: 910px; }
+.call-overview .call-table td { height: 52px; padding-block: 8px; }
+.call-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 6px 16px; border-top: 1px solid var(--line); }
+.call-pagination button { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--ink); cursor: pointer; }
+.call-pagination button:hover:not(:disabled) { background: #f6f7f9; }
+.call-pagination button:disabled { color: #aeb3bc; background: #fafafa; cursor: not-allowed; }
+.call-pagination button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+.call-pagination span { min-width: 44px; text-align: center; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.call-pagination .previous-chevron { transform: rotate(180deg); }
 .call-table th:first-child, .call-table th:nth-child(2), .call-table th:nth-child(3), .call-table th:last-child { width: auto; }
 .call-table tbody tr { cursor: default; }
 .call-table .text-button { color: var(--red-dark); min-height: 32px; }
@@ -760,7 +768,7 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
 .risk-caution { background: #fcf5e9; color: #80622c; }
 .risk-boundary { background: #fff1ec; color: #a34c31; }
 .risk-danger, .risk-critical { background: var(--red-soft); color: var(--red-dark); }
-.call-criteria { border-top: 1px solid var(--line); padding: 12px 20px; font-size: 11px; color: var(--muted); }
+.call-criteria { border-top: 1px solid var(--line); padding: 10px 20px; font-size: 11px; color: var(--muted); }
 .call-criteria summary, .call-signal summary { cursor: pointer; }
 .call-criteria p { margin-top: 8px; line-height: 1.8; }
 .appointment-overview-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; margin-bottom: 14px; }
@@ -801,6 +809,6 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
 .call-support-note { margin-top: 10px; color: var(--red-dark); font-size: 12px; }
 .call-briefing .microcopy { margin-top: 24px; line-height: 1.8; }
 @media (max-width: 530px) {
-  .call-filters { padding-inline: 14px; }
-  .call-filters label { flex: 1 1 130px; min-width: 0; }
+  .call-filters { width: 100%; margin-left: 0; }
+  .call-filters label { display: grid; flex: 1 1 130px; min-width: 0; gap: 6px; }
 }

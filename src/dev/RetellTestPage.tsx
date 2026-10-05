@@ -3,6 +3,8 @@ import { createCallController, retellProxyFetch, type CallView } from './retellC
 import { createAuxMicController, idleAuxMic } from './auxMic';
 import { createLiveAudioReporter, type AudioReportView } from './liveAudioReporter';
 import { SHOUT_SETTINGS } from './shouting';
+import { Icon } from '../components/Icon';
+import { workspaceMock } from '../data/workspaceMockData';
 import './retell-test.css';
 
 const labels: Record<CallView['status'], string> = {
@@ -21,7 +23,20 @@ export default function RetellTestPage() {
   const [setup, setSetup] = useState('SDK와 백엔드 설정을 확인하고 있습니다.');
   const [loadError, setLoadError] = useState('');
   const [attempt, setAttempt] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const busy = view.status === 'connecting' || view.status === 'live' || view.status === 'ending';
+
+  // Display-only timer. Call/analysis timestamps continue to come from the existing controllers.
+  useEffect(() => {
+    if (view.status === 'idle' || view.status === 'connecting') setElapsedSeconds(0);
+    if (view.status !== 'live') return;
+    const started = performance.now();
+    const tick = () => setElapsedSeconds(Math.floor((performance.now() - started) / 1000));
+    tick();
+    const timer = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timer);
+  }, [view.status]);
+  const elapsed = `${Math.floor(elapsedSeconds / 60).toString().padStart(2, '0')}:${(elapsedSeconds % 60).toString().padStart(2, '0')}`;
 
   useEffect(() => {
     reporter.current = createLiveAudioReporter(setAudioReport);
@@ -69,22 +84,37 @@ export default function RetellTestPage() {
   }, [attempt]);
 
   return <main className="retell-test">
-    <section className="retell-test-card" aria-labelledby="retell-title">
-      <p className="retell-test-eyebrow">개발·시연용 통화 테스트 화면</p>
-      <h1 id="retell-title">KCM AI 상담 테스트</h1>
-      <p>마이크로 Retell AI와 실제 Web Call을 진행합니다. 통화 내용은 백엔드 터미널에 출력됩니다.</p>
-      <div className="retell-test-status" role="status" aria-live="polite">
-        <span>통화 상태</span><strong>{labels[view.status]}</strong>
-        {view.callId && <code>call_id: {view.callId}</code>}
+    <section className={`retell-test-card is-${view.status}`} aria-labelledby="retell-title">
+      <header className="retell-customer-header"><Icon name="store" size={18}/><span>{workspaceMock.store}</span></header>
+      <div className="retell-customer-main">
+        <div className="retell-customer-brand"><span>KCM<span className="retell-brand-dot">.</span></span><h1 id="retell-title">AI 상담 도우미</h1></div>
+        <div className="retell-customer-avatar" aria-hidden="true"><Icon name="phone" size={42}/><span className="retell-avatar-dot"/></div>
+        <div className="retell-test-status" role="status" aria-live="polite" aria-atomic="true">
+          <span className="retell-status-dot" aria-hidden="true"/><strong>{labels[view.status]}</strong>
+        </div>
+        <div className="retell-customer-message">
+          {view.status === 'idle' && <p>궁금한 내용을 편하게 말씀해 주세요.<br/>AI 상담 도우미가 함께하겠습니다.</p>}
+          {view.status === 'connecting' && <p>AI 상담 도우미와 연결하고 있습니다.<br/>잠시만 기다려 주세요.</p>}
+          {view.status === 'live' && <><p className="retell-call-timer" role="timer" aria-label="통화 경과 시간" aria-live="off">{elapsed}</p><p>편하게 말씀해 주세요.</p></>}
+          {view.status === 'ending' && <p>상담을 마무리하고 있습니다.</p>}
+          {view.status === 'ended' && <p>상담이 종료되었습니다.<br/>필요하시면 다시 상담하실 수 있습니다.</p>}
+        </div>
+        {(loadError || view.error || micView.error) && <p className="retell-test-error" role="alert">{loadError ? '상담 연결을 준비하지 못했습니다. 잠시 후 페이지를 새로고침해 주세요.' : view.error || micView.error}</p>}
+        <div className="retell-call-controls">
+          {!busy ? <button type="button" className="retell-call-button retell-call-start" aria-label={view.status === 'ended' ? '다시 상담' : '상담 시작'} disabled={!ready || busy} onClick={() => { void auxMic.current?.start(); controller.current?.start(); }}><Icon name="phone" size={30}/></button>
+            : <button type="button" className="retell-call-button retell-call-end" aria-label={view.status === 'connecting' ? '연결 취소' : '통화 종료'} disabled={!busy || view.status === 'ending'} onClick={() => { void (async () => { await reporter.current?.finish(); auxMic.current?.stop(); await controller.current?.end(); })(); }}><Icon name="phone" size={30}/></button>}
+          <span aria-hidden="true">{view.status === 'connecting' ? '연결 취소' : busy ? '통화 종료' : view.status === 'ended' ? '다시 상담' : '상담 시작'}</span>
+          {!ready && !loadError && <p className="retell-test-note" role="status">상담을 준비하고 있습니다.</p>}
+        </div>
+        <p className="retell-customer-permission"><Icon name="phone" size={15}/>통화를 위해 마이크 사용을 허용해 주세요.</p>
       </div>
+      <details className="retell-test-details">
+      <summary>테스트 정보</summary>
       <p className="retell-test-setup">{setup}</p>
-      {(loadError || view.error) && <p className="retell-test-error" role="alert">{loadError || view.error}</p>}
-      <div className="retell-test-actions">
-        <button type="button" className="retell-test-start" disabled={!ready || busy} onClick={() => { void auxMic.current?.start(); controller.current?.start(); }}>통화 시작</button>
-        <button type="button" disabled={!busy || view.status === 'ending'} onClick={() => { void (async () => { await reporter.current?.finish(); auxMic.current?.stop(); await controller.current?.end(); })(); }}>통화 종료</button>
-        <button type="button" disabled={busy} onClick={() => setAttempt(value => value + 1)}>설정 다시 확인</button>
-      </div>
-      <p className="retell-test-note">브라우저에서 마이크 사용을 허용해 주세요. 권한을 차단했다면 주소창의 사이트 권한에서 변경할 수 있습니다.</p>
+      {view.callId && <code>call_id: {view.callId}</code>}
+      {loadError && <p className="retell-test-note">{loadError}</p>}
+      <div className="retell-test-actions"><button type="button" disabled={busy} onClick={() => setAttempt(value => value + 1)}>설정 다시 확인</button></div>
+      <p className="retell-test-note">권한을 차단했다면 주소창의 사이트 권한에서 마이크 사용을 허용할 수 있습니다.</p>
       <p className="retell-test-note">통화 신호와 종료 후 결과는 직원용 실시간 패널에서 확인합니다. 기존 방문 예약·데모 상담 기록과는 별도로 관리됩니다.</p>
       <section className="retell-aux-mic" aria-labelledby="aux-mic-title">
         <div className="retell-aux-mic-heading">
@@ -110,6 +140,7 @@ export default function RetellTestPage() {
         <p className="retell-test-note">통화 중 고성 횟수·상태만 KCM 백엔드로 전달합니다. 원본 음성·레벨 샘플은 전송·저장하지 않습니다. 통화 시작 시 보조 마이크도 켭니다. 측정이 중단되면 최종 점수를 보류합니다.</p>
       </section>
       <a href="#/home">직원용 KCM으로 이동</a>
+      </details>
     </section>
   </main>;
 }

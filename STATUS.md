@@ -1,4 +1,38 @@
-# KCM 작업 상태 — v0.3 / 2026-10-02
+# KCM 작업 상태 — v0.3 / 2026-10-05
+
+## Release Candidate — 개발 Freeze 준비 / 2026-10-05
+
+- 기준 main/origin main `6c14697`에서 `release/kcm-rc`를 생성했습니다. 이전 미커밋 UI 11개 파일을 먼저 `.cache/rc-audit`에 보존한 뒤 작업했으며, 홈 배치·페이지네이션·고객 전화 화면·title 구현을 다시 작성하지 않았습니다. RC 브랜치만 커밋·push 대상이며 main 병합·Render 배포는 사용자 검토 후입니다.
+- `src/live/livePresentation.ts` 신규: 고객 ID별 읽기 전용 이력과 최신 완료 통화를 선택합니다. 동일 시각은 나중에 수신한 통화를 우선하고, 미식별 고객 통화는 합치지 않으며 최신 점수 보류를 과거 점수로 대체하지 않습니다. n8n 수신 응답과 DB 저장 성공을 구분해 표시합니다.
+- `src/live/LiveConsultations.tsx`, `src/live/live-calls.css`, `src/pages/SecondaryPages.tsx`: 고객관리에서 현재 서버 수신 고객 ID·최근 완료 위험도·통화별 독립 점수·상담/통화 이력을 확인하고 기존 실시간 모달을 재사용합니다. 모달에서 call/consultation/customer/store ID를 확인합니다. 가상 방문 예약 고객은 별도 표로 구분합니다. DB 이름·연락처·재시작 이전 이력 조회는 미구현입니다.
+- `src/live/LiveRiskSignals.tsx`, `src/components/Layout.tsx`, `src/App.tsx`: 실제 연결과 모순되던 Retell 미연동/외부 API 없음/n8n 전송·DB 저장 없음 문구를 정리했습니다. 전송 보류·pending·sent·failed와 결과 보존을 표시하되 sent를 DB 저장 완료로 표현하지 않습니다. 유용한 테스트 정보는 유지합니다.
+- `src/dev/retellCall.ts`: 종료 중/종료 후 늦은 SDK live 이벤트와 중복 onEnd/onError가 상태·call ID를 덮어쓰지 않도록 최소 가드를 추가했습니다. 기존 SDK create/stop, 보조 마이크 자동 시작·최종 snapshot·정리 순서와 인증은 유지합니다.
+- `src/pages/ProductsPage.tsx`, `src/pages/StoreManagementPage.tsx`, `src/pages/SecondaryPages.tsx`: 상품 4개 탭을 명시적인 가상 조회 자료로 채우고 상담지원·마케팅은 현재 업무 확인 사항으로 정돈했습니다. 직원 소개 태그를 고객 성향 매칭으로 설명하던 문구를 수정했습니다. 스마트 재고 분기·메뉴·route·interface·InventoryPanel은 보존합니다.
+- `tests/retell.test.ts`, `tests/livePresentation.test.ts`, `tests/liveCalls.test.ts`, `server/tests/rc-flow.test.mjs`: 8개 검증을 추가했습니다. 같은 고객의 3통화가 개별 ID·전문·독립 점수 4/2/0으로 SSE에 반영되고 통화당 1회 모의 POST되는 흐름, 원격 종료 뒤 지연 audio, 미측정 시 보류, 늦은 SDK 이벤트, 고객 묶음과 전송 표시를 검증합니다. 첫 통합 테스트의 비난 1회 기대값을 기존 점수표의 4점으로 수정했고 계산 로직은 변경하지 않았습니다.
+- 최종 `npm.cmd run check`: **333/333 테스트 통과**, 프런트 `tsc --noEmit`·백엔드 `tsc -p tsconfig.server.json`·Vite production build 성공. 기존 Retell SDK 약597kB 청크 경고와 Node MockTimers 경고만 남았습니다. 패키지·lockfile·서버 환경설정·점수표·텍스트 분석·고성 상태 머신·Monitor·SSE·전문·최종화·n8n payload/중복 가드는 변경하지 않았습니다.
+- 격리 localhost:5190 브라우저 검증: 홈 1920×1080 카드 하단 약748px/5행, 1366×768 하단 약742px/메뉴 하단624px/가로 넘침 없음. 직원 8메뉴, 상품4탭·매장2탭, 고객별 최신·과거 이력과 실시간 모달을 확인했습니다. 12건 목록 5/5/2행·필터 page=1·빈 결과·5건 이하 UI 숨김·6건 축소 시 page=2를 확인했습니다.
+- 기존 예약 상담 시작→결과→완료→수정에서 최초 시작·완료 시각과 완료 집계 2건·수정 이력 2건을 보존했습니다. C-003 데모 시작→지원 요청→결과·완료(독립14점)→완료 후 관리자 확인·지원 완료를 확인했고 카드 최종1/2/1/1입니다. 사용자 기존 데이터는 초기화하지 않았습니다.
+- 고객 화면 모의 SDK/오디오로 대기→연결→통화·경과시간→종료→두 번째 통화와 페이지 이탈, track/AudioContext 자동 시작 및 모두0으로 정리를 확인했습니다. 고객390×844·320×740 가로 넘침 없음, 직원390px 통화 기록 모달과 title 전환을 확인했습니다. 모의 환경의 측정 간격이 끊긴 통화는 기존 기준대로 최종 점수·전송이 보류됐습니다. 성공 최종화/SSE/POST는 자동 통합 테스트에서 검증했습니다. 이 검증은 실제 음성 통화를 대체하지 않습니다.
+- `npm.cmd run preview:standalone` 실행 후 `00_KCM_미리보기.html`의 홈·5행·고객관리 빈 이력 안내를 브라우저로 확인했습니다. 독립 HTML은 직원 샘플용이며 Retell/DB 조회용이 아닙니다. 검증 화면 캡처는 Git 제외 대상 `docs/rc-*.png`에만 보관합니다.
+- `docs/RELEASE_CANDIDATE.md`에 실행 경로·정책·제약과 10월6일 Freeze 전 체크리스트를 기록했습니다. 실제 Retell 음성 통화·Render 환경변수/RC 배포·n8n Publish/실제 저장·AI 요약 생성·Supabase 저장 확인·스마트 재고 팀원 병합은 사람이 확인할 외부 항목입니다. DB/schema/실제 서비스 데이터·실제 환경변수는 읽거나 변경하지 않았습니다.
+
+
+## 최신 변경 — 홈 밀도·통화 페이지네이션·고객 전화 UI / 2026-10-02
+
+- 기존 HEAD `6c14697` 및 팀 공유 지침/변경을 보존했습니다. 이번 범위는 UI·레이아웃·목록 표시 상태이며 사용자 요청에 따라 **커밋·push·Render 배포 전 검토 상태**로 남깁니다.
+- `src/App.tsx`: 홈의 순서만 현황 카드 → 통화 현황 → 실시간 AI 상담으로 변경했습니다. 카드 수치/크기·기존 예약/상담 영역은 유지합니다.
+- `src/components/CallOverview.tsx`, `src/styles.css`: 제목과 두 필터를 같은 card-heading에 배치하고 좁은 화면에서 줄바꿈합니다. 카드 제목·기준 안내의 세로 여백과 통화 표 행 높이만 정리했으며 8개 컬럼을 모두 유지합니다.
+- `src/lib/callPagination.ts`: 필터 적용 결과를 5건씩 표시합니다. 두 필터 변경/초기화 시 첫 페이지로 돌아가며 목록 감소 시 범위를 보정합니다. 5건 이하에서는 페이지 UI를 숨깁니다. 이전/다음 아이콘 버튼에 이름·비활성 상태·키보드 포커스를 제공합니다. 열린 브리핑은 전체 통화 ID로 계속 조회합니다.
+- `src/dev/RetellTestPage.tsx`, `src/dev/retell-test.css`: 고객용 매장명/KCM/AI 상담 도우미, 대기·연결 중·통화 중·종료, 시작/종료/다시 상담 버튼 및 표시 전용 경과시간을 구성했습니다. PC는 중앙 420px, 모바일은 전체 폭·100dvh 기준입니다. 320px·낮은 화면, safe-area, reduced-motion을 고려했습니다.
+- 설정/call_id/보조 마이크/RMS/고성/직원 이동 링크는 기본 닫힌 ‘테스트 정보’에 보존합니다. 마이크 오류는 닫힌 상태에서도 표시합니다. 기존 시작·종료 핸들러, SDK/보조 마이크/고성 전송 컨트롤러와 자원 정리 코드는 그대로입니다. 경과시간은 UI 표시만 하며 통화 시각·분석·저장에 사용하지 않습니다.
+- `src/EntryRouter.tsx`: 고객 경로 title은 ‘KCM · 고객용 AI 상담’, 직원 경로는 ‘KCM · 직원용 통합 대시보드’로 전환합니다.
+- `tests/callPagination.test.ts` 신규 4개를 `tests/domain.test.ts`에서 실행합니다. 5건 분할/마지막 페이지/원본 보존/빈 목록/범위 보정/필터 적용 순서를 검증합니다. **전체 325개 테스트 통과, 프런트·백엔드 타입 검사 및 Vite production build 성공**입니다. Vite의 Windows 샌드박스 상위 경로 접근 실패는 원인을 확인한 뒤 권한 확장으로 해결했습니다. 기존 SDK 청크 크기/MockTimers 경고만 남아 있습니다.
+- 격리 localhost5190 브라우저 검증: 1920×1080에서 제목·4개 카드·5행 통화 카드 하단이 약 748px로 첫 화면 안에 표시됩니다. 1366×768에서 통화 카드 하단 약742px, 사이드바 메뉴 하단624px이며 가로 넘침이 없습니다. stat-card 크기와 집계1/3/1/1은 유지합니다. 390px에서 필터 줄바꿈과 8개 컬럼 가로 스크롤, 직원 8개 메뉴 이동을 확인했습니다.
+- 12건 모의 목록에서 5/5/2행, 이전·다음 비활성 경계, 두 필터의 page=1, 빈 결과, 7건으로 축소 시 page=2, 5건 이하 페이지 UI 숨김을 직접 확인했습니다. 모의 SSE snapshot을 기존 LiveConsultations로 수신하고 이동된 영역의 모달에서 고객/AI 대화 조회·닫기를 확인했습니다.
+- 고객 브라우저 검증: 1920px에서 420px 중앙 컨테이너, 390×844 전체 화면, 320×568에서 잘리지 않고 세로 스크롤 가능한 배치를 확인했습니다. 격리 SDK·오디오 장치 대역으로 키보드 시작→연결 취소→재시작→경과시간→종료 및 통화 중 직원 화면 이동을 확인했습니다. 닫힌 테스트 정보에서도 RMS 측정/고성 표시가 진행되며 3회 시작 후 종료/이동 시 track 3개·AudioContext 3개가 모두 정리됐습니다. 모의 권한 거부 안내와 고객↔직원 title 전환도 확인했습니다. 이는 실제 Retell 음성 연결 검증이 아닙니다.
+- `npm.cmd run preview:standalone`로 `00_KCM_미리보기.html`을 갱신했고, 브라우저에서 해당 HTML의 직원 홈·5행·제목 옆 필터를 직접 확인했습니다. 원래대로 독립 HTML은 직원 화면용이며 Retell 통화 검증용이 아닙니다. 확인한 브라우저 오류 로그는 0건입니다.
+- 서버/Monitor/SSE/transcript/위험 정책/보조 마이크·고성 측정/n8n/ID 처리/예약·상담 업무 코드, 환경변수, 의존성을 변경하지 않았습니다. 기존 저장 데이터를 초기화하지 않았습니다. 임시 브라우저 검증은 실제 전화·마이크·외부 전송과 분리했습니다. 실제 음성 통화·실물 모바일·n8n Production 수신·Render 배포는 이번 작업에서 미검증입니다.
+- 로컬 화면 확인: 기존 개발 서버의 `/#/home`, `/#/retell-test`. 검증 캡처 `docs/ui-customer-390.png` 등은 기존 Git 제외 정책에 따라 로컬에만 보관합니다.
 
 ## 팀 공유용 Git 보안 점검 / 2026-10-02
 

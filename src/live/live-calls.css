@@ -46,3 +46,10 @@
 .live-signal-badge.sexual { background: #f6edf5; color: #7e456c; }
 .live-final-risk { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
 .live-final-risk pre { max-width: 100%; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
+.live-delivery-state { margin-top: 12px; font-size: 12px; line-height: 1.7; color: #59616d; }
+.live-customer-history { padding: 0 20px 16px; margin-bottom: 24px; }
+.live-customer-history > .card-heading { padding-inline: 0; flex-wrap: wrap; }
+.live-customer-group { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 16px; }
+.live-customer-group h3 { font-size: 14px; overflow-wrap: anywhere; }
+.live-customer-group .live-intake-row > div { min-width: 0; overflow-wrap: anywhere; }
+.live-customer-group .live-intake-row > button { flex-shrink: 0; }

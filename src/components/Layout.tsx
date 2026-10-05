@@ -59,7 +59,7 @@ export function Layout({ data, page, navigate, children }: {
         </div>
       </header>
       <main id="main-content" className="main-content" tabIndex={-1}>{children}</main>
-      <footer className="app-footer"><span>KCM <b>·</b> 예약부터 사후관리까지</span><span>모든 고객·예약·재고는 가상 데이터입니다.</span></footer>
+      <footer className="app-footer"><span>KCM <b>·</b> 예약부터 사후관리까지</span><span>예약·재고 예시는 가상 데이터이며, 실시간 AI 상담 기록은 별도로 표시합니다.</span></footer>
     </div>
     {mobileOpen && <Modal title="메뉴" onClose={() => setMobileOpen(false)}>{nav}</Modal>}
   </div>;

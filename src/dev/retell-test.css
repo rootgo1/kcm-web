@@ -1,28 +1,70 @@
-.retell-test { min-height: 100dvh; padding: 40px 20px; display: grid; place-items: center; background: #f5f6f8; }
-.retell-test-card { width: min(100%, 640px); padding: 32px; background: #fff; border: 1px solid #e5e7eb; border-radius: 20px; }
-.retell-test h1 { margin: 0 0 16px; font-size: 28px; }
+.retell-test { min-height: 100dvh; padding: 32px 20px; display: grid; place-items: center; background: #f1f2f5; color: #24272d; }
+.retell-test-card { width: min(100%, 420px); min-height: 740px; display: flex; flex-direction: column; background: #fff; border: 1px solid #e5e7eb; border-radius: 28px; box-shadow: 0 16px 48px #24272d09; overflow: hidden; }
+.retell-customer-header { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 25px 24px; border-bottom: 1px solid #f0f1f3; font-size: 13px; font-weight: 600; color: #59616d; }
+.retell-customer-header svg { color: #d92535; flex-shrink: 0; }
+.retell-customer-main { display: flex; flex-direction: column; align-items: center; flex: 1; padding: 42px 24px 18px; text-align: center; }
+.retell-customer-brand > span { font-size: 38px; line-height: 1.15; font-weight: 800; letter-spacing: -1.5px; }
+.retell-brand-dot { color: #d92535; }
+.retell-test h1 { margin: 10px 0 0; font-size: 19px; line-height: 1.4; font-weight: 600; letter-spacing: -.5px; }
 .retell-test p { line-height: 1.7; }
-.retell-test-eyebrow { color: #b91c2c; font-weight: 700; margin: 0 0 8px; }
-.retell-test-status { display: flex; flex-wrap: wrap; gap: 12px; padding: 20px; margin: 24px 0 16px; background: #f8f9fb; border-radius: 12px; }
-.retell-test-status code { flex-basis: 100%; overflow-wrap: anywhere; }
-.retell-test-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0; }
-.retell-test button { min-height: 44px; padding: 10px 16px; border: 1px solid #d1d5db; border-radius: 9px; background: #fff; color: #222; cursor: pointer; font: inherit; }
-.retell-test .retell-test-start { background: #d92535; color: #fff; border-color: #d92535; }
+.retell-customer-avatar { position: relative; display: grid; place-items: center; width: 112px; height: 112px; flex-shrink: 0; margin: 34px 0 24px; border: 1px solid #f4dfe2; border-radius: 50%; background: #fff5f6; color: #d92535; }
+.retell-avatar-dot { position: absolute; right: 6px; bottom: 8px; width: 18px; height: 18px; border: 4px solid #fff; border-radius: 50%; background: #bdc3cb; }
+.is-live .retell-avatar-dot { background: #338368; }
+.retell-test-status { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 15px; }
+.retell-status-dot { width: 7px; height: 7px; border-radius: 50%; background: #adb4bd; }
+.is-live .retell-status-dot { background: #338368; }
+.is-connecting .retell-status-dot, .is-ending .retell-status-dot { width: 13px; height: 13px; border: 2px solid #f5d6da; border-top-color: #d92535; background: transparent; animation: retell-connect 1s linear infinite; }
+.retell-customer-message { min-height: 90px; padding-top: 12px; color: #68717e; font-size: 13px; }
+.retell-customer-message p { margin: 0; }
+.retell-customer-message .retell-call-timer { color: #24272d; font-size: 28px; line-height: 1.45; font-weight: 500; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+.retell-call-controls { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: auto; padding-top: 24px; font-size: 14px; font-weight: 600; }
+.retell-test button { min-height: 44px; padding: 10px 16px; border: 1px solid #d1d5db; border-radius: 9px; background: #fff; color: #24272d; cursor: pointer; font: inherit; }
+.retell-test .retell-call-button { display: grid; place-items: center; width: 80px; height: 80px; padding: 0; border: 0; border-radius: 50%; background: #d92535; color: #fff; box-shadow: 0 6px 18px #d9253526; }
+.retell-test .retell-call-button:hover:not(:disabled) { background: #b91c2c; }
+.retell-call-end svg { transform: rotate(135deg); }
 .retell-test button:disabled { opacity: .45; cursor: not-allowed; }
-.retell-test :is(button,a):focus-visible { outline: 3px solid #d92535; outline-offset: 3px; }
-.retell-test-error { color: #a71929; background: #fff1f2; padding: 14px; border-radius: 10px; overflow-wrap: anywhere; }
-.retell-test-note, .retell-test-setup { color: #586174; font-size: 14px; }
-.retell-test a { display: inline-block; margin-top: 12px; color: #a71929; }
-@media(max-width: 480px) { .retell-test { padding: 20px 12px; } .retell-test-card { padding: 24px 18px; } .retell-test h1 { font-size: 25px; } }
-.retell-aux-mic { margin: 24px 0; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background: #f9fafb; }
-.retell-aux-mic-heading, .retell-aux-mic-level { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
-.retell-aux-mic h2 { margin: 0; font-size: 18px; }
-.retell-aux-mic-state { font-size: 14px; color: #6b7280; }
+.retell-test :is(button,a,summary):focus-visible { outline: 3px solid #d92535; outline-offset: 4px; }
+.retell-customer-permission { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 26px 0 0; font-size: 11px; color: #79818c; }
+.retell-customer-permission svg { flex-shrink: 0; }
+.retell-test-error { width: 100%; color: #a71929; background: #fff1f2; padding: 12px; border-radius: 10px; font-size: 13px; overflow-wrap: anywhere; }
+.retell-test-details { margin: 0 24px; padding: 10px 0 16px; color: #68717e; font-size: 12px; border-top: 1px solid #f0f1f3; }
+.retell-test-details > summary { width: fit-content; margin: auto; padding: 8px; cursor: pointer; }
+.retell-test-details[open] > summary { margin-bottom: 12px; }
+.retell-test-details code { display: block; overflow-wrap: anywhere; white-space: normal; font-size: 11px; }
+.retell-test-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+.retell-test-note, .retell-test-setup { color: #586174; font-size: 12px; font-weight: 400; }
+.retell-test a { display: inline-block; padding-block: 10px; color: #a71929; }
+.retell-aux-mic { margin: 20px 0; padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #f9fafb; }
+.retell-aux-mic-heading, .retell-aux-mic-level { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.retell-aux-mic h2 { margin: 0; font-size: 15px; }
+.retell-aux-mic-state { font-size: 12px; color: #6b7280; }
 .retell-aux-mic-state.is-running { color: #166534; }
 .retell-aux-mic-state.is-error { color: #b91c1c; }
-.retell-aux-mic-level { margin-top: 18px; font-size: 14px; }
+.retell-aux-mic-level { margin-top: 18px; font-size: 12px; }
 .retell-aux-mic-level output { font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 700; }
 .retell-aux-mic-meter { height: 12px; margin-top: 8px; background: #e5e7eb; border-radius: 6px; overflow: hidden; }
 .retell-aux-mic-meter > span { display: block; height: 100%; background: #d71920; transition: width 80ms linear; }
-.retell-aux-mic .retell-test-actions { margin: 16px 0; }
 .retell-aux-mic .retell-test-note:last-child { margin-bottom: 0; }
+@keyframes retell-connect { to { transform: rotate(360deg); } }
+@media(max-width: 480px) {
+  .retell-test { padding: 0; background: #fff; }
+  .retell-test-card { width: 100%; min-height: 100dvh; border: 0; border-radius: 0; box-shadow: none; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .retell-customer-header { padding: 22px max(20px, env(safe-area-inset-right, 0px)) 22px max(20px, env(safe-area-inset-left, 0px)); }
+  .retell-customer-main { padding: 36px max(24px, env(safe-area-inset-right, 0px)) 18px max(24px, env(safe-area-inset-left, 0px)); }
+}
+@media(max-height: 700px) {
+  .retell-customer-header { padding-block: 16px; }
+  .retell-customer-main { padding-top: 20px; }
+  .retell-customer-brand > span { font-size: 32px; }
+  .retell-test h1 { margin-top: 8px; font-size: 18px; }
+  .retell-customer-avatar { width: 80px; height: 80px; margin-block: 16px 14px; }
+  .retell-customer-message { min-height: 76px; }
+  .retell-call-controls { padding-top: 12px; }
+  .retell-test .retell-call-button { width: 76px; height: 76px; }
+  .retell-customer-permission { margin-top: 16px; }
+  .retell-test-details { padding-block: 6px 10px; }
+}
+@media(prefers-reduced-motion: reduce) {
+  .retell-status-dot { animation: none !important; }
+  .retell-aux-mic-meter > span { transition: none; }
+}

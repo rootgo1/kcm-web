@@ -71,6 +71,46 @@ test('Retell: error display never echoes arbitrary response body or token', () =
   assert.doesNotMatch(callErrorMessage(new Error('private-token-example')), /private-token-example/);
 });
 
+test('Retell: late live/end/error callbacks cannot resurrect an ended call or erase its ID', async () => {
+  const { controller, calls, views, stops } = setup();
+  controller.start();
+  calls[0].hooks.onStatus?.('live');
+  await controller.end();
+  const ended = structuredClone(views.at(-1));
+  const count = views.length;
+  calls[0].hooks.onStatus?.('live');
+  calls[0].hooks.onEnd?.({});
+  calls[0].hooks.onError?.(new Error('late'));
+  assert.equal(views.length, count);
+  assert.deepEqual(views.at(-1), ended);
+  assert.equal(ended?.callId, 'call_1');
+  assert.deepEqual(stops, []);
+  controller.dispose();
+});
+
+test('Retell: late live event during asynchronous end keeps ending and stops only once', async () => {
+  let release!: () => void;
+  let hooks!: SessionHooks;
+  const views: CallView[] = [];
+  let ends = 0;
+  const controller = createCallController({
+    createWebCall(options) {
+      hooks = options.hooks!;
+      return { callId: 'call_finishing', end: async () => { ends++; await new Promise<void>(resolve => { release = resolve; }); hooks.onEnd?.({}); } } as WebCallSession;
+    },
+    stopCall: async () => {},
+  }, 'agent_test', view => views.push(view));
+  controller.start();
+  const ending = controller.end();
+  hooks.onStatus?.('live');
+  await controller.end();
+  assert.equal(ends, 1);
+  assert.equal(views.at(-1)?.status, 'ending');
+  release(); await ending;
+  assert.equal(views.at(-1)?.status, 'ended');
+  controller.dispose();
+});
+
 test('Retell: REST proxy strips placeholder authorization and blocks unrelated operations', async () => {
   const original = globalThis.fetch;
   let called = 0;

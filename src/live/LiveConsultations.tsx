@@ -4,6 +4,8 @@ import { Icon } from '../components/Icon';
 import { applyLiveEvent, isNearConversationBottom, liveStatusLabels, subscribeLiveCalls, type LiveConnection } from './liveCalls';
 import type { LiveCall } from './types';
 import { LiveRiskSignals, LiveTurnBadges } from './LiveRiskSignals';
+import { deliveryLabel, liveCustomerHistory } from './livePresentation';
+import { formatRiskScore } from '../lib/riskScoring';
 import './live-calls.css';
 
 function clock(at: string | null) {
@@ -23,11 +25,11 @@ function LiveConversation({ call, connection, onClose }: { call: LiveCall; conne
   return <Modal title="실시간 AI 상담" eyebrow="KCM · Retell 실시간 통화" onClose={onClose} wide>
     <div className="live-conversation">
       <div className="live-conversation-meta">
-        <strong>고객 확인 전</strong><span className={`live-badge ${call.status}`}>{liveStatusLabels[call.status]}</span>
+        <strong>{call.customer_id || '고객 확인 전'}</strong><span className={`live-badge ${call.status}`}>{liveStatusLabels[call.status]}</span>
         <span>{call.status === 'live' ? '통화 진행 중' : call.status === 'ended' ? '통화 종료' : call.status === 'error' ? '통화 상태 확인 필요' : 'Monitor 연결을 기다리고 있습니다.'}</span>
       </div>
       <p className="live-small">시작 <time dateTime={call.started_at ?? undefined}>{clock(call.started_at)}</time>{call.ended_at && <> · 종료 <time dateTime={call.ended_at}>{clock(call.ended_at)}</time></>}</p>
-      <details className="live-call-id"><summary>통화 식별 정보</summary><code>{call.call_id}</code></details>
+      <details className="live-call-id"><summary>통화 식별 정보</summary><code>통화: {call.call_id}</code><code>상담: {call.consultation_id || '확인 필요'}</code><code>고객: {call.customer_id || '미식별'}</code><code>매장: {call.store_id || '미설정'}</code></details>
       {connection === 'reconnecting' && <p className="live-connection-note" role="status">실시간 상담 연결을 다시 시도하고 있습니다. 마지막 수신 대화를 표시합니다.</p>}
       {call.error && <p className="live-connection-note" role="status">{call.error}</p>}
       <LiveRiskSignals call={call}/>
@@ -40,14 +42,14 @@ function LiveConversation({ call, connection, onClose }: { call: LiveCall; conne
         </div>)}
       </div>
       {unread && <button className="button button-secondary live-new-message" onClick={() => { following.current = true; if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; setUnread(false); }}>최신 대화 보기</button>}
-      <p className="live-small">이 대화는 서버 메모리에만 유지됩니다. 서버를 다시 시작하면 사라집니다.</p>
+      <p className="live-small">화면의 대화는 현재 서버 메모리에서 조회합니다. 서버 재시작 시 화면 이력은 사라지며, 외부 저장 결과는 n8n에서 별도로 확인합니다.</p>
       <div className="modal-actions"><button className="button button-secondary" onClick={onClose}>실시간 상담 닫기</button></div>
     </div>
   </Modal>;
 }
 
 /** Independent of demo calls, metrics, reservations and their reset/save policy. */
-export function LiveConsultations() {
+export function LiveConsultations({ view = 'intake' }: { view?: 'intake' | 'history' }) {
   const [calls, setCalls] = useState<LiveCall[]>([]);
   const [connection, setConnection] = useState<LiveConnection>('connecting');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -64,13 +66,28 @@ export function LiveConsultations() {
   const recent = calls.filter(call => call.status === 'ended' || call.status === 'error').at(-1);
   const displayed = [...active, ...(recent ? [recent] : [])];
   const history = calls.filter(call => call.status === 'ended' && call !== recent);
-  if (!calls.length && connection !== 'reconnecting') return null;
+  if (!calls.length && connection !== 'reconnecting' && view === 'intake') return null;
   return <>
     {connection === 'reconnecting' && <p className="live-connection-note" role="status">실시간 상담 연결을 다시 시도하고 있습니다. <button className="text-button" onClick={() => setReconnectVersion(value => value + 1)}>다시 연결</button></p>}
-    {displayed.length > 0 && <section className="card live-intake" aria-label="실시간 AI 상담 인입">
+    {view === 'history' && <section className="card live-customer-history" aria-label="고객별 실시간 통화 이력">
+      <div className="card-heading"><h2>고객별 통화 이력</h2><span className="small-badge">현재 서버 수신 기록</span></div>
+      <p className="live-small">고객 ID로 통화를 구분합니다. 이름·연락처와 서버 재시작 이전의 DB 이력은 아직 조회하지 않습니다. 각 통화 위험도는 독립 기록이며 합산하지 않습니다.</p>
+      {calls.length === 0 && <div className="live-empty" role="status"><strong>현재 수신한 통화 이력이 없습니다.</strong><p>고객용 AI 상담이 연결되면 고객 ID와 통화별 기록을 여기에서 확인할 수 있습니다.</p></div>}
+      {liveCustomerHistory(calls).map(group => <section className="live-customer-group" key={group.key} aria-label={group.customerId || '고객 미식별 통화 ' + group.calls[0].call_id}>
+        <h3>{group.customerId || '고객 미식별 · 통화별 개별 표시'}</h3>
+        <p className="live-small">최근 완료 통화 위험도: {group.latestCompleted?.final_result ? formatRiskScore(group.latestCompleted.final_result.risk_score) : group.latestCompleted ? '점수 확정 보류' : '완료 통화 없음'}</p>
+        {group.calls.map(call => <div className="live-intake-row" key={call.call_id}>
+          <div><strong>{call.call_id}</strong><span className={`live-badge ${call.status}`}>{liveStatusLabels[call.status]}</span>
+            <p>{call.final_result ? formatRiskScore(call.final_result.risk_score) : call.status === 'ended' ? '최종 위험도 확정 보류' : '종료 후 위험도 확정'} · {clock(call.ended_at ?? call.started_at)}</p>
+            {call.status === 'ended' && <p>{deliveryLabel(call)}</p>}
+          </div><button className="button button-secondary" onClick={() => setSelectedId(call.call_id)}>통화 기록 보기<span className="sr-only"> {call.call_id}</span></button>
+        </div>)}
+      </section>)}
+    </section>}
+    {view === 'intake' && displayed.length > 0 && <section className="card live-intake" aria-label="실시간 AI 상담 인입">
       <div className="card-heading"><div className="title-with-icon"><span className="small-icon red"><Icon name="activity" size={17}/></span><h2>실시간 AI 상담</h2></div></div>
       {displayed.map(call => <div className="live-intake-row" key={call.call_id}>
-        <div><strong>고객 확인 전</strong><span className={`live-badge ${call.status}`}>{liveStatusLabels[call.status]}</span>
+        <div><strong>{call.customer_id || '고객 확인 전'}</strong><span className={`live-badge ${call.status}`}>{liveStatusLabels[call.status]}</span>
           <p>{call.status === 'live' ? '실시간 상담이 진행 중입니다.' : call.status === 'ended' ? '마지막 종료 통화의 대화를 확인할 수 있습니다.' : call.status === 'error' ? '마지막 수신 대화를 확인할 수 있습니다.' : '통화 연결 상태를 확인하고 있습니다.'}</p>
           {displayed.length > 1 && <small className="live-short-id">통화 …{call.call_id.slice(-8)}</small>}
         </div>

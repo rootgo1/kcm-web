@@ -76,7 +76,7 @@ export function StoreManagementPage({ data }: { data: DashboardData }) {
               </div>
               <dl className="directory-facts"><div><dt>전문분야</dt><dd>{employee.specialty}</dd></div><div><dt>상담 성향</dt><dd>{employee.style}</dd></div><div><dt>자기소개</dt><dd>{employee.introduction}</dd></div></dl>
               <div className="staff-traits">{employee.traits.map(trait => <span key={trait}>{trait}</span>)}</div>
-              <p className="directory-subnote">성향은 임시 샘플 태그이며, 유형 분류·매칭 기준은 아직 적용하지 않았습니다.</p>
+              <p className="directory-subnote">직원 소개용 샘플 태그입니다. 고객 성향 분류나 자동 직원 배정에는 사용하지 않습니다.</p>
             </section>
             <ReviewSamples items={employee.reviews} title="직원 리뷰"/>
           </div>
