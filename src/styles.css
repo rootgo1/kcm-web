@@ -812,3 +812,35 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
   .call-filters { width: 100%; margin-left: 0; }
   .call-filters label { display: grid; flex: 1 1 130px; min-width: 0; gap: 6px; }
 }
+
+/* Secondary workflow screens reuse the dashboard card, table and form styles. */
+.support-call-table { min-width: 1080px; }
+.support-call-table th:nth-child(n), .aftercare-table th:nth-child(n) { width: auto; }
+.support-call-table td, .aftercare-table td { height: auto; padding-block: 14px; vertical-align: top; white-space: normal; }
+.support-call-table td > small, .aftercare-table td > small { display: block; margin-top: 6px; }
+.support-call-table tbody tr, .aftercare-table tbody tr { cursor: default; }
+.support-call-table .text-button:disabled { color: var(--muted); cursor: not-allowed; }
+.support-signal-summary { display: flex; flex-wrap: wrap; gap: 5px; min-width: 170px; max-width: 240px; }
+.support-guide-card { margin-top: 24px; }
+.support-guide-card .card-heading { flex-wrap: wrap; gap: 12px; }
+.support-guide-card .card-heading p { margin-top: 6px; }
+.support-guide-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; padding: 20px; font-size: 13px; line-height: 1.8; overflow-wrap: anywhere; }
+.support-guide-grid .call-support { border-top: 0; padding-top: 0; }
+.support-guide-grid .call-opening { margin-bottom: 16px; }
+.support-guide-card:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+.aftercare-table { min-width: 1190px; }
+.aftercare-message-preview { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; min-width: 160px; max-width: 230px; line-height: 1.7; overflow-wrap: anywhere; }
+.aftercare-blocker { max-width: 160px; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.aftercare-notice { display: flex; align-items: flex-start; gap: 10px; padding: 16px 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.8; }
+.aftercare-notice > svg { flex-shrink: 0; margin-top: 3px; }
+.aftercare-success { display: flex; align-items: center; gap: 8px; margin-block: 16px; color: #4d735a; }
+.aftercare-sent-message { white-space: pre-wrap; overflow-wrap: anywhere; }
+.aftercare-modal-note { margin-top: 16px; }
+@media (max-width: 900px) {
+  .support-guide-grid { grid-template-columns: minmax(0, 1fr); }
+  .support-guide-grid .call-support { border-top: 1px solid var(--line); padding-top: 20px; }
+}
+@media (max-width: 530px) {
+  .support-guide-grid { padding: 16px; gap: 16px; }
+  .aftercare-notice { padding: 14px 16px; }
+}

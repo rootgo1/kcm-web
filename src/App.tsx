@@ -19,11 +19,16 @@ import { startCallConsultation } from './lib/callConsultation';
 import { applyCallSupport, type SupportHandler } from './lib/callSupport';
 import { completeDemoCall, createNextDemoCall, updateCallDraft, type DraftHandler } from './lib/callWorkflow';
 import { LiveConsultations } from './live/LiveConsultations';
+import { SupportPage } from './pages/SupportPage';
+import { MarketingPage } from './pages/MarketingPage';
+import { aftercareItems, reviewAftercare, sendAftercare, type AftercareState } from './lib/aftercare';
+import { demoContactConsents } from './data/aftercareMockData';
 
 export default function App() {
   const [page, setPage] = useState<PageId>(() => parsePage(window.location.hash));
   const [data, setData] = useState<DashboardData | null>(null);
   const [callState, setCallState] = useState(createCallDemoState);
+  const [aftercare, setAftercare] = useState<AftercareState>({});
   const calls = callState.calls;
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -72,7 +77,7 @@ export default function App() {
   const items = useMemo(() => data ? filterAppointments(data.appointments, filter, query) : [], [data, filter, query]);
   const selected = items.find(item => item.id === selectedId) ?? items[0];
   const editing = data?.appointments.find(item => item.id === editorId);
-  const reset = () => requestLeave(() => { setFilter('all'); setQuery(''); setSelectedId('DEMO-R002'); setCallState(createCallDemoState()); setLoadKey(key => key + 1); setModal(null); setToast('샘플 화면을 초기화했습니다.'); });
+  const reset = () => requestLeave(() => { setFilter('all'); setQuery(''); setSelectedId('DEMO-R002'); setCallState(createCallDemoState()); setAftercare({}); setLoadKey(key => key + 1); setModal(null); setToast('샘플 화면을 초기화했습니다.'); });
   const onReview = (id: string) => { if (dataRef.current) commitData(markReviewed(dataRef.current, id)); setToast('이 화면에서 확인 처리했습니다. 실제 DB는 변경되지 않습니다.'); };
   const onStartCall = (id: string) => {
     const at = new Date().toISOString();
@@ -104,6 +109,16 @@ export default function App() {
   };
   const metrics = data ? getMetrics(data) : null;
   const callMetrics = getCallMetrics(calls);
+  const aftercareList = aftercareItems(data?.appointments ?? [], calls, demoContactConsents);
+  const aftercareActor = data ? `${data.employee.name} (데모 직원)` : '데모 직원';
+  const onAftercareReview = (id: string, message: string) => {
+    const item = aftercareList.find(item => item.id === id);
+    if (item) setAftercare(current => reviewAftercare(current, item, message, new Date().toISOString(), aftercareActor));
+  };
+  const onAftercareSend = (id: string) => {
+    const item = aftercareList.find(item => item.id === id);
+    if (item) setAftercare(current => sendAftercare(current, item, new Date().toISOString(), aftercareActor));
+  };
   const statItems: { label: string; value: number; unit: string; caption: string; icon: IconName; tone: string }[] = [
     { label: 'AI 응대 중', value: callMetrics.aiResponding, unit: '건', caption: '현재 AI가 먼저 응대하는 통화', icon: 'phone', tone: 'gray' },
     { label: '직원 연결 대기', value: callMetrics.waiting, unit: '건', caption: '현재 직원 연결을 기다리는 통화', icon: 'clock', tone: 'gray' },
@@ -121,7 +136,7 @@ export default function App() {
       <div className="appointment-overview-heading"><h2>예약·상담 현황</h2>{metrics && <p aria-label="예약 상담 집계">전체 {metrics.reservations}건 · 방문 예정 {metrics.upcoming} · 상담 중 {metrics.inProgress} · 완료 {metrics.completed} · 브리핑 미확인 {metrics.unreviewed}</p>}</div>
       <div className="dashboard-grid">{table}{briefing}</div>
       <div className="bottom-grid"><InventoryPanel data={data} onOpen={() => navigate('inventory')}/><section className="card activity-card"><div className="card-heading"><div className="title-with-icon"><span className="small-icon gray"><Icon name="activity" size={18}/></span><h2>최근 업무 흐름</h2></div><span className="small-badge">샘플 기록</span></div><div className="activity-timeline">{data.activities.map(item => <div className="activity-item" key={item.id}><span className={`activity-dot ${item.kind}`}/><div><strong>{item.label}</strong><p>{item.description}</p></div><time>{item.time}</time></div>)}</div><div className="workflow-note"><Icon name="sparkles" size={17}/><span>상담 결과가 직원의 준비로 이어집니다.</span><button className="text-button" onClick={() => setModal('help')} aria-label="프로토타입 안내 보기"><Icon name="arrow" size={16}/></button></div></section></div>
-    </> : page === 'appointments' ? <><div className="page-heading"><div><span className="eyebrow">고객관리</span><h1>예약·상담관리</h1><p>고객을 선택해 사전 상담 내용과 브리핑을 확인하세요.</p></div><span className="small-badge">샘플 상담 처리</span></div><div className="dashboard-grid">{table}{briefing}</div></> : <SecondaryPages key={page === 'stores' ? storeInfoVisit : page} page={page} data={data} onHome={() => navigate('home')}/>}
+    </> : page === 'appointments' ? <><div className="page-heading"><div><span className="eyebrow">고객관리</span><h1>예약·상담관리</h1><p>고객을 선택해 사전 상담 내용과 브리핑을 확인하세요.</p></div><span className="small-badge">샘플 상담 처리</span></div><div className="dashboard-grid">{table}{briefing}</div></> : page === 'support' ? <SupportPage state={callState} onStart={onStartCall} onSupport={onSupport} onDraft={onCallDraft} onComplete={onCallComplete} onNext={id => setCallState(current => createNextDemoCall(current, id))}/> : page === 'marketing' ? <MarketingPage items={aftercareList} records={aftercare} store={data.store} onReview={onAftercareReview} onSend={onAftercareSend} onSupport={() => navigate('support')}/> : <SecondaryPages key={page === 'stores' ? storeInfoVisit : page} page={page} data={data}/>}
   </Layout>
   {modal === 'help' && <Modal title="KCM 프로토타입 안내" onClose={() => setModal(null)}><div className="help-content"><p className="modal-lead">AI 선응대와 통화 위험 신호를 바탕으로 <strong>직원의 상담 준비와 대응을 지원하는 KCM 시연 화면</strong>입니다.</p><div className="notice-inline"><Icon name="shield" size={19}/><span>예약·직원·매장·상품·재고는 가상 예시입니다. 실시간 AI 상담 영역에는 실제 테스트 통화가 표시될 수 있습니다. KT 공식 운영 서비스가 아닙니다.</span></div><h3>지금 확인할 수 있는 동작</h3><p>통화 현황·위험 등급 필터와 근거 발언을 포함한 통화 브리핑, 통화 상담 시작·이어보기·결과 기록·완료 조회, 통화별 최종 위험도·이력·동일 고객 다음 통화 데모, 관리자 지원 요청·확인·지원 완료·재요청 데모, 메뉴 이동, 예약 검색·필터, 고객 선택, 샘플 브리핑 상세 보기, 브리핑 확인 상태 변경, 상담 시작·결과 임시 반영·완료·완료 결과 수정과 이력 조회, 재고 조회 예시를 확인할 수 있습니다. 상품관리 4개 탭과 자사·타사 전환, 매장관리 2개 탭, 가상 매장 5곳과 우리 매장 직원의 정보·리뷰 배치도 확인할 수 있습니다.</p><h3>실제 통화와 외부 저장</h3><p>고객용 화면의 Retell 통화는 Monitor와 SSE를 통해 직원 화면에 표시됩니다. 5개 위험 신호의 최종 결과와 상담 전문은 서버 환경설정에 따라 n8n으로 전송합니다. 수신 응답과 DB 저장 성공은 다르므로 저장·AI 요약 결과는 n8n에서 확인합니다.</p><h3>시연 범위 밖</h3><p>실제 로그인, DB 이력 조회, 예약 등록·변경, 재고 대여, 문자 발송은 연결하지 않았습니다.</p><p className="muted-text">예약·데모 상담은 새로고침 시 초기화됩니다. 실시간 통화 이력은 현재 서버 메모리에서 조회하며 서버 재시작 시 화면에서 사라집니다. 외부에 저장된 데이터는 별도입니다.</p></div></Modal>}
   {modal === 'reset' && <Modal title="샘플 화면을 초기화할까요?" onClose={() => setModal(null)}><p className="modal-lead">통화 초안·상담 결과·통화별 위험 이력·점수 반영 기록·지원 이력, 예약 상담 상태·결과·수정 이력, 브리핑 확인 상태와 예약 검색·통화 필터 조건이 초기 상태로 돌아갑니다. 실제 DB나 다른 서비스에는 영향을 주지 않습니다.</p><div className="modal-actions"><button className="button button-secondary" onClick={() => setModal(null)}>취소</button><button className="button button-primary" onClick={reset}>샘플 초기화</button></div></Modal>}

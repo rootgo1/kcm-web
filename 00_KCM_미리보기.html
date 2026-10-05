@@ -812,6 +812,38 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
   .call-filters { width: 100%; margin-left: 0; }
   .call-filters label { display: grid; flex: 1 1 130px; min-width: 0; gap: 6px; }
 }
+
+/* Secondary workflow screens reuse the dashboard card, table and form styles. */
+.support-call-table { min-width: 1080px; }
+.support-call-table th:nth-child(n), .aftercare-table th:nth-child(n) { width: auto; }
+.support-call-table td, .aftercare-table td { height: auto; padding-block: 14px; vertical-align: top; white-space: normal; }
+.support-call-table td > small, .aftercare-table td > small { display: block; margin-top: 6px; }
+.support-call-table tbody tr, .aftercare-table tbody tr { cursor: default; }
+.support-call-table .text-button:disabled { color: var(--muted); cursor: not-allowed; }
+.support-signal-summary { display: flex; flex-wrap: wrap; gap: 5px; min-width: 170px; max-width: 240px; }
+.support-guide-card { margin-top: 24px; }
+.support-guide-card .card-heading { flex-wrap: wrap; gap: 12px; }
+.support-guide-card .card-heading p { margin-top: 6px; }
+.support-guide-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; padding: 20px; font-size: 13px; line-height: 1.8; overflow-wrap: anywhere; }
+.support-guide-grid .call-support { border-top: 0; padding-top: 0; }
+.support-guide-grid .call-opening { margin-bottom: 16px; }
+.support-guide-card:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+.aftercare-table { min-width: 1190px; }
+.aftercare-message-preview { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; min-width: 160px; max-width: 230px; line-height: 1.7; overflow-wrap: anywhere; }
+.aftercare-blocker { max-width: 160px; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.aftercare-notice { display: flex; align-items: flex-start; gap: 10px; padding: 16px 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.8; }
+.aftercare-notice > svg { flex-shrink: 0; margin-top: 3px; }
+.aftercare-success { display: flex; align-items: center; gap: 8px; margin-block: 16px; color: #4d735a; }
+.aftercare-sent-message { white-space: pre-wrap; overflow-wrap: anywhere; }
+.aftercare-modal-note { margin-top: 16px; }
+@media (max-width: 900px) {
+  .support-guide-grid { grid-template-columns: minmax(0, 1fr); }
+  .support-guide-grid .call-support { border-top: 1px solid var(--line); padding-top: 20px; }
+}
+@media (max-width: 530px) {
+  .support-guide-grid { padding: 16px; gap: 16px; }
+  .aftercare-notice { padding: 14px 16px; }
+}
 </style></head><body><div id="root"></div><!-- Generated from src/. React/ReactDOM/Scheduler: Copyright Meta Platforms, Inc. and affiliates, MIT License. See THIRD_PARTY_NOTICES.txt. No font files are embedded. --><script>(function(){'use strict';
 const process={env:{NODE_ENV:'production'}};
 const modules={"react":function(module,exports,require){
@@ -1218,10 +1250,15 @@ const callConsultation_1 = require("./lib/callConsultation");
 const callSupport_1 = require("./lib/callSupport");
 const callWorkflow_1 = require("./lib/callWorkflow");
 const LiveConsultations_1 = require("./live/LiveConsultations");
+const SupportPage_1 = require("./pages/SupportPage");
+const MarketingPage_1 = require("./pages/MarketingPage");
+const aftercare_1 = require("./lib/aftercare");
+const aftercareMockData_1 = require("./data/aftercareMockData");
 function App() {
     const [page, setPage] = (0, react_1.useState)(() => (0, domain_1.parsePage)(window.location.hash));
     const [data, setData] = (0, react_1.useState)(null);
     const [callState, setCallState] = (0, react_1.useState)(callMockData_1.createCallDemoState);
+    const [aftercare, setAftercare] = (0, react_1.useState)({});
     const calls = callState.calls;
     const [error, setError] = (0, react_1.useState)('');
     const [loading, setLoading] = (0, react_1.useState)(true);
@@ -1281,7 +1318,7 @@ function App() {
     const items = (0, react_1.useMemo)(() => data ? (0, domain_1.filterAppointments)(data.appointments, filter, query) : [], [data, filter, query]);
     const selected = items.find(item => item.id === selectedId) ?? items[0];
     const editing = data?.appointments.find(item => item.id === editorId);
-    const reset = () => requestLeave(() => { setFilter('all'); setQuery(''); setSelectedId('DEMO-R002'); setCallState((0, callMockData_1.createCallDemoState)()); setLoadKey(key => key + 1); setModal(null); setToast('샘플 화면을 초기화했습니다.'); });
+    const reset = () => requestLeave(() => { setFilter('all'); setQuery(''); setSelectedId('DEMO-R002'); setCallState((0, callMockData_1.createCallDemoState)()); setAftercare({}); setLoadKey(key => key + 1); setModal(null); setToast('샘플 화면을 초기화했습니다.'); });
     const onReview = (id) => { if (dataRef.current)
         commitData((0, domain_1.markReviewed)(dataRef.current, id)); setToast('이 화면에서 확인 처리했습니다. 실제 DB는 변경되지 않습니다.'); };
     const onStartCall = (id) => {
@@ -1325,6 +1362,18 @@ function App() {
     };
     const metrics = data ? (0, domain_1.getMetrics)(data) : null;
     const callMetrics = (0, callRisk_1.getCallMetrics)(calls);
+    const aftercareList = (0, aftercare_1.aftercareItems)(data?.appointments ?? [], calls, aftercareMockData_1.demoContactConsents);
+    const aftercareActor = data ? `${data.employee.name} (데모 직원)` : '데모 직원';
+    const onAftercareReview = (id, message) => {
+        const item = aftercareList.find(item => item.id === id);
+        if (item)
+            setAftercare(current => (0, aftercare_1.reviewAftercare)(current, item, message, new Date().toISOString(), aftercareActor));
+    };
+    const onAftercareSend = (id) => {
+        const item = aftercareList.find(item => item.id === id);
+        if (item)
+            setAftercare(current => (0, aftercare_1.sendAftercare)(current, item, new Date().toISOString(), aftercareActor));
+    };
     const statItems = [
         { label: 'AI 응대 중', value: callMetrics.aiResponding, unit: '건', caption: '현재 AI가 먼저 응대하는 통화', icon: 'phone', tone: 'gray' },
         { label: '직원 연결 대기', value: callMetrics.waiting, unit: '건', caption: '현재 직원 연결을 기다리는 통화', icon: 'clock', tone: 'gray' },
@@ -1412,7 +1461,7 @@ function App() {
                 __React.createElement("span", { className: "small-badge" }, "\uC0D8\uD50C \uC0C1\uB2F4 \uCC98\uB9AC")),
             __React.createElement("div", { className: "dashboard-grid" },
                 table,
-                briefing)) : __React.createElement(SecondaryPages_1.SecondaryPages, { key: page === 'stores' ? storeInfoVisit : page, page: page, data: data, onHome: () => navigate('home') })),
+                briefing)) : page === 'support' ? __React.createElement(SupportPage_1.SupportPage, { state: callState, onStart: onStartCall, onSupport: onSupport, onDraft: onCallDraft, onComplete: onCallComplete, onNext: id => setCallState(current => (0, callWorkflow_1.createNextDemoCall)(current, id)) }) : page === 'marketing' ? __React.createElement(MarketingPage_1.MarketingPage, { items: aftercareList, records: aftercare, store: data.store, onReview: onAftercareReview, onSend: onAftercareSend, onSupport: () => navigate('support') }) : __React.createElement(SecondaryPages_1.SecondaryPages, { key: page === 'stores' ? storeInfoVisit : page, page: page, data: data })),
         modal === 'help' && __React.createElement(Modal_1.Modal, { title: "KCM \uD504\uB85C\uD1A0\uD0C0\uC785 \uC548\uB0B4", onClose: () => setModal(null) },
             __React.createElement("div", { className: "help-content" },
                 __React.createElement("p", { className: "modal-lead" },
@@ -2629,6 +2678,17 @@ function Tabs({ id, label, tabs, active, onChange }) {
 }
 
 },
+"src/data/aftercareMockData":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.demoContactConsents = void 0;
+/** Frontend-only fictional consent fixtures; never actual consent or DB records. */
+exports.demoContactConsents = {
+    'DEMO-C001': 'granted', 'DEMO-C002': 'granted', 'DEMO-C003': 'unknown', 'DEMO-C004': 'declined',
+    'CUSTOMER-001': 'granted', 'CUSTOMER-002': 'declined', 'CUSTOMER-003': 'granted', 'CUSTOMER-004': 'granted', 'CUSTOMER-005': 'unknown',
+};
+
+},
 "src/data/callMockData":function(module,exports,require){const __React=require('react');
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -3521,6 +3581,68 @@ function EntryRouter() {
         return __React.createElement(react_1.Suspense, { fallback: __React.createElement("p", { role: "status" }, "AI \uC0C1\uB2F4 \uD654\uBA74\uC744 \uC900\uBE44\uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4.") },
             __React.createElement(RetellTestPage, null));
     return __React.createElement(App_1.default, null);
+}
+
+},
+"src/lib/aftercare":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.consentLabels = void 0;
+exports.aftercareItems = aftercareItems;
+exports.recommendedAftercareMessage = recommendedAftercareMessage;
+exports.aftercareBlocker = aftercareBlocker;
+exports.aftercareReviewed = aftercareReviewed;
+exports.reviewAftercare = reviewAftercare;
+exports.sendAftercare = sendAftercare;
+const consultation_js_1 = require("./consultation.js");
+const callWorkflow_js_1 = require("./callWorkflow.js");
+exports.consentLabels = { granted: '동의', declined: '미동의', unknown: '미확인' };
+/** Read-only projection. Appointment and call IDs remain distinct; no records are invented. */
+function aftercareItems(appointments, calls, consents) {
+    return [
+        ...calls.filter(call => call.status === 'completed').map(call => ({
+            id: 'call:' + call.id, sourceId: call.id, source: '통화 상담', customerId: call.customerId, customerName: call.customerLabel,
+            inquiryType: call.inquiryType, summary: call.result?.content ?? '', outcome: call.result?.outcome ? callWorkflow_js_1.callOutcomes[call.result.outcome] : '결과 기록 없음',
+            followUp: (call.result ? call.result.outcome !== 'resolved' || call.result.followUp.trim() ? 'required' : 'none' : 'unknown'),
+            followUpMemo: call.result?.followUp ?? '', completedAt: call.completedAt, consent: call.customerId ? consents[call.customerId] ?? 'unknown' : 'unknown', hasResult: Boolean(call.result?.outcome && call.result.content.trim()),
+        })),
+        ...appointments.filter(item => item.status === 'completed').map(item => ({
+            id: 'appointment:' + item.id, sourceId: item.id, source: '방문 예약', customerId: item.customerId, customerName: item.customerName,
+            inquiryType: item.purpose, summary: item.consultation?.result?.summary ?? '', outcome: item.consultation?.result?.outcome ? consultation_js_1.outcomeLabels[item.consultation.result.outcome] : '결과 기록 없음',
+            followUp: item.consultation?.result?.followUp ?? 'unknown', followUpMemo: item.consultation?.result?.followUpMemo ?? '', completedAt: item.consultation?.completedAt ?? null,
+            consent: consents[item.customerId] ?? 'unknown', hasResult: Boolean(item.consultation?.result?.outcome && item.consultation.result.summary.trim()),
+        })),
+    ].sort((a, b) => (Date.parse(b.completedAt ?? '') || 0) - (Date.parse(a.completedAt ?? '') || 0));
+}
+function recommendedAftercareMessage(item, store) {
+    if (!item.hasResult || item.followUp !== 'required')
+        return '';
+    return `안녕하세요, ${store}입니다. ${item.inquiryType} 관련 사후 안내드립니다. ${item.followUpMemo.trim() || '추가 확인이 필요한 내용을 확인한 뒤 다시 안내드리겠습니다.'}`;
+}
+function aftercareBlocker(item) {
+    if (!item.hasResult)
+        return '완료된 상담 결과 기록이 필요합니다.';
+    if (item.consent !== 'granted')
+        return item.consent === 'declined' ? '연락·안내에 동의하지 않은 고객입니다.' : '연락·안내 동의 확인이 필요합니다.';
+    if (item.followUp !== 'required')
+        return item.followUp === 'none' ? '후속 안내가 필요 없는 상담입니다.' : '후속 안내 필요 여부를 확인해 주세요.';
+    return '';
+}
+const signature = (item) => JSON.stringify([item.id, item.customerId, item.inquiryType, item.summary, item.outcome, item.followUp, item.followUpMemo, item.consent]);
+function aftercareReviewed(item, record) {
+    return Boolean(record?.status === 'reviewed' && record.sourceSignature === signature(item) && !aftercareBlocker(item));
+}
+function reviewAftercare(state, item, message, at, actor) {
+    if (state[item.id]?.status === 'sent' || aftercareBlocker(item) || !message.trim() || message.length > 1000 || !actor.trim() || !Number.isFinite(Date.parse(at)))
+        return state;
+    return { ...state, [item.id]: { status: 'reviewed', message: message.trim(), sourceSignature: signature(item), reviewedAt: at, reviewedBy: actor, sentAt: null, sentBy: null } };
+}
+/** Local demo transition only. Guards repeated clicks and stale reviews without touching source consultations. */
+function sendAftercare(state, item, at, actor) {
+    const record = state[item.id];
+    if (!aftercareReviewed(item, record) || !Number.isFinite(Date.parse(at)) || !actor.trim())
+        return state;
+    return { ...state, [item.id]: { ...record, status: 'sent', sentAt: at, sentBy: actor } };
 }
 
 },
@@ -4568,6 +4690,147 @@ if (!root)
     __React.createElement(EntryRouter_1.default, null)));
 
 },
+"src/pages/MarketingPage":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.MarketingPage = MarketingPage;
+const react_1 = require("react");
+const Modal_1 = require("../components/Modal");
+const Icon_1 = require("../components/Icon");
+const consultation_1 = require("../lib/consultation");
+const customerName_1 = require("../lib/customerName");
+const aftercare_1 = require("../lib/aftercare");
+function MarketingPage({ items, records, store, onReview, onSend, onSupport }) {
+    const [selectedId, setSelectedId] = (0, react_1.useState)(null);
+    const selected = items.find(item => item.id === selectedId);
+    return __React.createElement(__React.Fragment, null,
+        __React.createElement("div", { className: "page-heading" },
+            __React.createElement("div", null,
+                __React.createElement("span", { className: "eyebrow" }, "\uACE0\uAC1D\uAD00\uB9AC"),
+                __React.createElement("h1", null, "\uB9C8\uCF00\uD305"),
+                __React.createElement("p", null, "\uC644\uB8CC \uC0C1\uB2F4\uC744 \uBC14\uD0D5\uC73C\uB85C \uACE0\uAC1D \uC0AC\uD6C4 \uC548\uB0B4\uB97C \uD655\uC778\uD558\uACE0 \uBC1C\uC1A1 \uCC98\uB9AC\uD558\uC138\uC694.")),
+            __React.createElement("span", { className: "small-badge" }, "\uC0AC\uD6C4\uAD00\uB9AC \uB370\uBAA8")),
+        __React.createElement("section", { className: "card appointments-card", "aria-label": "\uC0C1\uB2F4 \uD6C4 \uACE0\uAC1D \uC0AC\uD6C4\uAD00\uB9AC" },
+            __React.createElement("div", { className: "card-heading" },
+                __React.createElement("div", { className: "title-with-icon" },
+                    __React.createElement("span", { className: "small-icon red" },
+                        __React.createElement(Icon_1.Icon, { name: "megaphone", size: 18 })),
+                    __React.createElement("h2", null, "\uC644\uB8CC \uC0C1\uB2F4 \uACE0\uAC1D")),
+                __React.createElement("div", { className: "support-actions" },
+                    __React.createElement("span", { className: "small-badge" },
+                        "\uC804\uCCB4 ",
+                        items.length,
+                        "\uAC74"),
+                    __React.createElement("span", { className: "small-badge" },
+                        "\uBC1C\uC1A1 \uC644\uB8CC ",
+                        items.filter(item => records[item.id]?.status === 'sent').length,
+                        "\uAC74"))),
+            __React.createElement("div", { className: "table-scroll", role: "region", "aria-label": "\uC0AC\uD6C4\uAD00\uB9AC \uBAA9\uB85D \u00B7 \uC88C\uC6B0 \uC2A4\uD06C\uB864", tabIndex: 0 },
+                __React.createElement("table", { className: "appointment-table aftercare-table" },
+                    __React.createElement("thead", null,
+                        __React.createElement("tr", null,
+                            __React.createElement("th", { scope: "col" }, "\uACE0\uAC1D / \uC0C1\uB2F4"),
+                            __React.createElement("th", { scope: "col" }, "\uC0C1\uB2F4 \uC694\uC57D"),
+                            __React.createElement("th", { scope: "col" }, "\uC0C1\uB2F4 \uACB0\uACFC"),
+                            __React.createElement("th", { scope: "col" }, "\uC5F0\uB77D\u00B7\uC548\uB0B4 \uB3D9\uC758"),
+                            __React.createElement("th", { scope: "col" }, "\uD6C4\uC18D \uC548\uB0B4"),
+                            __React.createElement("th", { scope: "col" }, "\uCD94\uCC9C \uD6C4\uC18D \uBA54\uC2DC\uC9C0"),
+                            __React.createElement("th", { scope: "col" }, "\uBC1C\uC1A1 \uC0C1\uD0DC"),
+                            __React.createElement("th", { scope: "col" }, "\uBA54\uC2DC\uC9C0 \uD655\uC778"))),
+                    __React.createElement("tbody", null, items.map(item => {
+                        const record = records[item.id], sent = record?.status === 'sent', blocker = (0, aftercare_1.aftercareBlocker)(item);
+                        return __React.createElement("tr", { key: item.id },
+                            __React.createElement("td", null,
+                                __React.createElement("strong", null, (0, customerName_1.maskCustomerName)(item.customerName)),
+                                __React.createElement("small", { className: "muted-text" },
+                                    item.sourceId,
+                                    " \u00B7 ",
+                                    item.source)),
+                            __React.createElement("td", null,
+                                __React.createElement("span", { className: "aftercare-message-preview" }, item.summary || '상담 결과 기록 없음'),
+                                __React.createElement("small", { className: "muted-text" }, item.inquiryType)),
+                            __React.createElement("td", null, item.outcome),
+                            __React.createElement("td", null,
+                                __React.createElement("span", { className: `status-pill ${item.consent === 'granted' ? 'available' : 'neutral'}` }, aftercare_1.consentLabels[item.consent])),
+                            __React.createElement("td", null,
+                                __React.createElement("span", { className: "small-badge" }, consultation_1.followUpLabels[item.followUp])),
+                            __React.createElement("td", null,
+                                __React.createElement("span", { className: "aftercare-message-preview" }, sent ? record.message : (0, aftercare_1.recommendedAftercareMessage)(item, store) || '—')),
+                            __React.createElement("td", null,
+                                __React.createElement("span", { className: `status-pill ${sent ? 'available' : 'neutral'}` }, sent ? '완료' : '대기'),
+                                !sent && (0, aftercare_1.aftercareReviewed)(item, record) && __React.createElement("small", { className: "muted-text" }, "\uBA54\uC2DC\uC9C0 \uD655\uC778\uB428")),
+                            __React.createElement("td", null,
+                                __React.createElement("button", { className: "text-button", "aria-label": `${item.sourceId} ${sent ? '발송 기록 보기' : '메시지 확인'}`, onClick: () => setSelectedId(item.id) },
+                                    sent ? '발송 기록' : '메시지 확인',
+                                    __React.createElement(Icon_1.Icon, { name: "chevron", size: 13 })),
+                                !sent && blocker && __React.createElement("small", { className: "aftercare-blocker" }, blocker)));
+                    })))),
+            items.length === 0 && __React.createElement("div", { className: "empty-search", role: "status" },
+                __React.createElement("strong", null, "\uC644\uB8CC\uB41C \uC0C1\uB2F4\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."),
+                __React.createElement("p", null, "\uC0C1\uB2F4\uC9C0\uC6D0\uC5D0\uC11C \uC0C1\uB2F4\uC744 \uC2DC\uC791\uD558\uACE0 \uACB0\uACFC \uAE30\uB85D\uC744 \uC644\uB8CC\uD574 \uC8FC\uC138\uC694."),
+                __React.createElement("button", { className: "button button-secondary", onClick: onSupport }, "\uC0C1\uB2F4\uC9C0\uC6D0 \uBCF4\uAE30")),
+            __React.createElement("div", { className: "aftercare-notice" },
+                __React.createElement(Icon_1.Icon, { name: "help", size: 17 }),
+                __React.createElement("p", null, "\uD1B5\uD654\u00B7\uBC29\uBB38 \uC608\uC57D\uC758 \uC644\uB8CC \uACB0\uACFC\uB97C \uC0AC\uC6A9\uD569\uB2C8\uB2E4. \uC5F0\uB77D \uB3D9\uC758\uB294 \uAC00\uC0C1 \uC2DC\uC5F0 \uC124\uC815\uC774\uBA70, \uCD94\uCC9C \uBA54\uC2DC\uC9C0\uB294 \uD6C4\uC18D \uBA54\uBAA8\uB97C \uD65C\uC6A9\uD55C \uD15C\uD50C\uB9BF\uC785\uB2C8\uB2E4. \uC2E4\uC81C \uBB38\uC790 \uBC1C\uC1A1\uC740 \uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uD655\uC778\u00B7\uBC1C\uC1A1 \uAE30\uB85D\uC740 \uD604\uC7AC \uC571 \uC2E4\uD589 \uC911\uC5D0\uB9CC \uC720\uC9C0\uB418\uBA70 \uC0C8\uB85C\uACE0\uCE68 \uC2DC \uCD08\uAE30\uD654\uB429\uB2C8\uB2E4."))),
+        selected && __React.createElement(AftercareMessage, { key: selected.id, item: selected, record: records[selected.id], store: store, onReview: message => onReview(selected.id, message), onSend: () => onSend(selected.id), onClose: () => setSelectedId(null) }));
+}
+function AftercareMessage({ item, record, store, onReview, onSend, onClose }) {
+    const [message, setMessage] = (0, react_1.useState)(() => record?.message ?? (0, aftercare_1.recommendedAftercareMessage)(item, store));
+    const sent = record?.status === 'sent';
+    const blocker = (0, aftercare_1.aftercareBlocker)(item);
+    const messageError = !message.trim() ? '안내 메시지를 입력해 주세요.' : message.length > 1000 ? '안내 메시지는 1,000자 이내로 입력해 주세요.' : '';
+    const reviewed = (0, aftercare_1.aftercareReviewed)(item, record) && record?.message === message.trim();
+    return __React.createElement(Modal_1.Modal, { title: sent ? '사후 안내 발송 기록' : '사후 안내 메시지 확인', onClose: onClose },
+        __React.createElement("div", { className: "detail-meta" },
+            __React.createElement("span", null, item.sourceId),
+            __React.createElement("span", null, (0, customerName_1.maskCustomerName)(item.customerName)),
+            __React.createElement("span", null, item.outcome)),
+        __React.createElement("dl", { className: "consultation-result" },
+            __React.createElement("div", null,
+                __React.createElement("dt", null, "\uC0C1\uB2F4 \uC694\uC57D"),
+                __React.createElement("dd", null, item.summary || '결과 기록 없음')),
+            __React.createElement("div", null,
+                __React.createElement("dt", null, "\uD6C4\uC18D \uC870\uCE58"),
+                __React.createElement("dd", null, item.followUpMemo || consultation_1.followUpLabels[item.followUp])),
+            __React.createElement("div", null,
+                __React.createElement("dt", null, "\uC5F0\uB77D\u00B7\uC548\uB0B4 \uB3D9\uC758"),
+                __React.createElement("dd", null,
+                    aftercare_1.consentLabels[item.consent],
+                    " \u00B7 \uAC00\uC0C1 \uC2DC\uC5F0 \uC124\uC815"))),
+        sent ? __React.createElement(__React.Fragment, null,
+            __React.createElement("h3", { className: "section-label" }, "\uBC1C\uC1A1 \uCC98\uB9AC\uD55C \uBA54\uC2DC\uC9C0"),
+            __React.createElement("p", { className: "call-opening aftercare-sent-message" }, record.message),
+            __React.createElement("p", { className: "aftercare-success", role: "status" },
+                __React.createElement(Icon_1.Icon, { name: "check", size: 18 }),
+                "\uB370\uBAA8 \uBC1C\uC1A1 \uCC98\uB9AC\uAC00 \uC644\uB8CC\uB418\uC5C8\uC2B5\uB2C8\uB2E4."),
+            __React.createElement("p", { className: "muted-text" },
+                "\uBA54\uC2DC\uC9C0 \uD655\uC778: ",
+                (0, consultation_1.consultationTime)(record.reviewedAt),
+                " \u00B7 ",
+                record.reviewedBy,
+                __React.createElement("br", null),
+                "\uBC1C\uC1A1 \uCC98\uB9AC: ",
+                (0, consultation_1.consultationTime)(record.sentAt),
+                " \u00B7 ",
+                record.sentBy)) : __React.createElement(__React.Fragment, null,
+            __React.createElement("div", { className: "consultation-field" },
+                __React.createElement("label", { htmlFor: "aftercare-message" }, "\uCD94\uCC9C \uD6C4\uC18D \uBA54\uC2DC\uC9C0"),
+                __React.createElement("textarea", { id: "aftercare-message", value: message, maxLength: 1000, rows: 5, disabled: Boolean(blocker), onChange: event => setMessage(event.target.value), "aria-describedby": "aftercare-message-help" })),
+            __React.createElement("p", { id: "aftercare-message-help", className: "microcopy" },
+                message.length,
+                " / 1,000\uC790 \u00B7 \uB0B4\uC6A9\uC744 \uD655\uC778\uD55C \uB4A4 \uB370\uBAA8 \uBC1C\uC1A1 \uCC98\uB9AC\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."),
+            blocker ? __React.createElement("p", { className: "notice-inline", role: "status" }, blocker) : messageError ? __React.createElement("p", { className: "field-error" }, messageError) : __React.createElement("p", { className: "microcopy", role: "status" }, reviewed ? '메시지 확인 완료 · 발송 처리할 수 있습니다.' : '발송 전에 메시지 확인을 완료해 주세요.'),
+            __React.createElement("div", { className: "modal-actions" },
+                __React.createElement("button", { className: "button button-secondary", onClick: () => onReview(message), disabled: Boolean(blocker || messageError) || reviewed },
+                    __React.createElement(Icon_1.Icon, { name: "check", size: 16 }),
+                    "\uBA54\uC2DC\uC9C0 \uD655\uC778 \uC644\uB8CC"),
+                __React.createElement("button", { className: "button button-primary", disabled: !reviewed, onClick: onSend },
+                    "\uBC1C\uC1A1 \uCC98\uB9AC(\uB370\uBAA8)",
+                    __React.createElement(Icon_1.Icon, { name: "arrow", size: 16 })))),
+        __React.createElement("p", { className: "microcopy aftercare-modal-note" }, "\uC2E4\uC81C \uACE0\uAC1D\uC5D0\uAC8C \uBB38\uC790\uB97C \uBCF4\uB0B4\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uC0C8\uB85C\uACE0\uCE68\uD558\uBA74 \uB370\uBAA8 \uBC1C\uC1A1 \uAE30\uB85D\uC740 \uCD08\uAE30\uD654\uB429\uB2C8\uB2E4."));
+}
+
+},
 "src/pages/ProductsPage":function(module,exports,require){const __React=require('react');
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -4652,19 +4915,13 @@ function ProductsPage() {
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SecondaryPages = SecondaryPages;
-const domain_1 = require("../lib/domain");
-const navigation_1 = require("../lib/navigation");
 const ProductsPage_1 = require("./ProductsPage");
 const StoreManagementPage_1 = require("./StoreManagementPage");
 const Icon_1 = require("../components/Icon");
 const InventoryPanel_1 = require("../components/InventoryPanel");
 const LiveConsultations_1 = require("../live/LiveConsultations");
 const customerName_1 = require("../lib/customerName");
-const definitions = {
-    support: { icon: 'message', title: '상담에 필요한 정보를 빠르게', desc: '상담 전 브리핑과 통화 위험 신호를 확인하고 필요한 경우 관리자 지원을 요청하세요.', features: ['브리핑의 문의 내용과 AI 안내 확인', '위험 신호의 근거와 발생 시점 확인', '데모 상담 패널에서 관리자 지원 요청·처리'] },
-    marketing: { icon: 'megaphone', title: '상담 이후의 고객 관리까지', desc: '완료 상담의 후속 조치 메모를 검토할 때 사용하는 확인 사항입니다.', features: ['추가 확인이 필요한 상담 내용 검토', '고객의 연락 동의와 안내 필요성 확인', '처리 결과에 후속 안내 메모 기록'] },
-};
-function SecondaryPages({ page, data, onHome }) {
+function SecondaryPages({ page, data }) {
     if (page === 'inventory')
         return __React.createElement(__React.Fragment, null,
             __React.createElement("div", { className: "page-heading" },
@@ -4722,29 +4979,7 @@ function SecondaryPages({ page, data, onHome }) {
                             __React.createElement("td", null, (0, customerName_1.maskCustomerName)(item.customerName)),
                             __React.createElement("td", null, item.purpose),
                             __React.createElement("td", null, item.time))))))));
-    const config = definitions[page];
-    if (!config)
-        return null;
-    return __React.createElement(__React.Fragment, null,
-        __React.createElement("div", { className: "page-heading" },
-            __React.createElement("div", null,
-                __React.createElement("span", { className: "eyebrow" }, (0, navigation_1.pageCategory)(page)),
-                __React.createElement("h1", null, domain_1.pageLabels[page]),
-                __React.createElement("p", null, page === 'support' ? '직원 보호와 상담 대응을 위한 확인 사항입니다.' : '후속 안내 전 확인할 내용을 정리합니다.')),
-            __React.createElement("span", { className: "status-pill neutral" }, "\uC5C5\uBB34 \uCC38\uACE0")),
-        __React.createElement("section", { className: "card placeholder-page" },
-            __React.createElement("div", { className: "placeholder-mark" },
-                __React.createElement(Icon_1.Icon, { name: config.icon, size: 34 })),
-            __React.createElement("span", { className: "eyebrow" }, "\uC0C1\uB2F4 \uCCB4\uD06C\uB9AC\uC2A4\uD2B8"),
-            __React.createElement("h2", null, config.title),
-            __React.createElement("p", null, config.desc),
-            __React.createElement("div", { className: "feature-list" }, config.features.map(feature => __React.createElement("div", { key: feature },
-                __React.createElement(Icon_1.Icon, { name: "check", size: 16 }),
-                __React.createElement("span", null, feature)))),
-            __React.createElement("div", { className: "placeholder-note" }, page === 'support' ? '팀 시연용 참고 안내입니다. KT 공식 대응 매뉴얼이 아니며, 실제 관리자 알림은 전송하지 않습니다.' : '안내 문구·대상 자동 생성과 문자 발송은 연결하지 않았습니다. 고객 연락은 이 화면에서 실행되지 않습니다.'),
-            __React.createElement("button", { className: "button button-secondary", onClick: onHome },
-                "\uB300\uC2DC\uBCF4\uB4DC\uC5D0\uC11C \uC0C1\uB2F4 \uD655\uC778",
-                __React.createElement(Icon_1.Icon, { name: "arrow", size: 16 }))));
+    return null;
 }
 
 },
@@ -4911,6 +5146,115 @@ function StoreManagementPage({ data }) {
                         __React.createElement("div", { className: "staff-traits" }, employee.traits.map(trait => __React.createElement("span", { key: trait }, trait))),
                         __React.createElement("p", { className: "directory-subnote" }, "\uC9C1\uC6D0 \uC18C\uAC1C\uC6A9 \uC0D8\uD50C \uD0DC\uADF8\uC785\uB2C8\uB2E4. \uACE0\uAC1D \uC131\uD5A5 \uBD84\uB958\uB098 \uC790\uB3D9 \uC9C1\uC6D0 \uBC30\uC815\uC5D0\uB294 \uC0AC\uC6A9\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.")),
                     __React.createElement(ReviewSamples, { items: employee.reviews, title: "\uC9C1\uC6D0 \uB9AC\uBDF0" }))))))));
+}
+
+},
+"src/pages/SupportPage":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SupportPage = SupportPage;
+const react_1 = require("react");
+const CallBriefing_1 = require("../components/CallBriefing");
+const CallSupportPanel_1 = require("../components/CallSupportPanel");
+const Icon_1 = require("../components/Icon");
+const callRisk_1 = require("../lib/callRisk");
+const callSupport_1 = require("../lib/callSupport");
+const callWorkflow_1 = require("../lib/callWorkflow");
+const customerName_1 = require("../lib/customerName");
+function SupportPage({ state, onStart, onSupport, onDraft, onComplete, onNext }) {
+    const [filter, setFilter] = (0, react_1.useState)('all');
+    const [selectedId, setSelectedId] = (0, react_1.useState)(() => state.calls.find(call => call.supportRequests.some(callSupport_1.isOpenSupport))?.id ?? state.calls[0]?.id);
+    const [detailId, setDetailId] = (0, react_1.useState)(null);
+    const guideRef = (0, react_1.useRef)(null);
+    const selected = state.calls.find(call => call.id === selectedId) ?? state.calls[0];
+    const detail = state.calls.find(call => call.id === detailId);
+    const calls = state.calls.filter(call => filter === 'all' || (filter === 'support' ? call.supportRequests.some(callSupport_1.isOpenSupport) : filter === 'recent' ? call.status === 'completed' || call.status === 'ended' : call.status !== 'completed' && call.status !== 'ended'));
+    const choose = (id) => { setSelectedId(id); guideRef.current?.focus(); };
+    return __React.createElement(__React.Fragment, null,
+        __React.createElement("div", { className: "page-heading" },
+            __React.createElement("div", null,
+                __React.createElement("span", { className: "eyebrow" }, "\uC0C1\uB2F4\uC5C5\uBB34"),
+                __React.createElement("h1", null, "\uC0C1\uB2F4\uC9C0\uC6D0"),
+                __React.createElement("p", null, "\uD1B5\uD654 \uC704\uD5D8 \uC2E0\uD638\uC640 \uB300\uC751 \uAC00\uC774\uB4DC\uB97C \uD655\uC778\uD558\uACE0 \uAD00\uB9AC\uC790 \uC9C0\uC6D0\uC744 \uC694\uCCAD\uD558\uC138\uC694.")),
+            __React.createElement("span", { className: "small-badge" }, "\uD1B5\uD654 \uB370\uBAA8")),
+        __React.createElement("section", { className: "card appointments-card", "aria-label": "\uC0C1\uB2F4\uC9C0\uC6D0 \uD1B5\uD654 \uBAA9\uB85D" },
+            __React.createElement("div", { className: "card-heading" },
+                __React.createElement("div", { className: "title-with-icon" },
+                    __React.createElement("span", { className: "small-icon red" },
+                        __React.createElement(Icon_1.Icon, { name: "shield", size: 18 })),
+                    __React.createElement("h2", null, "\uD604\uC7AC\u00B7\uCD5C\uADFC \uD1B5\uD654")),
+                __React.createElement("div", { className: "call-filters" },
+                    __React.createElement("label", { htmlFor: "support-filter" }, "\uD1B5\uD654 \uBC94\uC704"),
+                    __React.createElement("select", { id: "support-filter", value: filter, onChange: event => setFilter(event.target.value) },
+                        __React.createElement("option", { value: "all" }, "\uC804\uCCB4 \uD1B5\uD654"),
+                        __React.createElement("option", { value: "active" }, "\uD604\uC7AC \uD1B5\uD654"),
+                        __React.createElement("option", { value: "recent" }, "\uC644\uB8CC\u00B7\uC885\uB8CC \uD1B5\uD654"),
+                        __React.createElement("option", { value: "support" }, "\uBBF8\uC644\uB8CC \uC9C0\uC6D0 \uC694\uCCAD")))),
+            __React.createElement("div", { className: "table-scroll", role: "region", "aria-label": "\uC0C1\uB2F4\uC9C0\uC6D0 \uBAA9\uB85D \u00B7 \uC88C\uC6B0 \uC2A4\uD06C\uB864", tabIndex: 0 },
+                __React.createElement("table", { className: "appointment-table support-call-table" },
+                    __React.createElement("thead", null,
+                        __React.createElement("tr", null,
+                            __React.createElement("th", { scope: "col" }, "\uACE0\uAC1D / \uD1B5\uD654"),
+                            __React.createElement("th", { scope: "col" }, "\uBB38\uC758 \uC720\uD615"),
+                            __React.createElement("th", { scope: "col" }, "\uC0C1\uB2F4 \uC0C1\uD0DC"),
+                            __React.createElement("th", { scope: "col" }, "\uC704\uD5D8\uB3C4\u00B7\uD604\uC7AC \uACBD\uACE0"),
+                            __React.createElement("th", { scope: "col" }, "\uAC10\uC9C0 \uC2E0\uD638"),
+                            __React.createElement("th", { scope: "col" }, "\uAD00\uB9AC\uC790 \uC9C0\uC6D0"),
+                            __React.createElement("th", { scope: "col" }, "\uC0C1\uB2F4\u00B7\uC9C0\uC6D0"))),
+                    __React.createElement("tbody", null, calls.map(call => {
+                        const risk = (0, callRisk_1.callRisk)(call), support = (0, callSupport_1.latestSupport)(call);
+                        return __React.createElement("tr", { key: call.id, className: selected?.id === call.id ? 'is-selected' : '' },
+                            __React.createElement("td", null,
+                                __React.createElement("strong", null, (0, customerName_1.maskCustomerName)(call.customerLabel)),
+                                __React.createElement("small", { className: "muted-text" }, call.id)),
+                            __React.createElement("td", null, call.inquiryType),
+                            __React.createElement("td", null,
+                                __React.createElement("span", { className: "status-pill neutral" }, callRisk_1.callStatusLabels[call.status]),
+                                __React.createElement("small", { className: "muted-text" }, callRisk_1.analysisStatusLabels[call.analysis.status])),
+                            __React.createElement("td", null,
+                                __React.createElement("span", { className: `risk-badge risk-${risk.grade ?? 'unavailable'}` }, risk.text)),
+                            __React.createElement("td", null,
+                                __React.createElement("div", { className: "support-signal-summary" }, Object.keys(callRisk_1.signalLabels).map(signal => __React.createElement("span", { className: "small-badge", key: signal },
+                                    callRisk_1.signalLabels[signal],
+                                    " ",
+                                    (0, callRisk_1.signalEvidence)(call.analysis, signal)?.length ?? '—')))),
+                            __React.createElement("td", null, support ? __React.createElement("span", { className: "small-badge" }, callSupport_1.supportStatusLabels[support.status]) : __React.createElement("span", { className: "muted-text" }, "\u2014")),
+                            __React.createElement("td", null,
+                                __React.createElement("div", { className: "support-actions" },
+                                    __React.createElement("button", { className: "text-button", "aria-label": `${call.id} 상담 상세 보기`, onClick: () => { setSelectedId(call.id); setDetailId(call.id); } },
+                                        "\uC0C1\uB2F4 \uC0C1\uC138",
+                                        __React.createElement(Icon_1.Icon, { name: "chevron", size: 13 })),
+                                    __React.createElement("button", { className: "text-button", "aria-label": `${call.id} ${support ? '지원 상태 확인' : '관리자 지원 요청'}`, disabled: !support && !(0, callSupport_1.canRequestSupport)(call), onClick: () => choose(call.id) }, support ? '지원 상태' : '지원 요청'))));
+                    })))),
+            calls.length === 0 && __React.createElement("div", { className: "empty-search", role: "status" },
+                __React.createElement("strong", null, "\uC870\uAC74\uC5D0 \uB9DE\uB294 \uD1B5\uD654\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4."),
+                __React.createElement("button", { className: "text-button", onClick: () => setFilter('all') }, "\uC804\uCCB4 \uD1B5\uD654 \uBCF4\uAE30"))),
+        selected && __React.createElement("section", { className: "card support-guide-card", ref: guideRef, tabIndex: -1, "aria-label": `${selected.id} 대응 가이드·관리자 지원` },
+            __React.createElement("div", { className: "card-heading" },
+                __React.createElement("div", null,
+                    __React.createElement("h2", null,
+                        (0, customerName_1.maskCustomerName)(selected.customerLabel),
+                        " \u00B7 ",
+                        selected.id,
+                        " \uB300\uC751 \uAC00\uC774\uB4DC"),
+                    __React.createElement("p", { className: "muted-text" },
+                        selected.inquiryType,
+                        " \u00B7 ",
+                        callRisk_1.callStatusLabels[selected.status])),
+                __React.createElement("button", { className: "button button-secondary", onClick: () => setDetailId(selected.id) }, "\uC120\uD0DD \uD1B5\uD654 \uC0C1\uC138 \uBCF4\uAE30")),
+            __React.createElement("div", { className: "support-guide-grid" },
+                __React.createElement("section", { "aria-label": "AI \uAD8C\uC7A5 \uB300\uC751 \uAC00\uC774\uB4DC" },
+                    __React.createElement("h3", { className: "section-label" },
+                        "AI \uAD8C\uC7A5 \uB300\uC751 \uAC00\uC774\uB4DC ",
+                        __React.createElement("span", { className: "small-badge" }, "\uAC00\uC0C1 \uBD84\uC11D \uC608\uC2DC")),
+                    selected.analysis.status === 'completed' && selected.analysis.recommendedActions.length ? __React.createElement("ul", { className: "call-action-list" }, selected.analysis.recommendedActions.map(action => __React.createElement("li", { key: action }, action))) : __React.createElement("p", { className: "muted-text" },
+                        callRisk_1.analysisStatusLabels[selected.analysis.status],
+                        " \u00B7 \uB300\uC751 \uAC00\uC774\uB4DC\uAC00 \uC544\uC9C1 \uC5C6\uC2B5\uB2C8\uB2E4."),
+                    __React.createElement("h3", { className: "section-label" }, "\uAD8C\uC7A5 \uCCAB \uC751\uB300"),
+                    __React.createElement("blockquote", { className: "call-opening" }, selected.analysis.status === 'completed' && selected.analysis.openingLine || '첫 응대 문구 분석 결과를 기다리고 있습니다.'),
+                    __React.createElement("p", { className: "microcopy" }, "\uD300 \uC2DC\uC5F0\uC6A9 \uB300\uC751 \uC608\uC2DC\uC774\uBA70 KT \uACF5\uC2DD \uB9E4\uB274\uC5BC\uC774 \uC544\uB2D9\uB2C8\uB2E4. \uC2E4\uC81C Retell \uD1B5\uD654\uC640\uB294 \uBCC4\uB3C4\uC758 \uC0D8\uD50C \uC0C1\uB2F4\uC785\uB2C8\uB2E4.")),
+                __React.createElement("div", null, !detail && __React.createElement(CallSupportPanel_1.CallSupportPanel, { key: selected.id, call: selected, onSupport: onSupport })))),
+        detail && __React.createElement(CallBriefing_1.CallBriefing, { key: detail.id, call: detail, calls: state.calls, customer: state.customers.find(customer => customer.id === detail.customerId), nextCall: (0, callWorkflow_1.nextCallBlocker)(state.calls, detail), onStart: onStart, onSupport: onSupport, onDraft: onDraft, onComplete: onComplete, onNext: onNext, onOpen: setDetailId, onClose: () => setDetailId(null) }));
 }
 
 },
