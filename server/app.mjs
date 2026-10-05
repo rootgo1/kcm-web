@@ -5,7 +5,7 @@ import { serveBuild } from './deployment.mjs';
 import { createConsultationId } from './call-identity.mjs';
 import { createN8nDelivery } from './n8n-delivery.mjs';
 import { createInventoryApi, createInventoryEvents, createInventoryStore } from './inventory.mjs';
-import { createDbInventoryApi, createInventoryDb } from './inventory-db.mjs';
+import { createDbInventoryApi, createInventoryDb, createInventoryNotifier } from './inventory-db.mjs';
 
 const localOrigins = new Set(['http://127.0.0.1:5173', 'http://localhost:5173']);
 const api = 'https://api.retellai.com';
@@ -40,7 +40,8 @@ export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log =
   const inventoryEvents = createInventoryEvents({ webhookUrl: inventoryWebhookUrl, fetchImpl: webhookFetchImpl, log });
   // N8N_INVENTORY_BASE_URL set → DB mode through n8n; otherwise the in-memory demo store.
   const inventoryDb = inventoryBaseUrl ? createInventoryDb({ baseUrl: inventoryBaseUrl, fetchImpl: webhookFetchImpl, log }) : null;
-  const inventoryApi = inventoryDb ? createDbInventoryApi({ db: inventoryDb, homeStoreId: demoStoreId, log })
+  const inventoryNotify = inventoryBaseUrl ? createInventoryNotifier({ baseUrl: inventoryBaseUrl, fetchImpl: webhookFetchImpl, log }) : null;
+  const inventoryApi = inventoryDb ? createDbInventoryApi({ db: inventoryDb, homeStoreId: demoStoreId, log, notify: inventoryNotify })
     : createInventoryApi({ store: inventory, events: inventoryEvents });
   // Ownership permits cancelling only calls created by this local server.
   // Expiring IDs carry no token; Monitor sessions have their own end/error cleanup.
@@ -178,7 +179,7 @@ export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log =
       error(502, 'RETELL_CONNECTION_FAILED');
     }
   });
-  server.on('close', () => { delivery.close(); inventoryEvents.close(); inventoryDb?.close(); liveEvents.close(); clearInterval(expiry); owned.clear(); monitors.close(); });
+  server.on('close', () => { delivery.close(); inventoryEvents.close(); inventoryDb?.close(); inventoryNotify?.close(); liveEvents.close(); clearInterval(expiry); owned.clear(); monitors.close(); });
   server.requestTimeout = 20_000;
   server.headersTimeout = 10_000;
   return server;
