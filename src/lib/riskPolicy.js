@@ -1,5 +1,12 @@
 /** Shared frontend/Node policy. Per-call results only; no previous customer score. */
-export const RISK_RULE = Object.freeze({ version: 'call-risk-v2', min: 0, max: 99 });
+export const RISK_RULE = Object.freeze({
+  version: 'call-risk-v4', min: 0, max: 99, profanityFloor: 20,
+  threatFloors: Object.freeze([
+    Object.freeze({ count: 1, score: 40 }),
+    Object.freeze({ count: 2, score: 60 }),
+    Object.freeze({ count: 3, score: 80 }),
+  ]),
+});
 export const RISK_BANDS = /** @type {const} */ ([
   { grade: 'normal', label: '정상', level: 1, min: 0 },
   { grade: 'caution', label: '주의', level: 2, min: 20 },
@@ -37,8 +44,10 @@ export function calculateCallRisk(signals) {
     shouting_score: signalScore('shouting', signals.shouting_count),
   };
   const raw_score = Object.values(scores).reduce((sum, value) => sum + value, 0);
-  const threat_floor = signals.threat_count >= 3 ? 60 : signals.threat_count >= 2 ? 40 : 0;
-  const adjusted_score = Math.max(raw_score, threat_floor);
+  const threat_floor = [...RISK_RULE.threatFloors].reverse().find(rule => signals.threat_count >= rule.count)?.score ?? 0;
+  // Preserve item scores and result fields; any profanity raises only the final minimum.
+  const profanity_floor = signals.profanity_count >= 1 ? RISK_RULE.profanityFloor : 0;
+  const adjusted_score = Math.max(raw_score, threat_floor, profanity_floor);
   const risk_score = Math.min(adjusted_score, RISK_RULE.max);
   const band = riskBand(risk_score);
   if (!band) throw new RangeError('점수 계산 오류');

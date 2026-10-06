@@ -24,7 +24,7 @@ test('all demo calls start at zero and have no customer cumulative score field',
   const state = createCallDemoState();
   assert.ok(state.calls.every(call => call.initialScore === 0 && !('scoreBefore' in call)));
   assert.ok(state.customers.every(customer => !('score' in customer)));
-  assert.equal(scorePreview(state.calls[2]).value?.risk_score, 14);
+  assert.equal(scorePreview(state.calls[2]).value?.risk_score, 20);
 });
 test('all five missing/invalid counts are rejected and quiet calls independently finish at zero', () => {
   for (const value of [-1,0.5,NaN,Infinity,null,undefined]) for (const field of ['shoutingCount','profanityCount','threatCount','blameCount','sexualCount']) {
@@ -36,7 +36,7 @@ test('same evidence ID is deduplicated, mismatched counts block finalization', (
   const call = createCallDemoState().calls[2];
   call.analysis.signals!.shouting.push({ ...call.analysis.signals!.shouting[0] });
   assert.equal(signalEvidence(call.analysis,'shouting')?.length,4);
-  assert.equal(scorePreview(call).value?.risk_score,14);
+  assert.equal(scorePreview(call).value?.risk_score,20);
   call.analysis.shoutingCount=5; assert.match(scorePreview(call).error,/불일치/);
 });
 test('prepared final samples and a threat warning never create a numeric score before ending', () => {
@@ -48,10 +48,10 @@ test('prepared final samples and a threat warning never create a numeric score b
 test('new/known/unknown customer identification does not change independent call calculation', () => {
   for (const historyStatus of ['new','known','unknown'] as const) {
     const state=ready(); state.calls[2].historyStatus=historyStatus;
-    assert.equal(finishedCall().calls[2].scoreRecord?.risk_score,14);
+    assert.equal(finishedCall().calls[2].scoreRecord?.risk_score,20);
     state.calls[2].customerId=null;
     const done=completeDemoCall(state,'C-003',doneAt,actor);
-    assert.equal(done.calls[2].scoreRecord?.risk_score,14);
+    assert.equal(done.calls[2].scoreRecord?.risk_score,20);
     assert.deepEqual(customerRiskHistory(done.calls,null),[]);
   }
 });
@@ -71,7 +71,7 @@ test('record completion and actual call end remain separate conditions', () => {
   assert.equal(state.calls[2].endedAt,null); assert.equal(applyFinalCallScore(state,'C-003',at),state);
   const done=simulateCallEnd(state,'C-003',laterAt);
   assert.equal(done.calls[2].completedAt,doneAt); assert.equal(done.calls[2].endedAt,laterAt);
-  assert.equal(done.calls[2].scoreRecord?.risk_score,14);
+  assert.equal(done.calls[2].scoreRecord?.risk_score,20);
 });
 test('repeated partial snapshots do not add scores; delayed final result applies once', () => {
   let state=ready(); const final=structuredClone(state.calls[2].analysis);
@@ -79,7 +79,7 @@ test('repeated partial snapshots do not add scores; delayed final result applies
   assert.equal(state.calls[2].scoreRecord,null); state=completeDemoCall(state,'C-003',doneAt,actor);
   const result=state.calls[2].result;
   state=receiveCallAnalysis(state,'C-003',final,laterAt);
-  assert.equal(state.calls[2].scoreRecord?.risk_score,14); assert.equal(state.calls[2].scoreRecord?.appliedAt,laterAt);
+  assert.equal(state.calls[2].scoreRecord?.risk_score,20); assert.equal(state.calls[2].scoreRecord?.appliedAt,laterAt);
   assert.equal(state.calls[2].result,result); assert.equal(state.calls[2].completedAt,doneAt);
   for(let n=0;n<10;n++) assert.equal(receiveCallAnalysis(state,'C-003',final,laterAt),state);
 });
@@ -138,12 +138,12 @@ test('analysis and support changes retain the draft; completion retains outstand
   assert.equal(applyCallSupport(state.calls,'C-003',{type:'request',requestId:'again',reason:'other',memo:'',actor},laterAt),state.calls);
   assert.equal(startCallConsultation(state.calls,'C-003',laterAt),state.calls);assert.equal(updateCallDraft(state,'C-003','content','수정 금지'),state);
 });
-test('C-004 completion removes live threat alert from metrics, preserves support and final 40 boundary', () => {
+test('C-004 completion removes live threat alert from metrics, preserves support and final 60 danger', () => {
   const state=completeDemoCall(ready(createCallDemoState(),'C-004'),'C-004',doneAt,actor);
   assert.equal(getCallMetrics(state.calls).dangerous,0); assert.equal(getCallMetrics(state.calls).pendingSupport,1);
-  assert.equal(state.calls[3].scoreRecord?.risk_score,40); assert.equal(filterCalls(state.calls,'completed','boundary')[0].id,'C-004');
+  assert.equal(state.calls[3].scoreRecord?.raw_score,30); assert.equal(state.calls[3].scoreRecord?.risk_score,60); assert.equal(filterCalls(state.calls,'completed','danger')[0].id,'C-004');
 });
-test('47 → independent 80 → independent 26 histories remain; fourth call starts zero', () => {
+test('47 → independent 80 → independent 40 histories remain; fourth call starts zero', () => {
   let state=ready();
   state.calls[2].analysis=analysis(7,1,0,2,1); //15+20+0+10+2=47
   state=completeDemoCall(state,'C-003',doneAt,actor);const first=state.calls[2];
@@ -158,18 +158,19 @@ test('47 → independent 80 → independent 26 histories remain; fourth call sta
   state=createNextDemoCall(state,second.id);const third=state.calls.at(-1)!;
   state=ready(state,third.id);state.calls.at(-1)!.analysis=analysis(2,1,0,0,0);
   state=completeDemoCall(state,third.id,'2026-09-30T06:15:00Z',actor);
-  assert.deepEqual(customerRiskHistory(state.calls,first.customerId).map(r=>r.risk_score),[26,80,47]);
-  assert.equal(latestCustomerRisk(state.calls,first.customerId)?.risk_score,26);
+  assert.equal(state.calls.at(-1)!.scoreRecord?.raw_score,26);
+  assert.deepEqual(customerRiskHistory(state.calls,first.customerId).map(r=>r.risk_score),[40,80,47]);
+  assert.equal(latestCustomerRisk(state.calls,first.customerId)?.risk_score,40);
   assert.equal(state.calls[2],first);assert.equal(first.scoreRecord?.risk_score,47);
   state=createNextDemoCall(state,third.id);assert.equal(state.calls.at(-1)!.initialScore,0);
-  assert.equal(latestCustomerRisk(state.calls,first.customerId)?.risk_score,26);
+  assert.equal(latestCustomerRisk(state.calls,first.customerId)?.risk_score,40);
 });
 test('no next call before finalization; same names do not merge customer IDs; latest is by completion time', () => {
   const initial=createCallDemoState();assert.equal(createNextDemoCall(initial,'C-003'),initial);
   const recorded=completeCallRecord(ready(),'C-003',doneAt,actor);assert.equal(createNextDemoCall(recorded,'C-003'),recorded);
   const state=finishedCall();state.calls[0].customerLabel=state.calls[2].customerLabel;
   assert.deepEqual(customerRiskHistory(state.calls,state.calls[0].customerId),[]);
-  assert.equal(latestCustomerRisk(state.calls,state.calls[2].customerId)?.risk_score,14);
+  assert.equal(latestCustomerRisk(state.calls,state.calls[2].customerId)?.risk_score,20);
 });
 test('new app memory has no drafts/results/history; inconsistent evidence blocks only scoring', () => {
   finishedCall();const fresh=createCallDemoState();
@@ -184,5 +185,5 @@ test('a newer completed but unscored call never mislabels an older score as the 
   state=ready(state,id);state.calls.at(-1)!.analysis.status='failed';
   state=completeDemoCall(state,id,laterAt,actor);
   assert.equal(latestCustomerRisk(state.calls,'CUSTOMER-003'),null);
-  assert.equal(customerRiskHistory(state.calls,'CUSTOMER-003')[0].risk_score,14);
+  assert.equal(customerRiskHistory(state.calls,'CUSTOMER-003')[0].risk_score,20);
 });

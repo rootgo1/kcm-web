@@ -2414,9 +2414,11 @@ function CallRiskDetails({ call, customer, calls }) {
                         final.raw_score,
                         "\uC810")),
                 __React.createElement("div", null,
-                    __React.createElement("dt", null, "\uC704\uD611 \uCD5C\uC18C\uC810\uC218 \uBCF4\uC815"),
+                    __React.createElement("dt", null, "\uCD5C\uC18C\uC810\uC218 \uBCF4\uC815"),
                     __React.createElement("dd", null,
-                        final.threat_floor ? '최소 ' + final.threat_floor + '점 적용' : '없음',
+                        final.signals.profanity_count >= 1 && final.rule_version === riskScoring_1.RISK_RULE.version && '욕설 최소 ' + riskScoring_1.RISK_RULE.profanityFloor + '점 · ',
+                        "\uC704\uD611 ",
+                        final.threat_floor ? '최소 ' + final.threat_floor + '점 적용' : '보정 없음',
                         " \u00B7 \uBCF4\uC815 \uD6C4 ",
                         final.adjusted_score,
                         "\uC810")),
@@ -5493,7 +5495,14 @@ exports.riskBand = riskBand;
 exports.signalScore = signalScore;
 exports.calculateCallRisk = calculateCallRisk;
 /** Shared frontend/Node policy. Per-call results only; no previous customer score. */
-exports.RISK_RULE = Object.freeze({ version: 'call-risk-v2', min: 0, max: 99 });
+exports.RISK_RULE = Object.freeze({
+    version: 'call-risk-v4', min: 0, max: 99, profanityFloor: 20,
+    threatFloors: Object.freeze([
+        Object.freeze({ count: 1, score: 40 }),
+        Object.freeze({ count: 2, score: 60 }),
+        Object.freeze({ count: 3, score: 80 }),
+    ]),
+});
 exports.RISK_BANDS = ([
     { grade: 'normal', label: '정상', level: 1, min: 0 },
     { grade: 'caution', label: '주의', level: 2, min: 20 },
@@ -5534,8 +5543,10 @@ function calculateCallRisk(signals) {
         shouting_score: signalScore('shouting', signals.shouting_count),
     };
     const raw_score = Object.values(scores).reduce((sum, value) => sum + value, 0);
-    const threat_floor = signals.threat_count >= 3 ? 60 : signals.threat_count >= 2 ? 40 : 0;
-    const adjusted_score = Math.max(raw_score, threat_floor);
+    const threat_floor = [...exports.RISK_RULE.threatFloors].reverse().find(rule => signals.threat_count >= rule.count)?.score ?? 0;
+    // Preserve item scores and result fields; any profanity raises only the final minimum.
+    const profanity_floor = signals.profanity_count >= 1 ? exports.RISK_RULE.profanityFloor : 0;
+    const adjusted_score = Math.max(raw_score, threat_floor, profanity_floor);
     const risk_score = Math.min(adjusted_score, exports.RISK_RULE.max);
     const band = riskBand(risk_score);
     if (!band)
@@ -6006,7 +6017,9 @@ function LiveRiskSignals({ call }) {
             __React.createElement("p", { className: "live-risk-note" },
                 "\uD56D\uBAA9 \uD569\uACC4 ",
                 final.raw_score,
-                "\uC810 \u00B7 \uC704\uD611 \uBCF4\uC815 ",
+                "\uC810",
+                final.signals.profanity_count >= 1 && final.rule_version === riskScoring_1.RISK_RULE.version && ' · 욕설 최소 ' + riskScoring_1.RISK_RULE.profanityFloor + '점 보정',
+                " \u00B7 \uC704\uD611 \uBCF4\uC815 ",
                 final.threat_floor ? '최소 ' + final.threat_floor + '점' : '없음',
                 final.adjusted_score > 99 && ' · 99점 상한 적용'),
             __React.createElement("dl", { className: "live-risk-counts" }, ['profanity', 'threat', 'blame', 'sexual', 'shouting'].map((key, index) => __React.createElement("div", { key: key },

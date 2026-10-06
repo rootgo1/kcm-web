@@ -115,7 +115,7 @@ test('live UI: valid finalized payload appears only after end, malformed scores 
   const result={...calculateCallRisk({profanity_count:2,threat_count:1,blame_count:3,sexual_count:0,shouting_count:2}),call_id:'call_one',customer_id:null,completed_at:'2026-10-01T02:01:00Z'};
   const ended={...call(),status:'ended',ended_at:result.completed_at,final_result:result};
   const valid=parseLiveEvent(JSON.stringify({type:'risk_finalized',...ended}));
-  assert.ok(valid && valid.type==='risk_finalized');assert.equal(valid.final_result?.risk_score,39);
+  assert.ok(valid && valid.type==='risk_finalized');assert.equal(valid.final_result?.raw_score,39);assert.equal(valid.final_result?.risk_score,40);assert.equal(valid.final_result?.risk_level,'경계');
   const live=parseLiveEvent(JSON.stringify({type:'transcript',...call(),final_result:result}));
   assert.ok(live && live.type==='transcript');assert.equal(live.final_result,null);
   for(const final_result of [{...result,risk_score:99},{...result,risk_level:'정상'},{...result,call_id:'other'},{...result,signals:{...result.signals,shouting_count:null}}]){
@@ -123,6 +123,30 @@ test('live UI: valid finalized payload appears only after end, malformed scores 
     assert.ok(bad && bad.type==='call_ended');assert.equal(bad.final_result,null);
   }
 });
+test('live UI: profanity floor accepts 20 caution and rejects an unadjusted normal score',()=>{
+  const result={...calculateCallRisk({profanity_count:1,threat_count:0,blame_count:0,sexual_count:0,shouting_count:0}),call_id:'call_one',customer_id:null,completed_at:'2026-10-01T02:01:00Z'};
+  const ended={...call(),status:'ended',ended_at:result.completed_at,messages:[message('u1','씨발')],final_result:result};
+  const valid=parseLiveEvent(JSON.stringify({type:'risk_finalized',...ended}));
+  assert.ok(valid && valid.type==='risk_finalized');
+  assert.equal(valid.final_result?.scores.profanity_score,3);
+  assert.equal(valid.final_result?.risk_score,20);assert.equal(valid.final_result?.risk_level,'주의');
+  const invalid=parseLiveEvent(JSON.stringify({type:'risk_finalized',...ended,final_result:{...result,adjusted_score:3,risk_score:3,risk_level:'정상'}}));
+  assert.ok(invalid && invalid.type==='risk_finalized');
+  assert.equal(invalid.final_result,null);assert.equal(invalid.messages[0].content,'씨발');
+});
+
+test('live UI: escalated threat floors are accepted and lower raw-only results never become final',()=>{
+  for (const [threat, score, raw] of [[1,40,20],[2,60,30],[3,80,40]]) {
+    const result={...calculateCallRisk({profanity_count:0,threat_count:threat,blame_count:0,sexual_count:0,shouting_count:0}),call_id:'call_one',customer_id:null,completed_at:'2026-10-01T02:01:00Z'};
+    const ended={...call(),status:'ended',ended_at:result.completed_at,messages:[message('u1','너 찾아가서 팬다')],final_result:result};
+    const valid=parseLiveEvent(JSON.stringify({type:'risk_finalized',...ended}));
+    assert.ok(valid && valid.type==='risk_finalized');
+    assert.equal(valid.final_result?.raw_score,raw);assert.equal(valid.final_result?.risk_score,score);assert.equal(valid.final_result?.threat_floor,score);
+    const invalid=parseLiveEvent(JSON.stringify({type:'risk_finalized',...ended,final_result:{...result,adjusted_score:raw,risk_score:raw,risk_level:raw<40?'주의':'경계',threat_floor:0}}));
+    assert.ok(invalid && invalid.type==='risk_finalized');assert.equal(invalid.final_result,null);assert.equal(invalid.messages[0].content,'너 찾아가서 팬다');
+  }
+});
+
 test('live UI: audio SSE updates one call and malformed audio does not hide transcript',()=>{
   const audio={sequence:1,shouting_count:2,is_shouting:true,available:true,coverage_complete:true,closed:false};
   const event=parseLiveEvent(JSON.stringify({type:'audio_signal',...call(),audio_signal:audio}));
