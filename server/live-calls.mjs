@@ -59,8 +59,10 @@ export function createLiveCallStore(/** @type {() => string} */ now = () => new 
     if (!analysis) return { ...call, finalization_reason: '텍스트 분석 확인 필요 · 점수 보류' };
     if (!audio?.closed) return { ...call, finalization_reason: '고성 최종 상태 수신 대기 · 점수 보류' };
     if (!audio.available || !audio.coverage_complete) return { ...call, finalization_reason: '마이크 미측정·중단 구간 있음 · 점수 보류' };
+    const explicitHarmThreat = Object.values(analysis.analysisByTurn).some(turn =>
+      turn.signals.some(signal => signal.type === 'threat' && signal.explicitHarm === true));
     const result = calculateCallRisk({ profanity_count: analysis.profanityCount, threat_count: analysis.threatCount,
-      blame_count: analysis.blameCount, sexual_count: analysis.sexualCount, shouting_count: audio.shouting_count });
+      blame_count: analysis.blameCount, sexual_count: analysis.sexualCount, shouting_count: audio.shouting_count }, { explicitHarmThreat });
     return { ...call, finalization_reason: null, final_result: { ...result, call_id: call.call_id,
       customer_id: call.customer_id ?? null, completed_at: call.ended_at ?? now() } };
   };

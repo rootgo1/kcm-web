@@ -11,7 +11,8 @@ function isTextRisk(value: unknown): value is LiveTextRisk {
   if (!record(value) || !count(value.profanityCount) || !count(value.threatCount) || !count(value.blameCount) || !count(value.sexualCount) ||
     value.threatDetected !== (value.threatCount > 0) || !Array.isArray(value.signals)) return false;
   if (!value.signals.every(signal => record(signal) && ['profanity', 'threat', 'blame', 'sexual'].includes(String(signal.type)) &&
-    typeof signal.matchedText === 'string' && typeof signal.reason === 'string')) return false;
+    typeof signal.matchedText === 'string' && typeof signal.reason === 'string' &&
+    (signal.explicitHarm === undefined || typeof signal.explicitHarm === 'boolean' && (signal.explicitHarm === false || signal.type === 'threat')))) return false;
   return value.profanityCount === value.signals.filter(signal => signal.type === 'profanity').length &&
     value.threatCount === value.signals.filter(signal => signal.type === 'threat').length &&
     value.blameCount === value.signals.filter(signal => signal.type === 'blame').length &&
@@ -32,6 +33,9 @@ function isRiskAnalysis(value: unknown, messages: LiveCall['messages']): value i
 
 // Older backend / invalid analysis must not interrupt the already-working transcript.
 function withValidRisk(call: LiveCall): LiveCall {
+  const analysis = isRiskAnalysis(call.risk_analysis, call.messages) ? call.risk_analysis : null;
+  const explicitHarmThreat = analysis !== null && Object.values(analysis.analysisByTurn).some(turn =>
+    turn.signals.some(signal => signal.type === 'threat' && signal.explicitHarm === true));
   const audio = call.audio_signal;
   const validAudio = audio && count(audio.sequence) && count(audio.shouting_count) &&
     [audio.is_shouting, audio.available, audio.coverage_complete, audio.closed].every(v => typeof v === 'boolean');
@@ -39,7 +43,7 @@ function withValidRisk(call: LiveCall): LiveCall {
   const received = call.final_result;
   if (call.status === 'ended' && received && received.call_id === call.call_id && received.completed_at === call.ended_at) {
     try {
-      const checked = calculateCallRisk(received.signals);
+      const checked = calculateCallRisk(received.signals, { explicitHarmThreat });
       if (received.rule_version === checked.rule_version && received.risk_score === checked.risk_score && received.risk_level === checked.risk_level
         && received.raw_score === checked.raw_score && received.adjusted_score === checked.adjusted_score
         && received.threat_floor === checked.threat_floor && JSON.stringify(received.scores) === JSON.stringify(checked.scores)) {
@@ -49,7 +53,7 @@ function withValidRisk(call: LiveCall): LiveCall {
     } catch { /* Invalid results must not become a normal 0 score. */ }
   }
   return { ...call, customer_id: typeof call.customer_id === 'string' ? call.customer_id : null,
-    risk_analysis: isRiskAnalysis(call.risk_analysis, call.messages) ? call.risk_analysis : null,
+    risk_analysis: analysis,
     audio_signal: validAudio ? audio : null, final_result: final,
     finalization_reason: typeof call.finalization_reason === 'string' ? call.finalization_reason : null };
 }

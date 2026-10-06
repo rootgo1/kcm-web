@@ -613,6 +613,8 @@ test('filming script counts exactly two USER profanities and one facility threat
     { type: 'profanity', matchedText: '개판이네' },
     { type: 'threat', matchedText: '매장 뒤집어 놓을 거니까' },
   ]);
+  assert.equal(result.analysisByTurn.film_u2.signals.find(signal => signal.type === 'threat').explicitHarm, true);
+  assert.ok(result.analysisByTurn.film_u2.signals.filter(signal => signal.type !== 'threat').every(signal => !Object.hasOwn(signal, 'explicitHarm')));
   for (const id of ['film_u1', 'film_u3', 'film_u4']) assert.deepEqual(totals(result.analysisByTurn[id]), [0, 0, 0, 0]);
 });
 
@@ -629,6 +631,7 @@ for (const action of ['뒤집어 놓을 거니까 알아서 하세요.', '뒤집
     assert.equal(result.analysisByTurn.u3.threatCount, 1);
     assert.equal(result.analysisByTurn.u3.signals[0].matchedText, action.replace(' 알아서 하세요.', ''));
     assert.match(result.analysisByTurn.u3.signals[0].reason, /이전 USER/);
+    assert.equal(result.analysisByTurn.u3.signals[0].explicitHarm, true);
   });
 }
 
@@ -657,4 +660,102 @@ test('normal product and appointment filming dialogue is not a threat', () => {
     message('u3', '아 그런 건 가서 얘기할게요.'), message('u4', '네네.'),
   ]);
   assert.deepEqual(totals(result), [0, 0, 0, 0]);
+});
+
+for (const text of [
+  '매장 뒤집어 놓을 거니까 알아서 하세요.', '매장 부숴버릴 거야.',
+  '죽여버린다.', '때리겠다.', '너 찾아가서 팬다.', '두들겨 팬다.',
+  '당신 찾아가서 내가 엎어버릴 거야.',
+]) {
+  test('explicit physical harm metadata marks the existing single threat without another occurrence: ' + text, () => {
+    const result = analyzeRiskText(text);
+    assert.deepEqual(totals(result), [0, 1, 0, 0]);
+    assert.equal(result.signals.length, 1);
+    assert.equal(result.signals[0].type, 'threat');
+    assert.equal(result.signals[0].explicitHarm, true);
+  });
+}
+
+for (const text of [
+  '내가 니 찾아간다고.', '너 찾아간다.', '가만 안 둔다.',
+  '찾아가서 난리친다.', '매장에 가서 난동을 부리겠다.',
+]) {
+  test('general threat metadata does not infer an explicit physical attack: ' + text, () => {
+    const result = analyzeRiskText(text);
+    assert.equal(result.threatCount, 1);
+    assert.ok(result.signals.every(signal => !Object.hasOwn(signal, 'explicitHarm')));
+  });
+}
+
+for (const text of [
+  '매장에 방문해서 제품을 확인하겠습니다.',
+  '“매장 부숴버릴 거야”라는 말을 들었어요.', '매장 부숴버린다고 신고했습니다.',
+  '너 찾아가서 팬다는 뜻이 아닙니다.', '당신 찾아가서 내가 엎어버릴 거야라는 건 아닙니다.',
+]) {
+  test('nonassertions and normal visits never produce an explicit harm signal: ' + text, () => {
+    const result = analyzeRiskText(text);
+    assert.equal(result.threatCount, 0);
+    assert.ok(result.signals.every(signal => !Object.hasOwn(signal, 'explicitHarm')));
+  });
+}
+
+test('overlapping harm rules retain true metadata while each physical act still counts once', () => {
+  for (const [text, expected] of [
+    ['매장에 가서 다 박살내버린다.', 1],
+    ['너 찾아가서 패버린다.', 1],
+    ['매장에 가서 다 박살내버린다. 너 찾아가서 패버린다.', 2],
+  ]) {
+    const result = analyzeRiskText(text);
+    assert.equal(result.threatCount, expected);
+    assert.equal(result.signals.length, expected);
+    assert.ok(result.signals.every(signal => signal.explicitHarm === true));
+  }
+});
+
+test('explicit harm metadata survives bounded USER context and cannot originate from an AGENT turn', () => {
+  const result = analyzeTranscriptRisk([
+    message('u1', '그날도 없으면 매장'),
+    message('a1', '죽여버린다. 매장 부숴버린다.', 'agent'),
+    message('u2', '뒤집어 놓을 거니까 알아서 하세요.'),
+  ]);
+  assert.equal(result.threatCount, 1);
+  assert.equal(result.analysisByTurn.u2.signals[0].explicitHarm, true);
+  assert.equal(Object.hasOwn(result.analysisByTurn, 'a1'), false);
+
+  const agentAction = analyzeTranscriptRisk([message('u1', '매장'), message('a1', '뒤집어 놓을 거니까', 'agent')]);
+  assert.equal(agentAction.threatCount, 0);
+  assert.ok(Object.values(agentAction.analysisByTurn).every(turnRisk => turnRisk.signals.length === 0));
+});
+
+test('ASR corrections replace explicit harm metadata without changing snapshot occurrence accounting', () => {
+  const store = createLiveCallStore(); store.connecting('harm');
+  const apply = content => {
+    for (let n = 0; n < 10; n++) store.transcript('harm', [turn('u1', content)]);
+    return store.snapshot()[0].risk_analysis;
+  };
+  let risk = apply('너 찾아간다.');
+  assert.equal(risk.threatCount, 1);
+  assert.ok(risk.analysisByTurn.u1.signals.every(signal => !Object.hasOwn(signal, 'explicitHarm')));
+  risk = apply('너 찾아가서 팬다.');
+  assert.equal(risk.threatCount, 1);
+  assert.equal(risk.analysisByTurn.u1.signals[0].explicitHarm, true);
+  risk = apply('너 찾아가서 팬다는 건 아닙니다.');
+  assert.equal(risk.threatCount, 0);
+  assert.deepEqual(risk.analysisByTurn.u1.signals, []);
+  store.transcript('harm', [turn('u1', '너 찾아가서 팬다.', 'agent')]);
+  assert.equal(store.snapshot()[0].risk_analysis.threatCount, 0);
+});
+
+test('v6 reanalyzes cached v5 harm findings to enrich metadata rather than increase threat counts', () => {
+  const messages = [message('u1', '매장 뒤집어 놓을 거니까 알아서 하세요.')];
+  const previous = analyzeTranscriptRisk(messages);
+  previous.ruleVersion = 'local-text-rules-v5';
+  previous.analysisByTurn.u1.signals = previous.analysisByTurn.u1.signals.map(({ explicitHarm: _old, ...signal }) => signal);
+  const current = analyzeTranscriptRisk(messages, messages, previous);
+  assert.equal(current.ruleVersion, TEXT_RISK_RULE_VERSION);
+  assert.equal(current.threatCount, 1);
+  assert.equal(current.analysisByTurn.u1.signals[0].explicitHarm, true);
+  const repeated = analyzeTranscriptRisk(messages, messages, current);
+  assert.equal(repeated.threatCount, 1);
+  assert.equal(repeated.analysisByTurn.u1.signals[0].explicitHarm, true);
 });

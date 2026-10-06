@@ -1,6 +1,6 @@
 /** Shared frontend/Node policy. Per-call results only; no previous customer score. */
 export const RISK_RULE = Object.freeze({
-  version: 'call-risk-v4', min: 0, max: 99, profanityFloor: 20,
+  version: 'call-risk-v5', min: 0, max: 99, profanityFloor: 20, explicitHarmThreatFloor: 60,
   threatFloors: Object.freeze([
     Object.freeze({ count: 1, score: 40 }),
     Object.freeze({ count: 2, score: 60 }),
@@ -34,8 +34,17 @@ export function signalScore(kind, count) {
   return [...SCORE_TABLES[kind]].reverse().find(([minimum]) => count >= minimum)?.[1] ?? 0;
 }
 /** @typedef {{profanity_count:number, threat_count:number, blame_count:number, sexual_count:number, shouting_count:number}} RiskSignals */
-/** @param {RiskSignals} signals */
-export function calculateCallRisk(signals) {
+/** @typedef {{explicitHarmThreat?: boolean}} RiskContext */
+/** @param {RiskSignals} signals @param {RiskContext} [context] */
+export function calculateCallRisk(signals, context = {}) {
+  if (!context || typeof context !== 'object' || Array.isArray(context)
+    || Object.keys(context).some(key => key !== 'explicitHarmThreat')
+    || (context.explicitHarmThreat !== undefined && typeof context.explicitHarmThreat !== 'boolean')) {
+    throw new RangeError('위협 근거 누락·오류');
+  }
+  if (context.explicitHarmThreat === true && (!validCount(signals.threat_count) || signals.threat_count < 1)) {
+    throw new RangeError('명확한 위해 위협 근거·횟수 불일치');
+  }
   const scores = {
     profanity_score: signalScore('profanity', signals.profanity_count),
     threat_score: signalScore('threat', signals.threat_count),
@@ -44,7 +53,8 @@ export function calculateCallRisk(signals) {
     shouting_score: signalScore('shouting', signals.shouting_count),
   };
   const raw_score = Object.values(scores).reduce((sum, value) => sum + value, 0);
-  const threat_floor = [...RISK_RULE.threatFloors].reverse().find(rule => signals.threat_count >= rule.count)?.score ?? 0;
+  const count_threat_floor = [...RISK_RULE.threatFloors].reverse().find(rule => signals.threat_count >= rule.count)?.score ?? 0;
+  const threat_floor = Math.max(count_threat_floor, context.explicitHarmThreat === true ? RISK_RULE.explicitHarmThreatFloor : 0);
   // Preserve item scores and result fields; any profanity raises only the final minimum.
   const profanity_floor = signals.profanity_count >= 1 ? RISK_RULE.profanityFloor : 0;
   const adjusted_score = Math.max(raw_score, threat_floor, profanity_floor);

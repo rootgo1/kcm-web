@@ -226,9 +226,9 @@ async function finalThroughHttp(f, stream, socket, id, after = 0) {
   const accepted = await f.post('/api/live-calls/' + id + '/audio-signals', silentFinal);
   assert.deepEqual(accepted, { status: 200, body: { accepted: true } });
   const final = await stream.waitFor(event => event.type === 'risk_finalized' && event.call_id === id, after);
-  assert.equal(final.final_result.rule_version, 'call-risk-v4');
+  assert.equal(final.final_result.rule_version, 'call-risk-v5');
   assert.equal(final.final_result.signals.shouting_count, 0);
-  assert.equal(final.risk_analysis.ruleVersion, 'local-text-rules-v5');
+  assert.equal(final.risk_analysis.ruleVersion, 'local-text-rules-v6');
   return final;
 }
 
@@ -301,9 +301,9 @@ test('final release: concurrent stored-data/inventory reads leave Monitor-to-SSE
 });
 
 for (const [id, text, profanity, threat, score, level] of [
-  ['release_basic', '아 씨발, 장난해요?\n폰도 없이 장사를 해요?\n일 처리 진짜 개판이네.\n토요일 2시요.\n그날도 없으면 매장 뒤집어 놓을 거니까 알아서 하세요.', 2, 1, 40, '경계'],
+  ['release_basic', '아 씨발, 장난해요?\n폰도 없이 장사를 해요?\n일 처리 진짜 개판이네.\n토요일 2시요.\n그날도 없으면 매장 뒤집어 놓을 거니까 알아서 하세요.', 2, 1, 60, '위험'],
   ['release_strong', '아 씨발, 장난해요?\n폰도 없이 장사를 해요?\n일 처리 진짜 개판이네.\n토요일 2시요.\n그날도 없으면 매장 뒤집어 놓을 거예요.\n가서 다 부숴버릴 거니까 알아서 하세요.', 2, 2, 60, '위험'],
-  ['release_person', '아니 찾아와서 팬다?\n그래 그때까지 없으면 너 찾아가서 팬다?', 0, 1, 40, '경계'],
+  ['release_person', '아니 찾아와서 팬다?\n그래 그때까지 없으면 너 찾아가서 팬다?', 0, 1, 60, '위험'],
   ['release_visit', '매장에 방문하겠습니다.', 0, 0, 0, '정상'],
 ]) {
   test(`final release scenario ${id}: merged business APIs coexist with actual SDK/Monitor/SSE and final risk ${score}/${level}`, async t => {
@@ -350,7 +350,7 @@ test('final release: failed stored-data reads stay explicit and cannot break pri
   assert.equal((await f.post('/api/effective-price', { plan_id: 'own_plan_001' })).status, 200);
   assert.equal((await f.get('/api/inventory/stock')).status, 200);
   assert.deepEqual(f.store.snapshot()[0].risk_analysis, live.risk_analysis);
-  assert.equal((await finalThroughHttp(f, stream, socket, 'data_failure')).final_result.risk_score, 40);
+  assert.equal((await finalThroughHttp(f, stream, socket, 'data_failure')).final_result.risk_score, 60);
   f.failedTables.clear();
   assert.equal((await f.get('/api/data/appointments')).status, 200, 'A later explicit retry uses the recovered provider');
 });

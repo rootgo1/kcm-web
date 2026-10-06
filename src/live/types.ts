@@ -14,7 +14,7 @@ export interface LiveTextRisk {
   threatDetected: boolean;
   blameCount: number;
   sexualCount: number;
-  signals: { type: LiveSignalType; matchedText: string; reason: string }[];
+  signals: { type: LiveSignalType; matchedText: string; reason: string; explicitHarm?: boolean }[];
 }
 /** Current received text only: never a customer score or a finalized analysis. */
 export interface LiveRiskAnalysis {

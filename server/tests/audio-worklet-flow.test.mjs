@@ -109,12 +109,14 @@ test('filming script retains two profanities and one facility threat through fin
   const call = f.store.snapshot()[0];
   assert.equal(call.final_result.signals.profanity_count, 2);
   assert.equal(call.final_result.signals.threat_count, 1);
-  assert.equal(call.final_result.threat_floor, 40);
-  assert.equal(call.final_result.risk_score, 40);
-  assert.equal(call.final_result.risk_level, '경계');
+  assert.equal(call.final_result.threat_floor, 60);
+  assert.equal(call.final_result.risk_score, 60);
+  assert.equal(call.final_result.risk_level, '위험');
   assert.equal(f.posts.length, 1);
   assert.equal(f.posts[0].signals.threat_count, 1);
-  assert.equal(f.posts[0].risk_score, 40);
+  assert.equal(f.posts[0].risk_score, 60);
+  assert.equal(f.posts[0].risk_level, '위험');
+  assert.doesNotMatch(JSON.stringify(f.posts), /explicitHarm/);
   f.store.ended('call_audio_fixture'); await f.reporter.finish(); await tick();
   assert.equal(f.posts.length, 1);
 });

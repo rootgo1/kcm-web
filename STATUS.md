@@ -894,3 +894,29 @@ npm.cmd run dev
 - 수정 브랜치만 반영하며 이번 작업에서 main 병합·Render 배포·환경변수 변경·Production 데이터 생성은 하지 않습니다.
 - 배포된 수정 버전에서 고객 화면을 새로고침하고 새 통화로 실제 마이크 측정→종료→최종 점수→n8n 1회 수신→DB 저장→다음 통화의 이전 상담 브리핑을 재검증해야 합니다.
 - 실제 물리 마이크·Retell 동시 사용, 백그라운드/최소화·장치 차이, Production n8n/Supabase 저장은 이번 수정의 실제 재검증 전입니다. 미측정인 과거 통화를 0회로 채우거나 임의로 재전송하지 않습니다.
+
+## 위해 위협 1회 최소60점 보완 — 2026-10-06
+
+### 승인된 정책과 구현
+- 기존 `fix/live-audio-threat-followup`과 PR #2를 이어 작업했습니다. 앞선 AudioWorklet·측정 준비·종료 flush 보강과 주 작업 폴더의 사용자 변경을 보존했습니다.
+- 사용자 승인: 명확한 매장 파괴·폭행·살해 의사는1회라도 최소60점/위험으로 반영합니다. 일반 위협 횟수 하한40/60/80, 욕설 하한20, 기존 항목 점수표와99점 상한은 유지합니다.
+- `local-text-rules-v6`: 해당 USER 근거에만 `explicitHarm:true`를 추가합니다. 겹친 규칙은 같은 발생을 추가하지 않고 위해 표시만 보강합니다. 분절 문맥에서도 표시를 유지하며 인용·신고·부정·Agent 발화는 제외합니다. 정정·삭제·역할 변경 시 최신 근거로 교체하고 구버전 cache를 재분석합니다.
+- `call-risk-v5`: 공통 계산 함수의 선택 문맥으로 위해 여부를 받으며 횟수 하한과 위해 하한 중 큰 값을 적용합니다. raw_score·각 항목 점수·위협 횟수를 늘리지 않습니다. 근거 형식 오류·위협0회와 위해true 조합은 거부합니다.
+- Node 최종화와 프런트 최종값 검증이 동일한 USER 분석 근거를 사용합니다. SSE의 위해 표시는 분석 정보에만 존재하며 최종 결과/n8n payload 키는 추가하지 않습니다. 과거 확정 통화·DB 기록을 재산정하지 않습니다.
+- 새 환경변수·패키지·UI 레이아웃·Retell SDK·마이크/고성 기준·n8n 계약·재고 업무 로직 변경은 없습니다.
+
+### 촬영 시나리오와 회귀 검증
+- 정확한 기본 대사: 욕설2회(씨발, 개판이네), 위협1회(매장 뒤집어 놓을 거니까), 고성0 기준 raw26 → 위협 하한60 → **최종60점/위험**. 앞선40점 기록은 당시 v4 결과입니다.
+- “너 찾아가서 팬다”, “당신 찾아가서 내가 엎어버릴 거야”, 명시 살해 의사는 위해1회60점. “내가 니 찾아간다고”, “가만 안 둔다”는 위해 행동을 추정하지 않고 일반1회40점. 위협3회는 계속80점입니다.
+- Agent 발화 제외, 정상 매장 방문0회, USER 분절·ASR 정정·반복 snapshot, 정정에 따른 위해 표시 제거, 최종 결과 불변을 검증했습니다. 격리된 모의 n8n POST는60점/위험을1회 보내고 기존 JSON 계약만 유지합니다.
+- `npm.cmd run check`: **859/859 전체 테스트 통과**, 프런트 `tsc --noEmit`와 백엔드 `tsc -p tsconfig.server.json`, Vite production build 통과. 기존 SDK chunk500kB 경고만 남아 있습니다.
+- `npm.cmd run preview:standalone`: 독립 HTML 갱신 및 전체 inline JavaScript 문법 파싱 통과. 독립 HTML 직접 실행·이번 정책의 실제 음성 통화는 미검증입니다.
+
+### 변경 파일
+- `server/text-risk.mjs`, `server/live-calls.mjs`, `src/lib/riskPolicy.js`, `src/live/types.ts`, `src/live/liveCalls.ts`.
+- `server/tests/text-risk.test.mjs`, `server/tests/call-risk.test.mjs`, `server/tests/audio-worklet-flow.test.mjs`, `server/tests/risk-feedback-pipeline.test.mjs`, `server/tests/final-release-integration.test.mjs`, `tests/riskPolicy.test.ts`, `tests/liveCalls.test.ts`.
+- `server/README.md`, `docs/FINAL_PRODUCTION_E2E_CHECKLIST.md`, `docs/RISK_DETECTION_SEQUENCE_FEEDBACK.md`, `STATUS.md`, `00_KCM_미리보기.html`.
+
+### 적용 범위와 남은 확인
+- 수정 브랜치/PR에만 반영합니다. 이번 승인으로 main 병합·Render 배포·환경변수·Production 데이터·n8n workflow는 변경하지 않습니다.
+- 다음 적용 단계는 main 병합 및 프런트/백엔드 함께 배포 후 고객 화면 새로고침입니다. 이후 실제 새 통화의 음성 coverage·위해 탐지·60점 결과·n8n1회 수신·DB 저장·다음 통화 사전 브리핑을 확인해야 합니다. 실제 음성 인식 결과가 대사와 다르면 전사 문제와 규칙 문제를 구분합니다.

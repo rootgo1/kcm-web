@@ -47,7 +47,7 @@ test('profanity counts of one or more reach the 20-point final floor without cha
     assert.equal(result.scores.profanity_score, raw);
     assert.equal(result.raw_score, raw); assert.equal(result.adjusted_score, 20);
     assert.equal(result.threat_floor, 0); assert.equal(result.risk_score, 20); assert.equal(result.risk_level, '주의');
-    assert.equal(result.rule_version, 'call-risk-v4');
+    assert.equal(result.rule_version, 'call-risk-v5');
   }
   assert.equal(RISK_RULE.profanityFloor, 20);
   assert.deepEqual(Object.keys(calculateCallRisk(zero)).sort(), ['signals','scores','raw_score','adjusted_score','threat_floor','risk_score','risk_level','rule_version'].sort());
@@ -127,4 +127,77 @@ test('corrected threat counts lower only the current call floor without changing
   assert.deepEqual(snapshots.map(result => result.risk_score), [80,60,40,0]);
   assert.deepEqual(snapshots.map(result => result.signals.threat_count), [3,2,1,0]);
   assert.equal(calculateCallRisk(zero).risk_score, 0); assert.equal(snapshots[0].risk_score, 80);
+});
+
+test('explicit harm evidence raises one threat to 60 while keeping item tables and larger count floors', () => {
+  assert.equal(RISK_RULE.explicitHarmThreatFloor, 60);
+  assert.equal(RISK_RULE.version, 'call-risk-v5');
+  for (const [count, raw, floor, label] of [[1,20,60,'위험'],[2,30,60,'위험'],[3,40,80,'매우 위험'],[10,40,80,'매우 위험']] as const) {
+    const signals = { ...zero, threat_count: count };
+    const before = { ...signals };
+    const context = { explicitHarmThreat: true };
+    const result = calculateCallRisk(signals, context);
+    assert.equal(result.scores.threat_score, raw);
+    assert.equal(result.raw_score, raw);
+    assert.equal(result.threat_floor, floor);
+    assert.equal(result.adjusted_score, floor);
+    assert.equal(result.risk_score, floor);
+    assert.equal(result.risk_level, label);
+    assert.deepEqual(signals, before);
+    assert.deepEqual(context, { explicitHarmThreat: true });
+    assert.deepEqual(Object.keys(result).sort(), ['signals','scores','raw_score','adjusted_score','threat_floor','risk_score','risk_level','rule_version'].sort());
+    assert.deepEqual(result.signals, signals);
+    assert.ok(!('explicitHarmThreat' in result) && !('explicitHarmThreat' in result.signals));
+  }
+});
+
+test('explicit harm floor keeps larger raw totals and final 99 cap without changing raw/item scores', () => {
+  const cases = [
+    { signals: { ...zero, threat_count: 1, profanity_count: 7, blame_count: 4, sexual_count: 2 }, raw: 59, final: 60 },
+    { signals: { ...zero, threat_count: 1, profanity_count: 7, blame_count: 7, sexual_count: 1 }, raw: 60, final: 60 },
+    { signals: { ...zero, threat_count: 1, profanity_count: 4, blame_count: 4, sexual_count: 3, shouting_count: 1 }, raw: 61, final: 61 },
+    { signals: { profanity_count: 7, threat_count: 3, blame_count: 7, sexual_count: 3, shouting_count: 5 }, raw: 100, final: 99 },
+  ];
+  for (const { signals, raw, final } of cases) {
+    const result = calculateCallRisk(signals, { explicitHarmThreat: true });
+    const unmarked = calculateCallRisk(signals);
+    assert.deepEqual(result.scores, unmarked.scores);
+    assert.equal(result.raw_score, raw);
+    assert.equal(result.adjusted_score, Math.max(raw, result.threat_floor));
+    assert.equal(result.risk_score, final);
+  }
+});
+
+test('absent/false explicit harm evidence retains all existing count floors and nonthreat behavior', () => {
+  for (const signals of [zero, { ...zero, profanity_count: 1 }, ...[1,2,3,4].map(threat_count => ({ ...zero, threat_count }))]) {
+    const expected = calculateCallRisk(signals);
+    assert.deepEqual(calculateCallRisk(signals, {}), expected);
+    assert.deepEqual(calculateCallRisk(signals, { explicitHarmThreat: false }), expected);
+    assert.deepEqual(calculateCallRisk(signals, undefined), expected);
+  }
+  assert.equal(calculateCallRisk({ ...zero, threat_count: 1 }, { explicitHarmThreat: false }).risk_score, 40);
+  assert.equal(calculateCallRisk({ ...zero, profanity_count: 1 }).risk_score, 20);
+});
+
+test('invalid explicit harm metadata and threat-count inconsistencies are rejected rather than coercing inputs', () => {
+  type RiskContext = NonNullable<Parameters<typeof calculateCallRisk>[1]>;
+  for (const context of [null, false, 0, 'true', [], { explicitHarmThreat: null }, { explicitHarmThreat: 'true' },
+    { explicitHarmThreat: 1 }, { explicitHarmThreat: NaN }, { unexpected: true }]) {
+    assert.throws(() => calculateCallRisk({ ...zero, threat_count: 1 }, context as unknown as RiskContext), /위협 근거/);
+  }
+  for (const threat_count of [0, -1, 0.5, NaN, Infinity, null, undefined, '1']) {
+    assert.throws(() => calculateCallRisk({ ...zero, threat_count } as Parameters<typeof calculateCallRisk>[0], { explicitHarmThreat: true }), /불일치/);
+  }
+});
+
+test('corrected/removed explicit harm marker changes only the current call floor and preserves earlier snapshots', () => {
+  const signals = { ...zero, threat_count: 1 };
+  const context = { explicitHarmThreat: true };
+  const original = calculateCallRisk(signals, context);
+  context.explicitHarmThreat = false;
+  const corrected = calculateCallRisk(signals, context);
+  assert.equal(original.threat_floor, 60); assert.equal(original.risk_score, 60);
+  assert.equal(corrected.threat_floor, 40); assert.equal(corrected.risk_score, 40);
+  assert.equal(calculateCallRisk(zero, context).risk_score, 0);
+  assert.equal(original.signals.threat_count, 1);
 });

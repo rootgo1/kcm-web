@@ -238,7 +238,7 @@ test('feedback pipeline: full-list removal clears dependent context at the store
 });
 
 const threats = ['매장 뒤집어 놓을 거야.', '가서 다 부숴버릴 거야.', '직원도 가만 안 둘 거야.', '너 찾아가서 팬다.'];
-for (const [count, floor, level, raw] of [[1, 40, '경계', 20], [2, 60, '위험', 30], [3, 80, '매우 위험', 40]]) {
+for (const [count, floor, level, raw] of [[1, 60, '위험', 20], [2, 60, '위험', 30], [3, 80, '매우 위험', 40]]) {
   test(`feedback pipeline: ${count} USER threats finalize at ${floor} after final audio, unchanged n8n projection and one immutable result`, async t => {
     const f = sdkMonitorFactory(t), id = 'floor_' + count, socket = await f.start(id);
     const transcript = threats.slice(0, count).flatMap((text, index) => [turn('u' + index, text, 'user', index * 2),
@@ -258,7 +258,7 @@ for (const [count, floor, level, raw] of [[1, 40, '경계', 20], [2, 60, '위험
     assert.equal(f.store.audio(id, audio(2, true)), 'accepted');
     const finished = f.current(id), result = finished.final_result;
     assert.ok(result);
-    assert.equal(result.rule_version, 'call-risk-v4');
+    assert.equal(result.rule_version, 'call-risk-v5');
     assert.equal(result.signals.threat_count, count);
     assert.equal(result.signals.shouting_count, 0);
     assert.equal(result.scores.threat_score, raw);
@@ -313,9 +313,9 @@ test('feedback pipeline RISK lifecycle: four distinct USER threats count once ea
 });
 
 for (const [id, text, profanity, threat, score, level] of [
-  ['video_basic', '아 씨발, 장난해요?\n폰도 없이 장사를 해요?\n일 처리 진짜 개판이네.\n토요일 2시요.\n그날도 없으면 매장 뒤집어 놓을 거니까 알아서 하세요.', 2, 1, 40, '경계'],
+  ['video_basic', '아 씨발, 장난해요?\n폰도 없이 장사를 해요?\n일 처리 진짜 개판이네.\n토요일 2시요.\n그날도 없으면 매장 뒤집어 놓을 거니까 알아서 하세요.', 2, 1, 60, '위험'],
   ['video_strong', '아 씨발, 장난해요?\n폰도 없이 장사를 해요?\n일 처리 진짜 개판이네.\n토요일 2시요.\n그날도 없으면 매장 뒤집어 놓을 거예요.\n가서 다 부숴버릴 거니까 알아서 하세요.', 2, 2, 60, '위험'],
-  ['video_assault', '아니 찾아와서 팬다?\n그래 그때까지 없으면 너 찾아가서 팬다?', 0, 1, 40, '경계'],
+  ['video_assault', '아니 찾아와서 팬다?\n그래 그때까지 없으면 너 찾아가서 팬다?', 0, 1, 60, '위험'],
 ]) {
   test(`feedback pipeline exact scenario ${id}: USER-only counts and final floor survive intervening Agent attacks`, async t => {
     const f = sdkMonitorFactory(t), socket = await f.start(id);

@@ -73,7 +73,7 @@ test('one profanity finalizes at 20, keeps raw item score 3 and preserves intern
   const call=store.snapshot()[0],result=call.final_result;
   assert.equal(result.signals.profanity_count,1);assert.equal(result.scores.profanity_score,3);
   assert.equal(result.raw_score,3);assert.equal(result.adjusted_score,20);assert.equal(result.threat_floor,0);
-  assert.equal(result.risk_score,20);assert.equal(result.risk_level,'주의');assert.equal(result.rule_version,'call-risk-v4');
+  assert.equal(result.risk_score,20);assert.equal(result.risk_level,'주의');assert.equal(result.rule_version,'call-risk-v5');
   assert.deepEqual(Object.keys(result).sort(),['signals','scores','raw_score','adjusted_score','threat_floor','risk_score','risk_level','rule_version','call_id','customer_id','completed_at'].sort());
   const payload=callResultPayload(call);
   assert.deepEqual(Object.keys(payload),['call_id','consultation_id','customer_id','signals','scores','risk_score','risk_level','consultation']);
@@ -135,6 +135,60 @@ test('corrected/removed threat turns and repeated snapshots change only current 
   store.audio('deleted',audio(1,0,true));store.ended('deleted');assert.equal(store.snapshot().at(-1).final_result.risk_score,0);
   assert.deepEqual(store.snapshot().slice(0,4).map(call=>call.final_result.risk_score),[80,60,40,0]);
 });
+
+for (const [text, score, explicit] of [
+  ['그날도 없으면 매장 뒤집어 놓을 거니까 알아서 하세요.', 60, true],
+  ['너 찾아가서 팬다.', 60, true],
+  ['당신 찾아가서 내가 엎어버릴 거야.', 60, true],
+  ['죽여 버리겠어.', 60, true],
+  ['내가 니 찾아간다고.', 40, false],
+  ['가만 안 둔다.', 40, false],
+]) {
+  test(`explicit harm floor: ${text} retains one threat, raw item scores, final ${score} and payload contract`, () => {
+    const store = createLiveCallStore();
+    store.connecting('harm_fixture', 'customer_fixture', 'consultation_9901', 'store_fixture'); store.live('harm_fixture');
+    const messages = [turn('u1', '씨발. 일 처리 개판이네. ' + text), { ...turn('a1', text), role: 'agent' }];
+    store.transcript('harm_fixture', messages);
+    for (let index = 0; index < 5; index++) store.transcript('harm_fixture', messages);
+    const before = store.snapshot()[0];
+    assert.equal(before.risk_analysis.profanityCount, 2);
+    assert.equal(before.risk_analysis.threatCount, 1);
+    assert.equal(before.risk_analysis.analysisByTurn.a1, undefined);
+    assert.equal(before.risk_analysis.analysisByTurn.u1.signals.some(signal => signal.type === 'threat' && signal.explicitHarm === true), explicit);
+    assert.equal(before.final_result, null);
+    store.ended('harm_fixture'); assert.equal(store.snapshot()[0].final_result, null);
+    store.audio('harm_fixture', audio(1, 0, true));
+    const finished = store.snapshot()[0], result = finished.final_result;
+    assert.equal(result.signals.threat_count, 1);
+    assert.equal(result.raw_score, 26);
+    assert.equal(result.scores.threat_score, 20);
+    assert.equal(result.threat_floor, score);
+    assert.equal(result.risk_score, score);
+    assert.equal(result.risk_level, score === 60 ? '위험' : '경계');
+    const payload = callResultPayload(finished);
+    assert.equal(payload.risk_score, score);
+    assert.equal(payload.signals.threat_count, 1);
+    assert.deepEqual(Object.keys(payload), ['call_id','consultation_id','customer_id','signals','scores','risk_score','risk_level','consultation']);
+    assert.doesNotMatch(JSON.stringify(payload), /explicitHarm/);
+    store.ended('harm_fixture'); store.audio('harm_fixture', audio(2, 5, true));
+    assert.deepEqual(store.snapshot()[0].final_result, result);
+  });
+}
+
+test('harm evidence correction removes only the severity floor before completion; finalized scores stay immutable', () => {
+  const store = createLiveCallStore(); store.connecting('corrected_harm'); store.live('corrected_harm');
+  store.transcript('corrected_harm', [turn('u1', '매장 뒤집어 놓을 거야.')]);
+  assert.equal(store.snapshot()[0].risk_analysis.analysisByTurn.u1.signals[0].explicitHarm, true);
+  store.transcript('corrected_harm', [turn('u1', '내가 너 찾아간다.')]);
+  assert.equal(store.snapshot()[0].risk_analysis.threatCount, 1);
+  assert.equal(store.snapshot()[0].risk_analysis.analysisByTurn.u1.signals[0].explicitHarm, undefined);
+  store.audio('corrected_harm', audio(1, 0, true)); store.ended('corrected_harm');
+  const result = store.snapshot()[0].final_result;
+  assert.equal(result.risk_score, 40);
+  store.transcript('corrected_harm', [turn('u1', '매장 뒤집어 놓을 거야.')]);
+  assert.deepEqual(store.snapshot()[0].final_result, result);
+});
+
 test('HTTP audio endpoint validates origin/body/call, uses existing SSE and never calls Retell REST',async t=>{
   const store=createLiveCallStore();store.connecting('owned');store.live('owned');
   let upstream=0;const server=createBackend({key:'',agentId:'',liveCalls:store,monitors:{start(){},release(){},close(){}},fetchImpl:async()=>{upstream++;throw new Error('not allowed');},log:()=>{}});

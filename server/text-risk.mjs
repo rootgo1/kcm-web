@@ -3,7 +3,7 @@
  * Replace analyzeRiskText at this boundary when a real classifier is available.
  * Conservative phrase patterns intentionally do not cover every Korean expression.
  */
-export const TEXT_RISK_RULE_VERSION = 'local-text-rules-v5';
+export const TEXT_RISK_RULE_VERSION = 'local-text-rules-v6';
 /** @typedef {import('../src/live/types.js').LiveTextRisk} TextRisk */
 /** @typedef {import('../src/live/types.js').LiveRiskAnalysis} RiskAnalysis */
 /** @typedef {import('../src/live/types.js').LiveMessage} Message */
@@ -31,20 +31,20 @@ const destructionVerbs = [
 const disturbanceIntent = String.raw`(?:난리\s*(?:친다|치겠(?:다|어|습니다)|칠\s*${futureStatement})|난동(?:을)?\s*(?:부린다|부리겠(?:다|어|습니다)|부릴\s*${futureStatement}))`;
 const assaultVerbs = String.raw`(?:팬다|팰\s*${futureStatement}|패\s*버(?:린다|리겠(?:다|어|습니다)|릴\s*${futureStatement})|때린다|때릴\s*${futureStatement}|패준다|두들겨\s*팬다)`;
 
-/** @type {{ type: import('../src/live/types.js').LiveSignalType; expression: RegExp; reason: string }[]} */
+/** @type {{ type: import('../src/live/types.js').LiveSignalType; expression: RegExp; reason: string; explicitHarm?: boolean }[]} */
 const rules = [
   { type: 'profanity', expression: new RegExp(String.raw`(?<![가-힣A-Za-z0-9])(?:${profanityGroups.join('|')})`, 'gu'), reason: '명확한 욕설·비속어 표현' },
   // An explicit person target + an assertive visit is different from visiting a store.
   { type: 'threat', expression: new RegExp(String.raw`(?:너(?:를|한테)?|네놈(?:을)?|당신(?:을|한테)?|상담사(?:분)?(?:를|을)|직원(?:분)?(?:를|을)|${colloquialPersonTarget})\s*(?:직접\s*)?찾아(?:간다|갈\s*거야|가겠(?:다|어))`, 'gu'), reason: '상대방을 지목한 위협적 방문 의사' },
   { type: 'threat', expression: new RegExp(String.raw`가만\s*(?:안|못)\s*(?:둔다|두겠(?:다|어)|둘\s*줄\s*알아|둘\s*${futureStatement})|가만\s*두지\s*않겠(?:다|어)`, 'gu'), reason: '보복 의사를 명시한 표현' },
-  { type: 'threat', expression: /(?:죽여|패|때려|박살내)\s*(?:버린다|버리겠(?:다|어))|(?:죽이|때리|패주)겠(?:다|어)/gu, reason: '직접적인 위해·폭력 의사' },
-  { type: 'threat', expression: new RegExp(String.raw`${facilityTarget}\s*(?:(?:직접\s*)?(?:찾아\s*가서|가서)\s*)?(?:다\s*)?(?:${destructionVerbs})`, 'gu'), reason: '시설·매장을 대상으로 한 파괴 의사' },
-  { type: 'threat', expression: new RegExp(String.raw`(?<![가-힣A-Za-z0-9])(?:가서\s*)?다\s*(?:${destructionVerbs})`, 'gu'), reason: '전부 파괴하겠다는 명시적 의사' },
+  { type: 'threat', expression: /(?:죽여|패|때려|박살내)\s*(?:버린다|버리겠(?:다|어))|(?:죽이|때리|패주)겠(?:다|어)/gu, reason: '직접적인 위해·폭력 의사', explicitHarm: true },
+  { type: 'threat', expression: new RegExp(String.raw`${facilityTarget}\s*(?:(?:직접\s*)?(?:찾아\s*가서|가서)\s*)?(?:다\s*)?(?:${destructionVerbs})`, 'gu'), reason: '시설·매장을 대상으로 한 파괴 의사', explicitHarm: true },
+  { type: 'threat', expression: new RegExp(String.raw`(?<![가-힣A-Za-z0-9])(?:가서\s*)?다\s*(?:${destructionVerbs})`, 'gu'), reason: '전부 파괴하겠다는 명시적 의사', explicitHarm: true },
   { type: 'threat', expression: new RegExp(String.raw`(?:찾아\s*가서|${facilityTarget}\s*가서)\s*${disturbanceIntent}`, 'gu'), reason: '방문하여 난동·업무방해를 하겠다는 의사' },
-  { type: 'threat', expression: new RegExp(String.raw`${personTarget}\s*${attackVisit}\s*(?:내가\s*)?(?:${destructionVerbs})`, 'gu'), reason: '상대방을 찾아가 명시적으로 파괴하겠다는 의사' },
-  { type: 'threat', expression: new RegExp(String.raw`${personTarget}\s*(?:${attackVisit}\s*)?${assaultVerbs}`, 'gu'), reason: '상대방을 지목한 폭행 의사' },
-  { type: 'threat', expression: new RegExp(String.raw`${attackVisit}\s*${assaultVerbs}`, 'gu'), reason: '찾아가서 폭행하겠다는 의사' },
-  { type: 'threat', expression: /(?<![가-힣A-Za-z0-9])두들겨\s*팬다/gu, reason: '명시적으로 두들겨 패겠다는 의사' },
+  { type: 'threat', expression: new RegExp(String.raw`${personTarget}\s*${attackVisit}\s*(?:내가\s*)?(?:${destructionVerbs})`, 'gu'), reason: '상대방을 찾아가 명시적으로 파괴하겠다는 의사', explicitHarm: true },
+  { type: 'threat', expression: new RegExp(String.raw`${personTarget}\s*(?:${attackVisit}\s*)?${assaultVerbs}`, 'gu'), reason: '상대방을 지목한 폭행 의사', explicitHarm: true },
+  { type: 'threat', expression: new RegExp(String.raw`${attackVisit}\s*${assaultVerbs}`, 'gu'), reason: '찾아가서 폭행하겠다는 의사', explicitHarm: true },
+  { type: 'threat', expression: /(?<![가-힣A-Za-z0-9])두들겨\s*팬다/gu, reason: '명시적으로 두들겨 패겠다는 의사', explicitHarm: true },
   { type: 'blame', expression: /일을\s*왜\s*이렇게\s*못\s*(?:해요|합니까|하나요)|이것도\s*제대로\s*못\s*(?:해요|합니까|하나요)/gu, reason: '업무 능력에 대한 직접적 비난' },
   { type: 'blame', expression: /말이\s*안\s*통(?:하네(?:요)?|해요|합니다)|처리를\s*왜\s*이렇게\s*(?:합니까|해요)|상담을\s*이렇게밖에\s*못\s*(?:해요|합니까)|뭐\s*하는\s*사람(?:이에요|입니까)/gu, reason: '상담·처리 방식에 대한 직접적 책망' },
   { type: 'sexual', expression: /(?:너|당신|상담사(?:님|분)?|직원(?:님|분)?)(?:랑|와|하고)\s*(?:섹스|성관계)\s*(?:하(?:자|고\s*싶(?:어|어요))|해(?:보자|요))/gu, reason: '상담 상대를 향한 명시적 성적 제안' },
@@ -78,8 +78,14 @@ function findRiskSignals(text, onlyType = null) {
       const start = match.index, end = start + match[0].length;
       if (isNonAssertion(text, start, end, rule.type)) continue;
       // Overlapping alternatives in the same category represent one occurrence.
-      if (found.some(signal => signal.type === rule.type && start < signal.end && end > signal.start)) continue;
-      found.push({ type: rule.type, matchedText: match[0], reason: rule.reason, start, end });
+      const overlapping = found.filter(signal => signal.type === rule.type && start < signal.end && end > signal.start);
+      if (overlapping.length) {
+        // A later, more explicit rule may enrich the same event, never add a count.
+        if (rule.explicitHarm === true) for (const signal of overlapping) signal.explicitHarm = true;
+        continue;
+      }
+      found.push({ type: rule.type, matchedText: match[0], reason: rule.reason, start, end,
+        ...(rule.explicitHarm === true ? { explicitHarm: true } : {}) });
     }
   }
   found.sort((a, b) => a.start - b.start);
@@ -143,7 +149,8 @@ function withFragmentContext(text, context, independent) {
     // A complete threat already found in this action is the same occurrence, not a second event.
     return findRiskSignals(action, 'threat').length === 0;
   }).map(signal => ({ type: /** @type {const} */ ('threat'), matchedText: text.slice(0, signal.end - prefix.length).trim(),
-    reason: '이전 USER의 미완성 대상·행동 문맥을 이어받은 위협 의사' }));
+    reason: '이전 USER의 미완성 대상·행동 문맥을 이어받은 위협 의사',
+    ...(signal.explicitHarm === true ? { explicitHarm: true } : {}) }));
   if (!additions.length) return independent;
   const threatCount = independent.threatCount + additions.length;
   return { ...independent, threatCount, threatDetected: threatCount > 0, signals: [...additions, ...independent.signals] };

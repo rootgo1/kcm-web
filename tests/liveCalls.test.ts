@@ -155,3 +155,89 @@ test('live UI: audio SSE updates one call and malformed audio does not hide tran
   const bad=parseLiveEvent(JSON.stringify({type:'audio_signal',...call(),messages:[message('x','대화 유지')],audio_signal:{...audio,shouting_count:-1}}));
   assert.ok(bad && bad.type==='audio_signal');assert.equal(bad.audio_signal,null);assert.equal(bad.messages.length,1);
 });
+
+const explicitHarmAnalysis = (marker: unknown = true) => ({ ...risk(), ruleVersion: 'local-text-rules-v6',
+  analysisByTurn: { user_1: { ...risk().analysisByTurn.user_1, signals: [{ type: 'threat', matchedText: '매장 부숴버릴 거야',
+    reason: '시설·매장을 대상으로 한 파괴 의사', ...(marker === undefined ? {} : { explicitHarm: marker }) }] } } });
+const harmFinal = () => ({ ...calculateCallRisk({ profanity_count: 0, threat_count: 1, blame_count: 0, sexual_count: 0, shouting_count: 0 },
+  { explicitHarmThreat: true }), call_id: 'call_one', customer_id: null, completed_at: '2026-10-01T02:01:00Z' });
+const endedHarmCall = (analysis: unknown = explicitHarmAnalysis()) => ({ ...call(), status: 'ended', ended_at: harmFinal().completed_at,
+  messages: [message('user_1', '매장 부숴버릴 거야')], risk_analysis: analysis, final_result: harmFinal() });
+
+test('live UI: verified USER explicit harm marker accepts one-threat 60 floor without changing final contract', () => {
+  const event = parseLiveEvent(JSON.stringify({ type: 'risk_finalized', ...endedHarmCall(),
+    final_result: { ...harmFinal(), privateExtra: 'not-part-of-final-contract' } }));
+  assert.ok(event && event.type === 'risk_finalized');
+  assert.equal(event.final_result?.raw_score, 20); assert.equal(event.final_result?.threat_floor, 60);
+  assert.equal(event.final_result?.risk_score, 60); assert.equal(event.final_result?.risk_level, '위험');
+  assert.equal(event.risk_analysis?.analysisByTurn.user_1.signals[0].explicitHarm, true);
+  assert.deepEqual(Object.keys(event.final_result!).sort(), Object.keys(harmFinal()).sort());
+  assert.equal(Object.hasOwn(event.final_result!, 'explicitHarmThreat'), false);
+  assert.equal(Object.hasOwn(event.final_result!.signals, 'explicitHarm'), false);
+});
+
+test('live UI: absent and false explicit harm markers retain generic one-threat 40 floor', () => {
+  const generic = { ...calculateCallRisk({ profanity_count: 0, threat_count: 1, blame_count: 0, sexual_count: 0, shouting_count: 0 }),
+    call_id: 'call_one', customer_id: null, completed_at: harmFinal().completed_at };
+  for (const analysis of [risk(), explicitHarmAnalysis(false)]) {
+    const event = parseLiveEvent(JSON.stringify({ type: 'risk_finalized', ...endedHarmCall(analysis), final_result: generic }));
+    assert.ok(event && event.type === 'risk_finalized'); assert.equal(event.final_result?.risk_score, 40); assert.equal(event.final_result?.threat_floor, 40);
+    const inflated = parseLiveEvent(JSON.stringify({ type: 'risk_finalized', ...endedHarmCall(analysis) }));
+    assert.ok(inflated && inflated.type === 'risk_finalized'); assert.equal(inflated.final_result, null);
+  }
+});
+
+test('live UI: malformed explicit harm markers do not hide transcript or justify the 60 floor', () => {
+  for (const marker of ['true', 1, 0, null, {}, []]) {
+    const event = parseLiveEvent(JSON.stringify({ type: 'risk_finalized', ...endedHarmCall(explicitHarmAnalysis(marker)) }));
+    assert.ok(event && event.type === 'risk_finalized'); assert.equal(event.risk_analysis, null); assert.equal(event.final_result, null);
+    assert.equal(event.messages[0].content, '매장 부숴버릴 거야');
+  }
+});
+
+test('live UI: true harm marker on a non-threat signal is invalid while false remains compatible', () => {
+  for (const marker of [true, false]) {
+    const turn = { profanityCount: 1, threatCount: 0, threatDetected: false, blameCount: 0, sexualCount: 0,
+      signals: [{ type: 'profanity', matchedText: '욕설', reason: '저장 분석', explicitHarm: marker }] };
+    const analysis = { ruleVersion: 'local-text-rules-v6', analyzedUserTurns: 1, profanityCount: 1, threatCount: 0,
+      threatDetected: false, blameCount: 0, sexualCount: 0, analysisByTurn: { user_1: turn } };
+    const event = parseLiveEvent(JSON.stringify({ type: 'risk_finalized', ...endedHarmCall(analysis) }));
+    assert.ok(event && event.type === 'risk_finalized'); assert.equal(event.risk_analysis === null, marker); assert.equal(event.final_result, null);
+  }
+});
+
+test('live UI: Agent and unknown-turn harm markers cannot establish a customer harm floor', () => {
+  const agent = parseLiveEvent(JSON.stringify({ type: 'risk_finalized', ...endedHarmCall(),
+    messages: [{ ...message('user_1', '위협 표현 설명'), role: 'agent' }] }));
+  assert.ok(agent && agent.type === 'risk_finalized'); assert.equal(agent.risk_analysis, null); assert.equal(agent.final_result, null);
+  const unknown = parseLiveEvent(JSON.stringify({ type: 'risk_finalized', ...endedHarmCall(), messages: [message('other_user', '대화 유지')] }));
+  assert.ok(unknown && unknown.type === 'risk_finalized'); assert.equal(unknown.risk_analysis, null); assert.equal(unknown.final_result, null);
+});
+
+test('live UI: invalid or missing analysis cannot justify 60 even when raw body contains a harm marker', () => {
+  for (const analysis of [null, undefined, { ...explicitHarmAnalysis(), analyzedUserTurns: 2 }, { ...explicitHarmAnalysis(), threatCount: 2 },
+    { ...explicitHarmAnalysis(), threatDetected: false }, { ...explicitHarmAnalysis(), analysisByTurn: {} }]) {
+    const event = parseLiveEvent(JSON.stringify({ type: 'risk_finalized', ...endedHarmCall(), risk_analysis: analysis, explicitHarmThreat: true }));
+    assert.ok(event && event.type === 'risk_finalized'); assert.equal(event.risk_analysis, null); assert.equal(event.final_result, null);
+  }
+});
+
+test('live UI: explicit harm floor still rejects stale policy versions and tampered final fields', () => {
+  const result = harmFinal();
+  for (const final_result of [{ ...result, rule_version: 'call-risk-v4' }, { ...result, raw_score: 60 }, { ...result, adjusted_score: 40 },
+    { ...result, threat_floor: 40 }, { ...result, risk_score: 40 }, { ...result, risk_level: '경계' }, { ...result, call_id: 'other_call' },
+    { ...result, completed_at: '2026-10-01T02:02:00Z' }, { ...result, scores: { ...result.scores, threat_score: 60 } }]) {
+    const event = parseLiveEvent(JSON.stringify({ type: 'risk_finalized', ...endedHarmCall(), final_result }));
+    assert.ok(event && event.type === 'risk_finalized'); assert.equal(event.final_result, null); assert.ok(event.risk_analysis);
+  }
+});
+
+test('live UI: corrected harm analysis replaces old metadata and finalized state across SSE snapshots', () => {
+  const first = parseLiveEvent(JSON.stringify({ type: 'risk_finalized', ...endedHarmCall() }));
+  assert.ok(first && first.type === 'risk_finalized'); let state = applyLiveEvent([], first);
+  assert.equal(state[0].final_result?.risk_score, 60);
+  const cleared = parseLiveEvent(JSON.stringify({ type: 'transcript', ...call(), messages: [message('user_1', '요금 문의입니다.')], risk_analysis: risk(false) }));
+  assert.ok(cleared && cleared.type === 'transcript'); state = applyLiveEvent(state, cleared);
+  assert.equal(state[0].final_result, null); assert.deepEqual(state[0].risk_analysis?.analysisByTurn.user_1.signals, []);
+  assert.equal(state[0].risk_analysis?.threatCount, 0);
+});

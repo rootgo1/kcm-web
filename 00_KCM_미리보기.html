@@ -5784,7 +5784,7 @@ exports.signalScore = signalScore;
 exports.calculateCallRisk = calculateCallRisk;
 /** Shared frontend/Node policy. Per-call results only; no previous customer score. */
 exports.RISK_RULE = Object.freeze({
-    version: 'call-risk-v4', min: 0, max: 99, profanityFloor: 20,
+    version: 'call-risk-v5', min: 0, max: 99, profanityFloor: 20, explicitHarmThreatFloor: 60,
     threatFloors: Object.freeze([
         Object.freeze({ count: 1, score: 40 }),
         Object.freeze({ count: 2, score: 60 }),
@@ -5821,8 +5821,17 @@ function signalScore(kind, count) {
     return [...exports.SCORE_TABLES[kind]].reverse().find(([minimum]) => count >= minimum)?.[1] ?? 0;
 }
 /** @typedef {{profanity_count:number, threat_count:number, blame_count:number, sexual_count:number, shouting_count:number}} RiskSignals */
-/** @param {RiskSignals} signals */
-function calculateCallRisk(signals) {
+/** @typedef {{explicitHarmThreat?: boolean}} RiskContext */
+/** @param {RiskSignals} signals @param {RiskContext} [context] */
+function calculateCallRisk(signals, context = {}) {
+    if (!context || typeof context !== 'object' || Array.isArray(context)
+        || Object.keys(context).some(key => key !== 'explicitHarmThreat')
+        || (context.explicitHarmThreat !== undefined && typeof context.explicitHarmThreat !== 'boolean')) {
+        throw new RangeError('위협 근거 누락·오류');
+    }
+    if (context.explicitHarmThreat === true && (!(0, exports.validCount)(signals.threat_count) || signals.threat_count < 1)) {
+        throw new RangeError('명확한 위해 위협 근거·횟수 불일치');
+    }
     const scores = {
         profanity_score: signalScore('profanity', signals.profanity_count),
         threat_score: signalScore('threat', signals.threat_count),
@@ -5831,7 +5840,8 @@ function calculateCallRisk(signals) {
         shouting_score: signalScore('shouting', signals.shouting_count),
     };
     const raw_score = Object.values(scores).reduce((sum, value) => sum + value, 0);
-    const threat_floor = [...exports.RISK_RULE.threatFloors].reverse().find(rule => signals.threat_count >= rule.count)?.score ?? 0;
+    const count_threat_floor = [...exports.RISK_RULE.threatFloors].reverse().find(rule => signals.threat_count >= rule.count)?.score ?? 0;
+    const threat_floor = Math.max(count_threat_floor, context.explicitHarmThreat === true ? exports.RISK_RULE.explicitHarmThreatFloor : 0);
     // Preserve item scores and result fields; any profanity raises only the final minimum.
     const profanity_floor = signals.profanity_count >= 1 ? exports.RISK_RULE.profanityFloor : 0;
     const adjusted_score = Math.max(raw_score, threat_floor, profanity_floor);
@@ -6006,7 +6016,8 @@ function isTextRisk(value) {
         value.threatDetected !== (value.threatCount > 0) || !Array.isArray(value.signals))
         return false;
     if (!value.signals.every(signal => record(signal) && ['profanity', 'threat', 'blame', 'sexual'].includes(String(signal.type)) &&
-        typeof signal.matchedText === 'string' && typeof signal.reason === 'string'))
+        typeof signal.matchedText === 'string' && typeof signal.reason === 'string' &&
+        (signal.explicitHarm === undefined || typeof signal.explicitHarm === 'boolean' && (signal.explicitHarm === false || signal.type === 'threat'))))
         return false;
     return value.profanityCount === value.signals.filter(signal => signal.type === 'profanity').length &&
         value.threatCount === value.signals.filter(signal => signal.type === 'threat').length &&
@@ -6027,6 +6038,8 @@ function isRiskAnalysis(value, messages) {
 }
 // Older backend / invalid analysis must not interrupt the already-working transcript.
 function withValidRisk(call) {
+    const analysis = isRiskAnalysis(call.risk_analysis, call.messages) ? call.risk_analysis : null;
+    const explicitHarmThreat = analysis !== null && Object.values(analysis.analysisByTurn).some(turn => turn.signals.some(signal => signal.type === 'threat' && signal.explicitHarm === true));
     const audio = call.audio_signal;
     const validAudio = audio && count(audio.sequence) && count(audio.shouting_count) &&
         [audio.is_shouting, audio.available, audio.coverage_complete, audio.closed].every(v => typeof v === 'boolean');
@@ -6034,7 +6047,7 @@ function withValidRisk(call) {
     const received = call.final_result;
     if (call.status === 'ended' && received && received.call_id === call.call_id && received.completed_at === call.ended_at) {
         try {
-            const checked = (0, riskPolicy_js_1.calculateCallRisk)(received.signals);
+            const checked = (0, riskPolicy_js_1.calculateCallRisk)(received.signals, { explicitHarmThreat });
             if (received.rule_version === checked.rule_version && received.risk_score === checked.risk_score && received.risk_level === checked.risk_level
                 && received.raw_score === checked.raw_score && received.adjusted_score === checked.adjusted_score
                 && received.threat_floor === checked.threat_floor && JSON.stringify(received.scores) === JSON.stringify(checked.scores)) {
@@ -6045,7 +6058,7 @@ function withValidRisk(call) {
         catch { /* Invalid results must not become a normal 0 score. */ }
     }
     return { ...call, customer_id: typeof call.customer_id === 'string' ? call.customer_id : null,
-        risk_analysis: isRiskAnalysis(call.risk_analysis, call.messages) ? call.risk_analysis : null,
+        risk_analysis: analysis,
         audio_signal: validAudio ? audio : null, final_result: final,
         finalization_reason: typeof call.finalization_reason === 'string' ? call.finalization_reason : null };
 }
