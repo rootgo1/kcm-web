@@ -856,3 +856,41 @@ npm.cmd run dev
 ```
 
 각 명령이 성공한 뒤 다음 명령을 실행합니다. 개발 서버가 정상 시작되면 설정상 주소는 `http://127.0.0.1:5173`이며, 이번에는 접속을 확인하지 못했습니다. 포트 충돌 시 다른 프로세스를 강제 종료하지 않습니다. 이번 작업은 여기서 멈추며 다음 기능 개발은 진행하지 않습니다.
+
+## 실제 통화 후 음성 측정·위협 탐지 보강 — 2026-10-06
+
+### 기준과 변경 범위
+- 기준: `origin/main`의 `21c834e19fd90ef242f92fb8afe911e995302b8b`.
+- 수정 브랜치: `fix/live-audio-threat-followup`. 기존 별도 작업 폴더를 재사용하며 주 작업 폴더의 `STATUS.md`와 `deliverables/` 사용자 변경을 보존했습니다.
+- Supabase 키 교체 뒤 사용자 화면에 고객·현재 상품·요금제가 표시됐습니다. 반면 실제 통화의 음성 coverage 불완전으로 최종 위험도와 n8n 전송이 보류되어 새 저장 이력이 없었습니다. 실제 탭 전환이 원인이었는지는 확인되지 않았습니다.
+- 독립 마이크의 첫 실제 샘플을 확인한 뒤 Retell 통화를 시작합니다. 권한·장치·분석 준비 실패나 취소는 새 통화를 생성하지 않습니다.
+- 화면 렌더링 기반 측정을 AudioWorklet의 기존 2048샘플 RMS 창으로 교체했습니다. 약 100ms의 오디오 시각을 전달하므로 화면/MessagePort 전달 지연을 실제 음성 공백으로 오인하지 않습니다.
+- 실제 입력 누락·track mute/ended·오디오 컨텍스트 중단·processor/flush 오류는 정상 무음으로 채우지 않습니다. 처음 muted인 입력은 unmute 이후 새 샘플만 인정하며 준비 제한시간이 지나면 오류입니다.
+- 수동 종료는 SDK에 먼저 요청하고 실제 onEnd 뒤 남은 오디오 샘플을 받아 기존 최종 snapshot을 전송한 다음 독립 마이크를 해제합니다. Agent 종료도 같은 경로이며 반복 종료·이전 통화의 지연 메시지는 중복 처리하지 않습니다.
+- 텍스트 규칙 `local-text-rules-v5`: “내가 니 찾아간다고”, “당신 찾아가서 내가 엎어버릴 거야”를 각각 위협 1회로 탐지합니다. 정상 방문·인용·신고·부정과 Agent 제외, ASR 정정·snapshot 중복 방지를 유지합니다.
+- 고성 임계값 0.12/350ms, 해제 0.08/300ms, 실제 샘플 공백 400ms, 점수 정책·floor·최종화·Retell SDK·SSE·n8n 계약은 변경하지 않았습니다. 새 패키지·환경변수·DB/workflow 변경은 없습니다.
+
+### 촬영 시나리오 검증
+- 제시된 고객 대사 전체: 욕설 2회(씨발, 개판이네), 위협 1회(매장 뒤집어 놓을 거니까), 비난·선정적 표현 0회.
+- 제품 문의·예약 시각·“가서 얘기할게요”·“네네”는 위험 신호가 아닙니다. AI의 반복 발화도 count에서 제외합니다.
+- USER 분절과 `뒤집어놓을거니까` 변형, 부분→전체 snapshot, 반복 snapshot, 띄어쓰기 정정, 정상 문장으로의 정정에 대해 회귀 검사를 추가했습니다.
+- 전체 음성 측정과 종료가 정상인 격리 통합 검사에서 최종 40점/경계, 위협 floor 40, 모의 n8n POST 1회를 확인했습니다. 실제 Production 자동 대여·예약 생성·SMS 발송을 검증한 것은 아닙니다.
+
+### 실제 실행한 검증
+- `npm.cmd run check`: **818/818 테스트 통과**, 프런트 `tsc --noEmit`, 백엔드 `tsc -p tsconfig.server.json`, Vite production build 통과.
+- 기존 SDK 500kB 초과 chunk 경고는 남아 있으며 빌드 오류는 없습니다.
+- minify된 Worklet 모듈을 격리 실행해 등록·RMS·무음 출력·flush 정상과 외부 모듈 참조가 없음을 확인했습니다.
+- Chrome의 격리 합성 스트림에서 실제 AudioContext/AudioWorklet 실행: 준비 후 시작, 음성 레벨 갱신, 연속 고성 1회·해제 후 재상승 2회, 종료 flush와 `coverage_complete:true`, `closed:true`를 확인했습니다. 실제 마이크·Retell·n8n/DB는 호출하지 않았습니다.
+- 고객 route 렌더링과 안전한 백엔드 연결 실패 안내, 브라우저 경고/오류 로그 0건을 확인했습니다. 검증용 프런트는 사용자 서버와 충돌하지 않는 5180 포트를 사용했습니다.
+- `npm.cmd run preview:standalone`: 최신 독립 HTML 생성 및 전체 inline JS 문법 파싱 통과. 독립 HTML 직접 실행은 이번에 확인하지 않았으며 실제 Retell은 통합 서버에서 사용합니다.
+
+### 변경 파일
+- `src/dev/auxMic.ts`, `src/dev/audioLevelWorklet.ts`, `src/dev/callAudioLifecycle.ts`, `src/dev/RetellTestPage.tsx`.
+- `server/text-risk.mjs`, `server/tests/text-risk.test.mjs`, `server/tests/audio-worklet-flow.test.mjs`, `server/tests/final-release-integration.test.mjs`.
+- `tests/auxMic.test.ts`, `tests/audioLevelWorklet.test.ts`, `tests/callAudioLifecycle.test.ts`, `tests/retell.test.ts`.
+- `server/README.md`, `STATUS.md`, `00_KCM_미리보기.html`.
+
+### 적용과 남은 검증
+- 수정 브랜치만 반영하며 이번 작업에서 main 병합·Render 배포·환경변수 변경·Production 데이터 생성은 하지 않습니다.
+- 배포된 수정 버전에서 고객 화면을 새로고침하고 새 통화로 실제 마이크 측정→종료→최종 점수→n8n 1회 수신→DB 저장→다음 통화의 이전 상담 브리핑을 재검증해야 합니다.
+- 실제 물리 마이크·Retell 동시 사용, 백그라운드/최소화·장치 차이, Production n8n/Supabase 저장은 이번 수정의 실제 재검증 전입니다. 미측정인 과거 통화를 0회로 채우거나 임의로 재전송하지 않습니다.

@@ -1,8 +1,12 @@
+import { auxMicWorkletModuleSource } from './audioLevelWorklet.js';
+
 export interface AuxMicView {
   status: 'idle' | 'running' | 'error';
   starting: boolean;
   level: number;
   error: string;
+  /** AudioContext sample clock, independent of page rendering and MessagePort delivery time. */
+  sampledAtMs?: number;
 }
 
 export const idleAuxMic: AuxMicView = { status: 'idle', starting: false, level: 0, error: '' };
@@ -31,8 +35,10 @@ export function auxMicErrorMessage(error: unknown): string {
 interface MicEnvironment {
   getUserMedia: (constraints: MediaStreamConstraints) => Promise<MediaStream>;
   createContext: () => AudioContext;
-  requestFrame: (callback: FrameRequestCallback) => number;
-  cancelFrame: (id: number) => void;
+  loadWorklet: (context: AudioContext) => Promise<void>;
+  createWorkletNode: (context: AudioContext) => AudioWorkletNode;
+  readyTimeoutMs?: number;
+  flushTimeoutMs?: number;
 }
 
 const browserEnvironment: MicEnvironment = {
@@ -44,8 +50,14 @@ const browserEnvironment: MicEnvironment = {
     if (typeof AudioContext === 'undefined') throw new DOMException('', 'NotSupportedError');
     return new AudioContext();
   },
-  requestFrame: callback => requestAnimationFrame(callback),
-  cancelFrame: id => cancelAnimationFrame(id),
+  async loadWorklet(context) {
+    if (!context.audioWorklet || typeof AudioWorkletNode === 'undefined') throw new DOMException('', 'NotSupportedError');
+    const url = URL.createObjectURL(new Blob([auxMicWorkletModuleSource()], { type: 'application/javascript' }));
+    try { await context.audioWorklet.addModule(url); } finally { URL.revokeObjectURL(url); }
+  },
+  createWorkletNode: context => new AudioWorkletNode(context, 'kcm-aux-mic-level', {
+    numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1], channelCount: 1, channelCountMode: 'explicit',
+  }),
 };
 
 // Owns only the independent test stream. It never receives a Retell stream or session.
@@ -54,18 +66,34 @@ export function createAuxMicController(notify: (view: AuxMicView) => void, envir
     context?: AudioContext;
     stream?: MediaStream;
     source?: MediaStreamAudioSourceNode;
-    analyser?: AnalyserNode;
-    frame?: number;
+    node?: AudioWorkletNode;
     removeListeners?: () => void;
+    ready: Promise<boolean>;
+    settleReady: (ready: boolean) => void;
+    measured: boolean;
+    lastSampleAtMs?: number;
+    readyTimer?: ReturnType<typeof setTimeout>;
+    flushes: Map<number, { resolve: (ready: boolean) => void; timer: ReturnType<typeof setTimeout> }>;
+    released?: boolean;
   };
   let current: Run | null = null;
   let disposed = false;
+  let flushSequence = 0;
 
   const release = (run: Run) => {
+    if (run.released) return;
+    run.released = true;
     run.removeListeners?.();
-    if (run.frame !== undefined) environment.cancelFrame(run.frame);
+    if (run.readyTimer !== undefined) clearTimeout(run.readyTimer);
+    run.settleReady(false);
+    for (const pending of run.flushes.values()) { clearTimeout(pending.timer); pending.resolve(false); }
+    run.flushes.clear();
     run.source?.disconnect();
-    run.analyser?.disconnect();
+    if (run.node) {
+      run.node.port.onmessage = null;
+      run.node.port.close();
+      run.node.disconnect();
+    }
     run.stream?.getTracks().forEach(track => track.stop());
     if (run.context && run.context.state !== 'closed') void run.context.close().catch(() => {});
   };
@@ -77,12 +105,15 @@ export function createAuxMicController(notify: (view: AuxMicView) => void, envir
   };
 
   return {
-    async start() {
-      if (current || disposed) return;
-      const run: Run = {};
+    start(): Promise<boolean> {
+      if (disposed) return Promise.resolve(false);
+      if (current) return current.ready;
+      let settleReady!: (ready: boolean) => void;
+      const ready = new Promise<boolean>(resolve => { settleReady = resolve; });
+      const run: Run = { ready, settleReady, measured: false, flushes: new Map() };
       current = run;
       notify({ ...idleAuxMic, starting: true });
-      try {
+      void (async () => { try {
         // Start/resume in the click gesture, before awaiting microphone permission.
         const context = environment.createContext();
         run.context = context;
@@ -96,38 +127,89 @@ export function createAuxMicController(notify: (view: AuxMicView) => void, envir
         if (context.state !== 'running' || !run.stream?.getAudioTracks().some(track => track.readyState === 'live')) {
           throw new DOMException('', 'InvalidStateError');
         }
-        const analyser = context.createAnalyser();
-        run.analyser = analyser;
-        analyser.fftSize = 2048;
+        await environment.loadWorklet(context);
+        if (current !== run || disposed) return;
+        if (context.state !== 'running' || !run.stream.getAudioTracks().some(track => track.readyState === 'live')) {
+          throw new DOMException('', 'InvalidStateError');
+        }
+        const node = environment.createWorkletNode(context);
+        run.node = node;
         const source = context.createMediaStreamSource(run.stream);
         run.source = source;
-        source.connect(analyser); // No destination connection: no microphone playback.
         const interrupted = () => fail(run, new DOMException('', 'InvalidStateError'));
         const contextChanged = () => { if (context.state !== 'running') interrupted(); };
         const tracks = run.stream.getAudioTracks();
-        tracks.forEach(track => track.addEventListener('ended', interrupted));
+        const inputAvailable = () => tracks.length > 0 && tracks.every(track => track.readyState === 'live' && !track.muted);
+        // An initially muted capture can warm up, but its synthetic zeros are not valid samples.
+        let eligibleAfterMs = inputAvailable() ? -Infinity : Infinity;
+        const muted = () => { if (run.measured) interrupted(); else eligibleAfterMs = Infinity; };
+        const unmuted = () => {
+          if (!run.measured && inputAvailable()) eligibleAfterMs = context.currentTime * 1000;
+        };
+        tracks.forEach(track => {
+          track.addEventListener('ended', interrupted);
+          track.addEventListener('mute', muted);
+          track.addEventListener('unmute', unmuted);
+        });
         context.addEventListener('statechange', contextChanged);
+        node.addEventListener('processorerror', interrupted);
         run.removeListeners = () => {
-          tracks.forEach(track => track.removeEventListener('ended', interrupted));
+          tracks.forEach(track => {
+            track.removeEventListener('ended', interrupted);
+            track.removeEventListener('mute', muted);
+            track.removeEventListener('unmute', unmuted);
+          });
           context.removeEventListener('statechange', contextChanged);
+          node.removeEventListener('processorerror', interrupted);
         };
-        const samples = new Float32Array(analyser.fftSize);
-        let lastUpdate = -Infinity;
-        const measure: FrameRequestCallback = time => {
+        node.port.onmessage = event => {
           if (current !== run || disposed) return;
-          try {
-            if (time - lastUpdate >= 100) {
-              analyser.getFloatTimeDomainData(samples);
-              const level = normalizedRms(samples);
-              if (!Number.isFinite(level)) throw new Error('INVALID_AUDIO_SAMPLES');
-              notify({ status: 'running', starting: false, level, error: '' });
-              lastUpdate = time;
-            }
-            run.frame = environment.requestFrame(measure);
-          } catch (error) { fail(run, error); }
+          const data: unknown = event.data;
+          if (!data || typeof data !== 'object') { interrupted(); return; }
+          const message = data as { type?: unknown; level?: unknown; sampledAtMs?: unknown; requestId?: unknown; observed?: unknown };
+          if (message.type === 'flushed') {
+            if (typeof message.requestId !== 'number') return;
+            const pending = run.flushes.get(message.requestId);
+            if (!pending) return;
+            if (!run.measured || message.observed !== true || !inputAvailable()) { interrupted(); return; }
+            clearTimeout(pending.timer); run.flushes.delete(message.requestId); pending.resolve(true);
+            return;
+          }
+          if (message.type !== 'level' || typeof message.level !== 'number' || !Number.isFinite(message.level)
+            || message.level < 0 || message.level > 1 || typeof message.sampledAtMs !== 'number'
+            || !Number.isFinite(message.sampledAtMs) || message.sampledAtMs < 0
+            || (run.lastSampleAtMs !== undefined && message.sampledAtMs < run.lastSampleAtMs)) { interrupted(); return; }
+          if (!inputAvailable()) { if (run.measured) interrupted(); return; }
+          if (message.sampledAtMs <= eligibleAfterMs) return;
+          if (run.lastSampleAtMs === message.sampledAtMs) return;
+          run.lastSampleAtMs = message.sampledAtMs;
+          run.measured = true;
+          if (run.readyTimer !== undefined) clearTimeout(run.readyTimer);
+          notify({ status: 'running', starting: false, level: message.level, error: '', sampledAtMs: message.sampledAtMs });
+          run.settleReady(true);
         };
-        measure(0);
-      } catch (error) { fail(run, error); }
+        run.readyTimer = setTimeout(interrupted, environment.readyTimeoutMs ?? 5000);
+        source.connect(node);
+        node.connect(context.destination); // The processor writes silence; captured microphone audio is never played.
+      } catch (error) { fail(run, error); } })();
+      return ready;
+    },
+    /** Port FIFO orders queued levels before this ACK, including the last partial 100ms window. */
+    flush(): Promise<boolean> {
+      const run = current;
+      if (!run?.node || !run.measured || disposed) return Promise.resolve(false);
+      const tracks = run.stream?.getAudioTracks();
+      if (!tracks?.length || !tracks.every(track => track.readyState === 'live' && !track.muted)) {
+        fail(run, new DOMException('', 'InvalidStateError'));
+        return Promise.resolve(false);
+      }
+      return new Promise<boolean>(resolve => {
+        const requestId = ++flushSequence;
+        const timer = setTimeout(() => fail(run, new DOMException('', 'InvalidStateError')), environment.flushTimeoutMs ?? 5000);
+        run.flushes.set(requestId, { resolve, timer });
+        try { run.node!.port.postMessage({ type: 'flush', requestId }); }
+        catch { fail(run, new DOMException('', 'InvalidStateError')); }
+      });
     },
     stop() {
       const run = current;

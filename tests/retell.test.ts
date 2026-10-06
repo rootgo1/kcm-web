@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import './auxMic.test.js';
 import './shouting.test.js';
+import './callAudioLifecycle.test.js';
 import assert from 'node:assert/strict';
 import type { RetellClient, SessionHooks, WebCallSession } from 'retell-client-js-sdk';
 import { callErrorMessage, createCallController, retellProxyFetch, type CallView } from '../src/dev/retellCall.js';

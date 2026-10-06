@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createCallController, retellProxyFetch, type CallView } from './retellCall';
 import { createAuxMicController, idleAuxMic } from './auxMic';
 import { createLiveAudioReporter, type AudioReportView } from './liveAudioReporter';
+import { createCallAudioFinish, createMicReadyCallStart } from './callAudioLifecycle';
 import { SHOUT_SETTINGS } from './shouting';
 import { Icon } from '../components/Icon';
 import { workspaceMock } from '../data/workspaceMockData';
@@ -16,6 +17,8 @@ export default function RetellTestPage() {
   const controller = useRef<ReturnType<typeof createCallController> | null>(null);
   const auxMic = useRef<ReturnType<typeof createAuxMicController> | null>(null);
   const reporter = useRef<ReturnType<typeof createLiveAudioReporter> | null>(null);
+  const callStart = useRef<ReturnType<typeof createMicReadyCallStart> | null>(null);
+  const audioFinish = useRef<ReturnType<typeof createCallAudioFinish> | null>(null);
   const micLatest = useRef(idleAuxMic);
   const [audioReport, setAudioReport] = useState<AudioReportView | null>(null);
   const [micView, setMicView] = useState(idleAuxMic);
@@ -25,7 +28,10 @@ export default function RetellTestPage() {
   const [loadError, setLoadError] = useState('');
   const [attempt, setAttempt] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const busy = view.status === 'connecting' || view.status === 'live' || view.status === 'ending';
+  const [preparingMic, setPreparingMic] = useState(false);
+  const [finishingAudio, setFinishingAudio] = useState(false);
+  const displayStatus = finishingAudio ? 'ending' : preparingMic ? 'connecting' : view.status;
+  const busy = preparingMic || finishingAudio || view.status === 'connecting' || view.status === 'live' || view.status === 'ending';
 
   // Display-only timer. Call/analysis timestamps continue to come from the existing controllers.
   useEffect(() => {
@@ -40,13 +46,27 @@ export default function RetellTestPage() {
   const elapsed = `${Math.floor(elapsedSeconds / 60).toString().padStart(2, '0')}:${(elapsedSeconds % 60).toString().padStart(2, '0')}`;
 
   useEffect(() => {
-    reporter.current = createLiveAudioReporter(setAudioReport);
-    auxMic.current = createAuxMicController(next => {
+    const ownReporter = createLiveAudioReporter(setAudioReport);
+    reporter.current = ownReporter;
+    const ownMic = createAuxMicController(next => {
       micLatest.current = next;
       setMicView(next);
-      reporter.current?.observe(next, performance.now());
+      ownReporter.observe(next, next.sampledAtMs ?? performance.now());
     });
-    return () => { reporter.current?.dispose(); reporter.current = null; auxMic.current?.dispose(); auxMic.current = null; };
+    auxMic.current = ownMic;
+    audioFinish.current = createCallAudioFinish(
+      () => ownMic.flush(), () => ownReporter.finish(), () => ownMic.stop(), setFinishingAudio);
+    callStart.current = createMicReadyCallStart(() => ownMic.start(),
+      () => {
+        if (!audioFinish.current?.reset() || !controller.current) return false;
+        controller.current.start();
+      }, setPreparingMic);
+    return () => {
+      callStart.current?.dispose(); callStart.current = null;
+      audioFinish.current?.dispose(); audioFinish.current = null;
+      ownReporter.dispose(); reporter.current = null;
+      ownMic.dispose(); auxMic.current = null;
+    };
   }, []);
 
   useEffect(() => {
@@ -70,7 +90,7 @@ export default function RetellTestPage() {
         const client = new RetellClient({ key: 'unused-server-proxy', fetch: retellProxyFetch });
         controller.current = createCallController(client, config.agent_id, next => {
           if (next.status === 'live' && next.callId) reporter.current?.begin(next.callId, micLatest.current.status === 'running');
-          if (next.status === 'ended') { void reporter.current?.finish(); auxMic.current?.stop(); }
+          if (next.status === 'ended') void audioFinish.current?.finish().catch(() => {});
           setView(next);
         });
         setSetup(config.configured ? '백엔드 설정을 확인했습니다. 시작 버튼을 누르면 실제 Retell 통화를 시도합니다.'
@@ -85,26 +105,31 @@ export default function RetellTestPage() {
   }, [attempt]);
 
   return <main className="retell-test">
-    <section className={`retell-test-card is-${view.status}`} aria-labelledby="retell-title">
+    <section className={`retell-test-card is-${displayStatus}`} aria-labelledby="retell-title">
       <header className="retell-customer-header"><Icon name="store" size={18}/><span>{workspaceMock.store}</span></header>
       <div className="retell-customer-main">
         <div className="retell-customer-brand"><span>KCM<span className="retell-brand-dot">.</span></span><h1 id="retell-title">AI 상담 도우미</h1></div>
         <div className="retell-customer-avatar" aria-hidden="true"><Icon name="phone" size={42}/></div>
         <div className="retell-test-status" role="status" aria-live="polite" aria-atomic="true">
-          <span className="retell-status-dot" aria-hidden="true"/><strong>{labels[view.status]}</strong>
+          <span className="retell-status-dot" aria-hidden="true"/><strong>{labels[displayStatus]}</strong>
         </div>
         <div className="retell-customer-message">
-          {view.status === 'idle' && <p>궁금한 내용을 편하게 말씀해 주세요.<br/>AI 상담 도우미가 함께하겠습니다.</p>}
-          {view.status === 'connecting' && <p>AI 상담 도우미와 연결하고 있습니다.<br/>잠시만 기다려 주세요.</p>}
-          {view.status === 'live' && <><p className="retell-call-timer" role="timer" aria-label="통화 경과 시간" aria-live="off">{elapsed}</p><p>편하게 말씀해 주세요.</p></>}
-          {view.status === 'ending' && <p>상담을 마무리하고 있습니다.</p>}
-          {view.status === 'ended' && <p>상담이 종료되었습니다.<br/>필요하시면 다시 상담하실 수 있습니다.</p>}
+          {displayStatus === 'idle' && <p>궁금한 내용을 편하게 말씀해 주세요.<br/>AI 상담 도우미가 함께하겠습니다.</p>}
+          {displayStatus === 'connecting' && <p>AI 상담 도우미와 연결하고 있습니다.<br/>잠시만 기다려 주세요.</p>}
+          {displayStatus === 'live' && <><p className="retell-call-timer" role="timer" aria-label="통화 경과 시간" aria-live="off">{elapsed}</p><p>편하게 말씀해 주세요.</p></>}
+          {displayStatus === 'ending' && <p>상담을 마무리하고 있습니다.</p>}
+          {displayStatus === 'ended' && <p>상담이 종료되었습니다.<br/>필요하시면 다시 상담하실 수 있습니다.</p>}
         </div>
         {(loadError || view.error || micView.error) && <p className="retell-test-error" role="alert">{loadError ? '상담 연결을 준비하지 못했습니다. 잠시 후 페이지를 새로고침해 주세요.' : customerCallNotice(view.error || micView.error)}</p>}
         <div className="retell-call-controls">
-          {!busy ? <button type="button" className="retell-call-button retell-call-start" aria-label={view.status === 'ended' ? '다시 상담' : '상담 시작'} disabled={!ready || busy} onClick={() => { void auxMic.current?.start(); controller.current?.start(); }}><Icon name="phone" size={30}/></button>
-            : <button type="button" className="retell-call-button retell-call-end" aria-label={view.status === 'connecting' ? '연결 취소' : '통화 종료'} disabled={!busy || view.status === 'ending'} onClick={() => { void (async () => { await reporter.current?.finish(); auxMic.current?.stop(); await controller.current?.end(); })(); }}><Icon name="phone" size={30}/></button>}
-          <span aria-hidden="true">{view.status === 'connecting' ? '연결 취소' : busy ? '통화 종료' : view.status === 'ended' ? '다시 상담' : '상담 시작'}</span>
+          {!busy ? <button type="button" className="retell-call-button retell-call-start" aria-label={view.status === 'ended' ? '다시 상담' : '상담 시작'} disabled={!ready || busy} onClick={() => { void callStart.current?.start(); }}><Icon name="phone" size={30}/></button>
+            : <button type="button" className="retell-call-button retell-call-end" aria-label={displayStatus === 'connecting' ? '연결 취소' : '통화 종료'} disabled={!busy || displayStatus === 'ending'} onClick={() => {
+              callStart.current?.cancel();
+              if (preparingMic) { auxMic.current?.stop(); return; }
+              // Keep measuring until Retell acknowledges the actual end; onEnd drains final audio.
+              void controller.current?.end().catch(() => {});
+            }}><Icon name="phone" size={30}/></button>}
+          <span aria-hidden="true">{displayStatus === 'connecting' ? '연결 취소' : busy ? '통화 종료' : view.status === 'ended' ? '다시 상담' : '상담 시작'}</span>
           {!ready && !loadError && <p className="retell-test-note" role="status">상담을 준비하고 있습니다.</p>}
         </div>
         <p className="retell-customer-permission"><Icon name="phone" size={15}/>통화를 위해 마이크 사용을 허용해 주세요.</p>

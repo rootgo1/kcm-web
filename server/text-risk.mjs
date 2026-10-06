@@ -3,7 +3,7 @@
  * Replace analyzeRiskText at this boundary when a real classifier is available.
  * Conservative phrase patterns intentionally do not cover every Korean expression.
  */
-export const TEXT_RISK_RULE_VERSION = 'local-text-rules-v4';
+export const TEXT_RISK_RULE_VERSION = 'local-text-rules-v5';
 /** @typedef {import('../src/live/types.js').LiveTextRisk} TextRisk */
 /** @typedef {import('../src/live/types.js').LiveRiskAnalysis} RiskAnalysis */
 /** @typedef {import('../src/live/types.js').LiveMessage} Message */
@@ -17,7 +17,9 @@ const profanityGroups = [
   String.raw`좆\s*같(?:\s*(?:다|네|은|아|게))?`,
 ];
 const facilityTarget = String.raw`(?:매장|가게|시설|점포|사무실)(?:을|를|에서|에|으로|로)?`;
-const personTarget = String.raw`(?:너(?:를|한테|도)?|네놈(?:을|도)?|당신(?:을|한테|도)?|(?:직원|상담사)(?:님|분)?(?:을|를|한테|도)?)`;
+// A colloquial pronoun must not match the tail of unrelated words such as '언니'.
+const colloquialPersonTarget = String.raw`(?<![가-힣A-Za-z0-9])니(?:를|한테|도)?`;
+const personTarget = String.raw`(?:너(?:를|한테|도)?|네놈(?:을|도)?|당신(?:을|한테|도)?|(?:직원|상담사)(?:님|분)?(?:을|를|한테|도)?|${colloquialPersonTarget})`;
 const futureStatement = String.raw`거(?:야|예요|니까)`;
 const attackVisit = String.raw`(?:찾아\s*가서|가서)`;
 const destructionEnding = String.raw`(?:놓(?:는다|겠(?:다|어|습니다)|을\s*${futureStatement})|버(?:린다|리겠(?:다|어|습니다)|릴\s*${futureStatement}))`;
@@ -33,12 +35,13 @@ const assaultVerbs = String.raw`(?:팬다|팰\s*${futureStatement}|패\s*버(?:�
 const rules = [
   { type: 'profanity', expression: new RegExp(String.raw`(?<![가-힣A-Za-z0-9])(?:${profanityGroups.join('|')})`, 'gu'), reason: '명확한 욕설·비속어 표현' },
   // An explicit person target + an assertive visit is different from visiting a store.
-  { type: 'threat', expression: /(?:너(?:를|한테)?|네놈(?:을)?|당신(?:을|한테)?|상담사(?:분)?(?:를|을)|직원(?:분)?(?:를|을))\s*(?:직접\s*)?찾아(?:간다|갈\s*거야|가겠(?:다|어))/gu, reason: '상대방을 지목한 위협적 방문 의사' },
+  { type: 'threat', expression: new RegExp(String.raw`(?:너(?:를|한테)?|네놈(?:을)?|당신(?:을|한테)?|상담사(?:분)?(?:를|을)|직원(?:분)?(?:를|을)|${colloquialPersonTarget})\s*(?:직접\s*)?찾아(?:간다|갈\s*거야|가겠(?:다|어))`, 'gu'), reason: '상대방을 지목한 위협적 방문 의사' },
   { type: 'threat', expression: new RegExp(String.raw`가만\s*(?:안|못)\s*(?:둔다|두겠(?:다|어)|둘\s*줄\s*알아|둘\s*${futureStatement})|가만\s*두지\s*않겠(?:다|어)`, 'gu'), reason: '보복 의사를 명시한 표현' },
   { type: 'threat', expression: /(?:죽여|패|때려|박살내)\s*(?:버린다|버리겠(?:다|어))|(?:죽이|때리|패주)겠(?:다|어)/gu, reason: '직접적인 위해·폭력 의사' },
   { type: 'threat', expression: new RegExp(String.raw`${facilityTarget}\s*(?:(?:직접\s*)?(?:찾아\s*가서|가서)\s*)?(?:다\s*)?(?:${destructionVerbs})`, 'gu'), reason: '시설·매장을 대상으로 한 파괴 의사' },
   { type: 'threat', expression: new RegExp(String.raw`(?<![가-힣A-Za-z0-9])(?:가서\s*)?다\s*(?:${destructionVerbs})`, 'gu'), reason: '전부 파괴하겠다는 명시적 의사' },
   { type: 'threat', expression: new RegExp(String.raw`(?:찾아\s*가서|${facilityTarget}\s*가서)\s*${disturbanceIntent}`, 'gu'), reason: '방문하여 난동·업무방해를 하겠다는 의사' },
+  { type: 'threat', expression: new RegExp(String.raw`${personTarget}\s*${attackVisit}\s*(?:내가\s*)?(?:${destructionVerbs})`, 'gu'), reason: '상대방을 찾아가 명시적으로 파괴하겠다는 의사' },
   { type: 'threat', expression: new RegExp(String.raw`${personTarget}\s*(?:${attackVisit}\s*)?${assaultVerbs}`, 'gu'), reason: '상대방을 지목한 폭행 의사' },
   { type: 'threat', expression: new RegExp(String.raw`${attackVisit}\s*${assaultVerbs}`, 'gu'), reason: '찾아가서 폭행하겠다는 의사' },
   { type: 'threat', expression: /(?<![가-힣A-Za-z0-9])두들겨\s*팬다/gu, reason: '명시적으로 두들겨 패겠다는 의사' },

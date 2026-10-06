@@ -513,3 +513,148 @@ test('a colloquial assertion without explicit negation is still a threat', () =>
   assert.equal(analyzeRiskText('너 찾아가서 팬다는 건 결정됐어.').threatCount, 1);
   assert.equal(analyzeTranscriptRisk([message('u1', '직원을 찾아가서'), message('u2', '팬다는 건 결정됐어.')]).threatCount, 1);
 });
+
+for (const text of [
+  '내가 니 찾아간다고. ', '니를 찾아간다.', '니한테 직접 찾아갈 거야.', '니도 찾아간다.',
+  '당신 찾아가서 내가 엎어버릴 거야. ', '당신 찾아가서 엎어버릴 거야.',
+  '니 찾아가서 내가 엎어버릴 거야.', '너 찾아가서 내가 부숴버릴 거야.',
+  '너 찾아가서 팬다.',
+]) {
+  test('actual-call pronoun and targeted destruction variants count one occurrence: ' + text, () => {
+    const result = analyzeRiskText(text);
+    assert.deepEqual(totals(result), [0, 1, 0, 0]);
+    assert.equal(result.signals.length, 1);
+  });
+}
+
+for (const text of [
+  '언니 찾아간다.', '언니를 찾아가서 선물을 드릴 거야.', '머니 찾아간다.',
+  '매장에 찾아가겠습니다.', '매장 찾아가서 재고 확인할 거야.',
+  '당신 찾아가서 내가 상담할 거야.',
+  '“내가 니 찾아간다고”라는 말을 들었어요.', '니 찾아간다고 신고했습니다.',
+  '니 찾아간다는 것은 아닙니다.',
+  '“당신 찾아가서 내가 엎어버릴 거야”라고 들었습니다.',
+  '당신 찾아가서 내가 엎어버릴 거야라고 신고했습니다.',
+  '당신 찾아가서 내가 엎어버릴 거야라는 건 아닙니다.',
+]) {
+  test('actual-call extensions retain normal visits, word boundaries and nonassertion guards: ' + text, () => {
+    assert.deepEqual(totals(analyzeRiskText(text)), [0, 0, 0, 0]);
+  });
+}
+
+test('actual-call USER phrases remain separate through AGENT interjections, corrections and duplicate snapshots', () => {
+  const store = createLiveCallStore(); store.connecting('actual'); store.connecting('other');
+  const transcript = [
+    turn('u1', '내가 니 찾아간다고. '),
+    turn('a1', '방문하시면 재고를 안내해 드리겠습니다.', 'agent'),
+    turn('u2', '당신 찾아가서 내가 엎어버릴 거야. '),
+    turn('a2', '위협적인 말씀은 삼가 주세요.', 'agent'),
+  ];
+  for (let n = 0; n < 10; n++) store.transcript('actual', transcript);
+  let risk = store.snapshot()[0].risk_analysis;
+  assert.equal(risk.threatCount, 2);
+  assert.equal(risk.analysisByTurn.u1.threatCount, 1);
+  assert.equal(risk.analysisByTurn.u2.threatCount, 1);
+  assert.equal(risk.analyzedUserTurns, 2);
+  assert.equal(store.snapshot()[1].risk_analysis.threatCount, 0);
+
+  const corrected = transcript.map(item => item.id === 'u1' ? { ...item, content: '언니 찾아간다고.' } : item);
+  store.transcript('actual', corrected);
+  assert.equal(store.snapshot()[0].risk_analysis.threatCount, 1);
+  const onlyAgentThreat = corrected.map(item => item.id === 'u2' ? { ...item, role: 'agent' } : item);
+  store.transcript('actual', onlyAgentThreat);
+  risk = store.snapshot()[0].risk_analysis;
+  assert.equal(risk.threatCount, 0);
+  assert.equal(Object.hasOwn(risk.analysisByTurn, 'u2'), false);
+});
+
+test('new colloquial target can seed only the existing unfinished USER fragment window', () => {
+  const result = analyzeTranscriptRisk([
+    message('u1', '니'), message('a1', '위협적인 말씀은 삼가 주세요.', 'agent'),
+    message('u2', '찾아가서 내가 엎어버릴 거야.'),
+  ]);
+  assert.equal(result.threatCount, 1);
+  assert.equal(result.analysisByTurn.u1.threatCount, 0);
+  assert.equal(result.analysisByTurn.u2.threatCount, 1);
+  assert.equal(analyzeTranscriptRisk([message('u1', '언니'), message('u2', '찾아가서 내가 엎어버릴 거야.')]).threatCount, 0);
+});
+
+test('updated rules replace older cached misses without accumulating prior snapshot counts', () => {
+  const messages = [message('u1', '내가 니 찾아간다고.')];
+  const previous = analyzeTranscriptRisk(messages);
+  previous.ruleVersion = 'local-text-rules-v4';
+  previous.threatCount = 0; previous.threatDetected = false;
+  previous.analysisByTurn.u1 = { ...previous.analysisByTurn.u1, threatCount: 0, threatDetected: false, signals: [] };
+  const current = analyzeTranscriptRisk(messages, messages, previous);
+  assert.equal(current.ruleVersion, TEXT_RISK_RULE_VERSION);
+  assert.equal(current.threatCount, 1);
+  assert.equal(analyzeTranscriptRisk(messages, messages, current).threatCount, 1);
+});
+
+const filmingComplaint = '아 씨발, 장난해요? 폰도 없이 장사를 해요? 일 처리 진짜 개판이네. …하, 토요일 2시요. 그날도 없으면 매장 뒤집어 놓을 거니까 알아서 하세요.';
+const filmingMessages = [
+  message('film_u1', 'S26 울트라 512 실버요. 있죠?'),
+  message('film_a1', '현재 재고가 없어 토요일 오후 2시 방문을 안내해 드립니다.', 'agent'),
+  message('film_u2', filmingComplaint),
+  // Repeating USER words in AI guidance must not create additional occurrences.
+  message('film_a2', '씨발, 개판이네, 매장 뒤집어 놓을 거니까 같은 표현은 삼가 주세요.', 'agent'),
+  message('film_u3', '아 그런 건 가서 얘기할게요.'),
+  message('film_a3', '토요일 오후 2시 방문 예정으로 안내해 드리겠습니다.', 'agent'),
+  message('film_u4', '네네.'),
+];
+
+test('filming script counts exactly two USER profanities and one facility threat with precise evidence', () => {
+  const result = analyzeTranscriptRisk(filmingMessages);
+  assert.deepEqual(totals(result), [2, 1, 0, 0]);
+  assert.equal(result.analyzedUserTurns, 4);
+  assert.deepEqual(Object.keys(result.analysisByTurn), ['film_u1', 'film_u2', 'film_u3', 'film_u4']);
+  assert.deepEqual(result.analysisByTurn.film_u2.signals.map(({ type, matchedText }) => ({ type, matchedText })), [
+    { type: 'profanity', matchedText: '씨발' },
+    { type: 'profanity', matchedText: '개판이네' },
+    { type: 'threat', matchedText: '매장 뒤집어 놓을 거니까' },
+  ]);
+  for (const id of ['film_u1', 'film_u3', 'film_u4']) assert.deepEqual(totals(result.analysisByTurn[id]), [0, 0, 0, 0]);
+});
+
+for (const action of ['뒤집어 놓을 거니까 알아서 하세요.', '뒤집어놓을거니까 알아서 하세요.']) {
+  test('filming script USER fragments preserve the target across AI intervention and ASR spacing: ' + action, () => {
+    const result = analyzeTranscriptRisk([
+      message('u1', 'S26 울트라 512 실버요. 있죠?'),
+      message('u2', '아 씨발, 장난해요? 폰도 없이 장사를 해요? 일 처리 진짜 개판이네. …하, 토요일 2시요. 그날도 없으면 매장'),
+      message('a1', '위협적인 말씀은 삼가 주세요.', 'agent'), message('u3', action),
+      message('u4', '아 그런 건 가서 얘기할게요.'), message('u5', '네네.'),
+    ]);
+    assert.deepEqual(totals(result), [2, 1, 0, 0]);
+    assert.equal(result.analysisByTurn.u2.threatCount, 0);
+    assert.equal(result.analysisByTurn.u3.threatCount, 1);
+    assert.equal(result.analysisByTurn.u3.signals[0].matchedText, action.replace(' 알아서 하세요.', ''));
+    assert.match(result.analysisByTurn.u3.signals[0].reason, /이전 USER/);
+  });
+}
+
+test('filming script full snapshot and ASR corrections never append duplicate signal counts', () => {
+  const store = createLiveCallStore(); store.connecting('filming');
+  const raw = filmingMessages.map(({ turn_id, content, role, start_sec }) => ({ id: turn_id, content, role, time_sec: start_sec }));
+  store.transcript('filming', raw.map(item => item.id === 'film_u2' ? { ...item, content: '아 씨발, 장난해요?' } : item));
+  assert.deepEqual(totals(store.snapshot()[0].risk_analysis), [1, 0, 0, 0]);
+  for (let n = 0; n < 10; n++) store.transcript('filming', raw);
+  assert.deepEqual(totals(store.snapshot()[0].risk_analysis), [2, 1, 0, 0]);
+
+  const corrected = raw.map(item => item.id === 'film_u2' ? { ...item, content: filmingComplaint.replace('뒤집어 놓을 거니까', '뒤집어놓을거니까') } : item);
+  for (let n = 0; n < 10; n++) store.transcript('filming', corrected);
+  const risk = store.snapshot()[0].risk_analysis;
+  assert.deepEqual(totals(risk), [2, 1, 0, 0]);
+  assert.equal(risk.analysisByTurn.film_u2.signals.find(signal => signal.type === 'threat').matchedText, '매장 뒤집어놓을거니까');
+
+  store.transcript('filming', corrected.map(item => item.id === 'film_u2' ? { ...item, content: '토요일 오후 2시에 매장에 방문해서 재고를 확인할게요.' } : item));
+  assert.deepEqual(totals(store.snapshot()[0].risk_analysis), [0, 0, 0, 0]);
+});
+
+test('normal product and appointment filming dialogue is not a threat', () => {
+  const result = analyzeTranscriptRisk([
+    message('u1', 'S26 울트라 512 실버요. 있죠?'),
+    message('u2', '토요일 오후 2시요. 그날 매장에 찾아가서 재고를 확인할게요.'),
+    message('u3', '아 그런 건 가서 얘기할게요.'), message('u4', '네네.'),
+  ]);
+  assert.deepEqual(totals(result), [0, 0, 0, 0]);
+});
