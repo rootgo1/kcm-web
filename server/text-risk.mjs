@@ -3,7 +3,7 @@
  * Replace analyzeRiskText at this boundary when a real classifier is available.
  * Conservative phrase patterns intentionally do not cover every Korean expression.
  */
-export const TEXT_RISK_RULE_VERSION = 'local-text-rules-v6';
+export const TEXT_RISK_RULE_VERSION = 'local-text-rules-v7';
 /** @typedef {import('../src/live/types.js').LiveTextRisk} TextRisk */
 /** @typedef {import('../src/live/types.js').LiveRiskAnalysis} RiskAnalysis */
 /** @typedef {import('../src/live/types.js').LiveMessage} Message */
@@ -20,7 +20,7 @@ const facilityTarget = String.raw`(?:매장|가게|시설|점포|사무실)(?:�
 // A colloquial pronoun must not match the tail of unrelated words such as '언니'.
 const colloquialPersonTarget = String.raw`(?<![가-힣A-Za-z0-9])니(?:를|한테|도)?`;
 const personTarget = String.raw`(?:너(?:를|한테|도)?|네놈(?:을|도)?|당신(?:을|한테|도)?|(?:직원|상담사)(?:님|분)?(?:을|를|한테|도)?|${colloquialPersonTarget})`;
-const futureStatement = String.raw`거(?:야|예요|니까)`;
+const futureStatement = String.raw`(?:거(?:야|예요|니까)|테니까)`;
 const attackVisit = String.raw`(?:찾아\s*가서|가서)`;
 const destructionEnding = String.raw`(?:놓(?:는다|겠(?:다|어|습니다)|을\s*${futureStatement})|버(?:린다|리겠(?:다|어|습니다)|릴\s*${futureStatement}))`;
 const destructionVerbs = [

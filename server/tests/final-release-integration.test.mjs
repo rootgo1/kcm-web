@@ -228,7 +228,7 @@ async function finalThroughHttp(f, stream, socket, id, after = 0) {
   const final = await stream.waitFor(event => event.type === 'risk_finalized' && event.call_id === id, after);
   assert.equal(final.final_result.rule_version, 'call-risk-v5');
   assert.equal(final.final_result.signals.shouting_count, 0);
-  assert.equal(final.risk_analysis.ruleVersion, 'local-text-rules-v6');
+  assert.equal(final.risk_analysis.ruleVersion, 'local-text-rules-v7');
   return final;
 }
 

@@ -128,3 +128,42 @@ test('unready microphone preparation creates neither a Retell call nor a downstr
   assert.equal(await start.start(), false);
   assert.deepEqual(store.snapshot(), []);
 });
+
+test('actual ASR 놓을 테니까 snapshot finalizes to 60 and delivers once without changing the transcript', async t => {
+  const f = measuredCall(t);
+  const transcript = [
+    { id: 'asr_a1', role: 'agent', content: '통화 내용이 녹음되고 음성 분석이 진행됩니다. 동의하시겠습니까?', time_sec: 0 },
+    { id: 'asr_u1', role: 'user', content: '아 씨발, 장난해요?', time_sec: 13 },
+    { id: 'asr_u2', role: 'user', content: '처리 진짜 개판이네. 그날도 없으면 매장 뒤집어 놓을 테니까 알아서 하세요.', time_sec: 15 },
+    { id: 'asr_a2', role: 'agent', content: '매장 뒤집어 놓을 테니까라는 말씀은 삼가 주세요.', time_sec: 21 },
+  ];
+  f.store.transcript('call_audio_fixture', transcript);
+  for (let n = 0; n < 10; n++) f.store.transcript('call_audio_fixture', transcript);
+  const analysis = f.store.snapshot()[0].risk_analysis;
+  assert.equal(analysis.profanityCount, 2);
+  assert.equal(analysis.threatCount, 1);
+  assert.equal(analysis.blameCount, 0);
+  assert.equal(analysis.sexualCount, 0);
+  assert.equal(analysis.analysisByTurn.asr_a2, undefined);
+  const signal = analysis.analysisByTurn.asr_u2.signals.find(value => value.type === 'threat');
+  assert.equal(signal.matchedText, '매장 뒤집어 놓을 테니까');
+  assert.equal(signal.explicitHarm, true);
+  assert.equal(f.posts.length, 0);
+  f.feed(400); f.drain();
+  f.store.ended('call_audio_fixture');
+  f.processor.port.onmessage({ data: { type: 'flush', requestId: 1 } });
+  f.drain(); await f.reporter.finish(); await tick();
+  const final = f.store.snapshot()[0].final_result;
+  assert.equal(final.raw_score, 28);
+  assert.equal(final.signals.profanity_count, 2);
+  assert.equal(final.signals.threat_count, 1);
+  assert.equal(final.threat_floor, 60);
+  assert.equal(final.risk_score, 60);
+  assert.equal(final.risk_level, '위험');
+  assert.equal(f.posts.length, 1);
+  assert.equal(f.posts[0].risk_score, 60);
+  assert.equal(f.posts[0].risk_level, '위험');
+  assert.equal(f.posts[0].consultation.transcript[2].content, transcript[2].content);
+  f.store.ended('call_audio_fixture'); await f.reporter.finish(); await tick();
+  assert.equal(f.posts.length, 1);
+});

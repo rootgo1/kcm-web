@@ -920,3 +920,23 @@ npm.cmd run dev
 ### 적용 범위와 남은 확인
 - 수정 브랜치/PR에만 반영합니다. 이번 승인으로 main 병합·Render 배포·환경변수·Production 데이터·n8n workflow는 변경하지 않습니다.
 - 다음 적용 단계는 main 병합 및 프런트/백엔드 함께 배포 후 고객 화면 새로고침입니다. 이후 실제 새 통화의 음성 coverage·위해 탐지·60점 결과·n8n1회 수신·DB 저장·다음 통화 사전 브리핑을 확인해야 합니다. 실제 음성 인식 결과가 대사와 다르면 전사 문제와 규칙 문제를 구분합니다.
+
+## 실제 통화 재검증과 ASR 끝형 보완 — 2026-10-06
+
+### 배포 및 실제 확인
+- 사용자 후속 승인에 따라 PR #2의 `a3d13c7b16cfbf28c9c68ee283073bdc3be5fd52`를 origin/main에 fast-forward push하고 기존 Render `kcm`에 배포했습니다. Render deploy `dep-db2g69ek1f9s73abfkfg`의 Succeeded/Live와 해당 SHA를 확인했습니다. 사용자 주 작업 폴더의 미커밋 STATUS·deliverables는 변경하지 않았습니다.
+- Production 9개 route 기본 화면 표시 및 브라우저 콘솔 runtime 오류 0건을 확인했습니다. `/health`, `/retell/config`와 스마트재고 stores/stock/rentals 읽기 API는 모두 HTTP200이었습니다. 실제 Retell·재고 write를 자동 실행하지 않았습니다.
+- 공개 배포의 일반 저장 예약·고객 API 접근 제한은 기존 의도된 동작으로 유지합니다. configured demo customer에 대한 실시간 사전 브리핑 읽기 경로는 별도 허용되어 있습니다.
+- 사용자가 새 실제 통화 2건을 수행했습니다. 두 통화 모두 음성 `available:true`, `closed:true`, `coverage_complete:true`로 종료되어 최종 위험도 보류가 해소됐고 n8n delivery는 `sent`였습니다. 고성은 관측0회이며 큰 목소리 탐지 성공을 이 통화로 단정하지 않습니다.
+- 첫 통화는 욕설1/위협0/최종20점, 두 번째는 욕설2/위협0/최종20점이었습니다. 두 번째 실시간 브리핑에는 같은 고객의 첫 번째 저장 상담과20점 위험도가 조회됐습니다. n8n HTTP 성공과 실제 이전 상담 조회를 구분하며, 전문·요약의 개별 저장 노드 성공은 따로 확인해야 합니다.
+
+### 확인된 미탐과 최소 수정
+- 두 번째 USER 실제 전사: “처리 진짜 개판이네. 그날도 없으면 매장 뒤집어 놓을 테니까 알아서 하세요.” 기존 미래형 `거야/거예요/거니까`에 `테니까`가 없어 위협0회가 된 원인을 확인했습니다.
+- `server/text-risk.mjs`에서 미래형 끝형에 `테니까`만 추가하고 규칙 버전을 `local-text-rules-v7`로 갱신했습니다. 위해 표시·욕설/다른 신호·40/60/80 횟수 하한·명백한 위해1회60점·항목 점수·99점 상한은 변경하지 않았습니다.
+- 실제 USER 두 발화가 욕설2·위협1로 분석되고 Agent 반복·10회 snapshot은 추가 count를 만들지 않습니다. 격리된 음성/최종화/n8n 통합 검사에서 최종60점/위험과1회 POST, 원문 전문 projection 보존을 확인했습니다.
+- 과거20점 확정 기록은 변경하거나 재전송하지 않습니다. 새 규칙은 배포 후 새 통화에서 재검증합니다. 환경변수·Retell Agent·DB 데이터·n8n workflow·재고 업무 로직은 변경하지 않았습니다.
+
+### 검증 및 변경 파일
+- `npm.cmd run check`: **872/872 전체 테스트 통과**, frontend `tsc --noEmit`, backend `tsc -p tsconfig.server.json`, Vite production build 통과. 기존 SDK chunk500kB 경고는 남아 있습니다.
+- 변경: `server/text-risk.mjs`, `server/tests/text-risk.test.mjs`(12개 추가), `server/tests/audio-worklet-flow.test.mjs`(실제 ASR 통합1개 추가), `server/tests/final-release-integration.test.mjs`(생성 규칙 버전 기대값 갱신), `server/README.md`, `docs/FINAL_PRODUCTION_E2E_CHECKLIST.md`, `STATUS.md`.
+- `npm.cmd run preview:standalone` 재생성과 전체 inline JavaScript 문법 파싱이 통과했습니다. frontend source 변경이 없어 생성 HTML 내용은 기존과 같습니다. 독립 HTML 직접 실행과 v7 배포 후 실제 새 통화의60점/n8n/DB 저장은 이 기록 시점에는 미검증입니다.

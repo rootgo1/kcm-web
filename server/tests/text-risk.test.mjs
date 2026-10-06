@@ -759,3 +759,83 @@ test('v6 reanalyzes cached v5 harm findings to enrich metadata rather than incre
   assert.equal(repeated.threatCount, 1);
   assert.equal(repeated.analysisByTurn.u1.signals[0].explicitHarm, true);
 });
+
+const actualFutureComplaint = '처리 진짜 개판이네. 그날도 없으면 매장 뒤집어 놓을 테니까 알아서 하세요.';
+
+test('actual Production ASR future form keeps two profanities and marks one explicit facility threat', () => {
+  const result = analyzeTranscriptRisk([
+    message('u1', '아 씨발, 장난해요?'),
+    message('a1', '개판이네. 매장 뒤집어 놓을 테니까 같은 말씀은 삼가 주세요.', 'agent'),
+    message('u2', actualFutureComplaint),
+  ]);
+  assert.deepEqual(totals(result), [2, 1, 0, 0]);
+  const threat = result.analysisByTurn.u2.signals.find(signal => signal.type === 'threat');
+  assert.equal(threat.matchedText, '매장 뒤집어 놓을 테니까');
+  assert.equal(threat.explicitHarm, true);
+  assert.equal(Object.hasOwn(result.analysisByTurn, 'a1'), false);
+});
+
+for (const text of [
+  '매장 뒤집어 놓을 테니까 알아서 하세요.', '매장 뒤집어놓을테니까 알아서 하세요.',
+  '매장 부숴버릴 테니까 알아서 하세요.', '매장 부숴버릴테니까 알아서 하세요.',
+]) {
+  test('future te-nikka spacing variants retain one explicit harm occurrence: ' + text, () => {
+    const result = analyzeRiskText(text);
+    assert.deepEqual(totals(result), [0, 1, 0, 0]);
+    assert.equal(result.signals.length, 1);
+    assert.equal(result.signals[0].explicitHarm, true);
+  });
+}
+
+for (const text of [
+  '“매장 뒤집어 놓을 테니까”라는 말을 들었어요.',
+  '매장 뒤집어 놓을 테니까라고 신고했습니다.',
+  '매장 뒤집어 놓을 테니까라는 건 아닙니다.',
+  '토요일 매장에 가서 제품을 확인할 테니까 안내해 주세요.',
+]) {
+  test('future te-nikka maintains quotation, report, negation and normal visit exclusions: ' + text, () => {
+    assert.deepEqual(totals(analyzeRiskText(text)), [0, 0, 0, 0]);
+  });
+}
+
+test('actual future form retains explicit harm across bounded USER fragmentation', () => {
+  const result = analyzeTranscriptRisk([
+    message('u1', '아 씨발, 장난해요? 처리 진짜 개판이네. 그날도 없으면 매장'),
+    message('a1', '위협적인 말씀은 삼가 주세요.', 'agent'),
+    message('u2', '뒤집어 놓을 테니까 알아서 하세요.'),
+  ]);
+  assert.deepEqual(totals(result), [2, 1, 0, 0]);
+  assert.equal(result.analysisByTurn.u1.threatCount, 0);
+  assert.equal(result.analysisByTurn.u2.signals[0].matchedText, '뒤집어 놓을 테니까');
+  assert.equal(result.analysisByTurn.u2.signals[0].explicitHarm, true);
+});
+
+test('actual future form ASR revisions and duplicate full snapshots replace rather than accumulate signals', () => {
+  const store = createLiveCallStore(); store.connecting('actual-future');
+  const apply = content => {
+    for (let n = 0; n < 10; n++) store.transcript('actual-future', [
+      turn('u1', '아 씨발, 장난해요?'), turn('u2', content),
+    ]);
+    return store.snapshot()[0].risk_analysis;
+  };
+  let risk = apply(actualFutureComplaint.replace('놓을 테니까', '놓을 거니까'));
+  assert.deepEqual(totals(risk), [2, 1, 0, 0]);
+  risk = apply(actualFutureComplaint);
+  assert.deepEqual(totals(risk), [2, 1, 0, 0]);
+  assert.equal(risk.analysisByTurn.u2.signals.find(signal => signal.type === 'threat').explicitHarm, true);
+  risk = apply('토요일 오후 2시에 매장에 방문할게요.');
+  assert.deepEqual(totals(risk), [1, 0, 0, 0]);
+});
+
+test('v7 reanalyzes cached v6 misses for the actual ASR future form', () => {
+  const messages = [message('u1', '매장 뒤집어 놓을 테니까 알아서 하세요.')];
+  const previous = analyzeTranscriptRisk(messages);
+  previous.ruleVersion = 'local-text-rules-v6';
+  previous.threatCount = 0; previous.threatDetected = false;
+  previous.analysisByTurn.u1 = { ...previous.analysisByTurn.u1, threatCount: 0, threatDetected: false, signals: [] };
+  const current = analyzeTranscriptRisk(messages, messages, previous);
+  assert.equal(current.ruleVersion, TEXT_RISK_RULE_VERSION);
+  assert.equal(current.threatCount, 1);
+  assert.equal(current.analysisByTurn.u1.signals[0].explicitHarm, true);
+  assert.equal(analyzeTranscriptRisk(messages, messages, current).threatCount, 1);
+});

@@ -53,7 +53,7 @@ B의 직원 담당자가 SSE를 먼저 열고 A를 동시에 관찰합니다. �
 |---|---|---|---|
 | [ ] A1 준비 | 고객 화면을 열고 마이크 허용·입력 장치를 확인합니다. 시작 버튼이 준비된 상태인지 확인합니다. | 고객 전화 UI가 보이고 직원 화면은 별도 탭에서 열려 있습니다. 준비 상태만으로 실제 Retell 인증 성공을 판정하지 않습니다. | 고객 화면의 안전 안내, 브라우저 사이트 마이크 권한, `/retell/config`의 준비 여부만 확인. `src/dev/RetellTestPage.tsx`, `src/dev/customerCopy.ts`. |
 | [ ] A2 통화 생성 | 승인된 T1을 시작하고 직원 화면의 통화 식별 정보를 펼칩니다. | 연결 중 → 통화 중. 실제 `call_id`와 새로운 `consultation_<숫자>`가 연결되고 `customer_id`는 `customer_9999`, 매장은 승인된 설정과 일치합니다. ID를 브라우저에서 주입하거나 기존 ID를 재사용하지 않습니다. | 백엔드 `call created` 로그, 고정 Retell 오류 코드, Retell의 해당 통화 존재, `server/app.mjs`, `server/call-identity.mjs`. 생성 응답의 토큰은 복사하지 않습니다. |
-| [ ] A3 전문 | 합성 테스트 문장을 짧게 말하고 AI 답변을 기다립니다. | 직원 모달에 user/agent 발화가 실제 수신 순서대로 보입니다. 수정된 같은 turn은 기존 내용이 교체되고 같은 발화가 SSE 수신 횟수만큼 중복되지 않습니다. | Retell 해당 통화의 전사 여부 → 백엔드 Monitor → 직원 SSE `transcript` 순서로 확인. `server/monitor.mjs`, `server/live-calls.mjs`, `src/live/liveCalls.ts`. |
+| [ ] A3 전문 | 첫 녹음·분석 동의 질문에 “네”라고 답한 뒤 합성 테스트 문장을 짧게 말하고 AI 답변을 기다립니다. | 직원 모달에 user/agent 발화가 실제 수신 순서대로 보입니다. 수정된 같은 turn은 기존 내용이 교체되고 같은 발화가 SSE 수신 횟수만큼 중복되지 않습니다. | Retell 해당 통화의 전사 여부 → 백엔드 Monitor → 직원 SSE `transcript` 순서로 확인. `server/monitor.mjs`, `server/live-calls.mjs`, `src/live/liveCalls.ts`. |
 | [ ] A4 텍스트 4신호 | 담당자가 승인한 합성 문장으로 욕설·위협·비난·성적 발언 각 범주를 확인합니다. 먼저 **실제로 전사된 user 문장**을 기준으로 분석 결과를 비교합니다. | 네 범주의 횟수와 근거가 전사 내용에 맞게 표시됩니다. agent 발화는 집계하지 않습니다. 말한 문장이 ASR에서 누락·변형되면 인식 문제와 규칙 분석 문제를 구분합니다. | `server/text-risk.mjs`의 현재 규칙과 `server/tests/text-risk.test.mjs`의 합성 fixture, `risk_analysis.analysisByTurn`, 직원 위험 신호 영역. |
 | [ ] A5 고성 | 승인된 음성 테스트로 높은 레벨 구간과 낮은 레벨 구간을 구분하고, 정상 종료까지 마이크 측정을 유지합니다. | 현재 기준은 RMS 0.12 이상 350ms 유지 시 1회 진입, 0.08 이하 300ms 유지 시 해제입니다. 연속 높은 구간은 매 샘플마다 추가하지 않고 해제 후 다음 진입에서 추가합니다. 수신된 고성 횟수와 상태가 직원 화면에 반영됩니다. | `src/dev/shouting.ts`, `src/dev/auxMic.ts`, `src/dev/liveAudioReporter.ts`, `/api/live-calls/:call_id/audio-signals`의 상태·고정 오류 코드, 직원 `audio_signal`. 일반 고객 UI의 숨겨진 내부 버튼을 열 필요는 없습니다. |
 | [ ] A6 정상 종료 | 고객 화면의 통화 종료 버튼을 한 번 누르고 직원 화면을 관찰합니다. | 종료 중 → 통화 종료. Monitor 종료와 마지막 고성 상태의 도착 순서와 무관하게, 텍스트 분석 및 `closed=true`, `available=true`, `coverage_complete=true`가 충족되면 최종 결과가 한 번 확정됩니다. 종료 시각과 마지막 대화가 유지됩니다. | Retell 종료 상태 → Monitor `call_ended` → 최종 `audio_signal` → `final_result` 순서. `server/live-calls.mjs`, `src/dev/RetellTestPage.tsx`, `src/dev/liveAudioReporter.ts`. |
@@ -76,6 +76,8 @@ B의 직원 담당자가 SSE를 먼저 열고 A를 동시에 관찰합니다. �
 5개 점수 합계가 `raw_score`입니다. 욕설 1회 이상은 최소 20점, 일반 위협 1회는 최소 40점, 2회는 최소 60점, 3회 이상은 최소 80점입니다. USER 근거에서 **명확한 매장 파괴·폭행·살해 의사**가 확인되면 1회라도 최소60점/위험입니다. 횟수 하한과 위해 하한 중 큰 값을 적용하여 `adjusted_score`를 구하고 최종 점수는 최대99점으로 제한합니다. 등급은 0~19 정상, 20~39 주의, 40~59 경계, 60~79 위험, 80~99 매우 위험입니다. 관측된 최종 횟수가 모두 정확히1회라면 항목 합계34점이며, 일반 위협일 때 최종40점/경계, 명확한 위해 위협일 때 최종60점/위험입니다. 발화 계획만으로 실제 횟수를 보장하지 않습니다.
 
 촬영 대사의 “씨발 … 개판이네 … 그날도 없으면 매장 뒤집어 놓을 거니까 알아서 하세요”가 그대로 USER에 전사되면 욕설2·위협1, 고성0 기준 raw26 → **최종60점/위험**입니다. 정상 방문·인용·신고·부정·Agent 발화는 위해 근거가 아닙니다. 동일 snapshot이나 ASR 정정으로 횟수 또는 점수가 중복 증가하지 않아야 하며, 이미 확정된 과거 기록은 새 기준으로 덮어쓰지 않습니다.
+
+2026-10-06 실제 통화에서 “매장 뒤집어 놓을 테니까”로 전사된 경우의 미탐을 확인하여 `local-text-rules-v7`에 같은 의미의 끝형만 추가했습니다. 띄어쓰기·USER 분절·정정·반복 snapshot도 같은 발생 1회입니다. 점수 정책 `call-risk-v5`는 그대로이며, 배포 전 이미 확정·저장된 20점 기록을 재산정하거나 다시 전송하지 않습니다. 새 통화에서 탐지·60점 확정·n8n 전달·저장 조회를 각각 재확인합니다.
 
 ## B. 직원 SSE · 전문 · 신호 · 동일 고객 반복
 
