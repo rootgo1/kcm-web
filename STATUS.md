@@ -1,5 +1,19 @@
 # KCM 작업 상태 — v0.3 / 2026-10-06
 
+## 최종 실제 데이터·위험탐지 통합 / 2026-10-06
+
+- 기준 main/origin main은 `86508324e33a59e4a74e508bb354f9ef09c86a96`입니다. 기본 작업 폴더의 사용자 `STATUS.md` 변경·미추적 `deliverables/`를 그대로 두고 깨끗한 기존 worktree에서 `integration/kcm-final-release`을 생성했습니다. main·기존 feature/fix/release 브랜치·Render·실제 .env·외부 데이터는 변경하지 않았습니다.
+- `feature/real-data-integration-v1`의 `e557081695502f7f5d8ee1298091402513345f96`을 fast-forward한 다음 `fix/risk-detection-test-feedback`의 `64507d9aec39fdbfe0561dc9b7266f8a6130d9de`를 병합했습니다. 충돌은 `STATUS.md` 한 파일의 작업 기록뿐이었으며 양쪽 기록을 모두 보존했습니다. 기능 코드 충돌은 없었습니다.
+- 실제 데이터 기능은 원본 feature와 동일합니다. SELECT 전용 Supabase provider, 저장 예약·고객·상담 이력과 `GET /api/briefings/:reservationId`, DB 상품 catalog, `POST /api/effective-price` 서버 계산, 마스킹·동의·매장 범위·공개 사이트 접근 제한을 보존했습니다.
+- 위험탐지 기능은 원본 fix와 동일합니다. `local-text-rules-v4`/`call-risk-v4`, 개판 욕설·시설/대인 위협·USER 분절 문맥·Agent 제외·ASR 정정/스냅샷 중복 방지·욕설 최소20·위협1/2/3회 최소40/60/80을 보존했습니다. Retell/Monitor/SSE/고성 RMS/최종화/n8n 전송/스마트재고/고객 전화/배포 설정·의존성 보호 파일은 main 대비 변경 없음입니다.
+- 새 `server/tests/final-release-integration.test.mjs`에 통합 테스트11개를 추가했습니다. 같은 Backend에서 실제 읽기 provider의 주입된 REST GET→예약/고객/이력/브리핑, catalog/서버 체감가, 재고 read-only3action, 공식 Monitor 인터페이스를 사용하는 Fake WebSocket→store→HTTP SSE/최종 audio 수신을 함께 검증합니다. 동시 조회·SSE 재접속·ASR 정정·공급자 실패 격리·동의/매장 범위·입력/요청 보호도 검사합니다.
+- 최종 `npm.cmd test`: **683/683 통과**, 실패·건너뜀0(양쪽 기존672 + 신규 통합11). 기존 테스트 삭제/약화0. `npm.cmd run build`에서 프런트 `tsc --noEmit`·백엔드 `tsc -p tsconfig.server.json` 및 Vite production build 모두 통과했습니다. 기존 Retell SDK 596.72kB 청크 경고만 유지합니다.
+- 영상 기본 욕설2+위협1 → raw26/최종40·경계, 강한 욕설2+위협2 → raw36/최종60·위험, “너 찾아가서 팬다” → 위협1/최종40·경계, 정상 매장 방문 → 위협0/최종0·정상을 자동 테스트와 격리 브라우저 최종 기록에서 확인했습니다. 같은 합성 customer_9999의 네 통화를 각각 독립 기록으로 유지했습니다.
+- 로컬 격리 production dist+Backend로 `#/home`, `#/appointments`, `#/customers`, `#/support`, `#/products`, `#/inventory`, `#/marketing`, `#/stores`, `#/retell-test` 직접 진입·기본 표시·직원/고객 title를 확인했습니다. 저장 예약/사전 브리핑·마스킹 고객·현재 상품/최근 이력과 기존 SSE 기록이 함께 보입니다. 체감가55,000−3,000=52,000원 소계/미확인 총부담, 재고 매장/목록/보낸 요청 조회를 확인했습니다. 이번 검증 탭 console error/warn0, 기본 viewport 바깥 가로 넘침 없음, 고객 avatar점0입니다. 모든 업무 버튼·모든 viewport의 전수 재검증은 이번 범위에서 수행하지 않았습니다.
+- 브라우저/통합 테스트는 합성 데이터만 사용하며 실제 Retell·n8n·Supabase 요청과 DB 변경은 하지 않았습니다. 재고는 GET_STORES/GET_INVENTORY/GET_RENTALS만 모의 조회했습니다. 합성 통화의 n8n failed 표시는 실제 URL을 설정하지 않은 검증 환경의 예상 동작이며 실제 전송 장애 판단이 아닙니다. 임시 서버·브라우저 탭은 정상 정리했습니다.
+- `npm.cmd run preview:standalone`으로 독립 HTML을 재생성했습니다. 직접 실행은 미검증이며 위 production dist 브라우저 검증과 구분합니다. 캡처/fixture/검증 로그는 Git 제외 `.cache/`에만 있습니다. 상세 통합 범위와 남은 검증은 `docs/FINAL_RELEASE_INTEGRATION.md`에 기록했습니다.
+- 남은 blocker: 공개 배포의 직원 인증 부재로 개인자료 조회/고객 지정 체감가는 기존대로503 `REAL_DATA_ACCESS_RESTRICTED`입니다. 실제 서버 SUPABASE_URL/SUPABASE_READ_KEY 설정·읽기 권한/RLS·REST 조회 E2E, 실제 음성/STT·고성·n8n/Supabase 저장·Production 스마트재고 조회는 별도 확인이 필요합니다. 보호 조치를 해제하거나 키/환경값을 임의 입력하지 않았습니다. 이번 통합 브랜치만 commit/push하며 main 병합/Render 배포는 하지 않습니다.
+
 ## 실제 데이터 연동 1차 / 2026-10-06
 
 - main/origin main `86508324e33a59e4a74e508bb354f9ef09c86a96`에서 `feature/real-data-integration-v1`을 생성했습니다. 기존 기본 작업 폴더의 사용자 STATUS 변경·deliverables를 보존하고 같은 저장소의 기존 worktree에서 작업했습니다. main·Render·실제 .env·비밀값·외부 데이터는 변경하지 않았습니다.
