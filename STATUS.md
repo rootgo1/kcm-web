@@ -1,5 +1,17 @@
 # KCM 작업 상태 — v0.3 / 2026-10-06
 
+## Production 비파괴 진단 + 고객 avatar 점 제거 / 2026-10-06
+
+- 최신 main/origin main `eef5648758d3358bb856bf11b43c7f714d3103da`를 확인했습니다. 기존 작업 폴더의 사용자 STATUS 변경·미추적 산출물을 보존하기 위해 동일 저장소의 별도 worktree `_worktrees/final-production-diagnostics`에서 `fix/final-production-diagnostics`를 생성했습니다. main·기존 브랜치·사용자 파일 초기화/이동은 없습니다.
+- 제품 코드 변경은 `src/dev/RetellTestPage.tsx`의 avatar 점 요소 1개와 `src/dev/retell-test.css`의 점 규칙 2개 삭제뿐입니다. 별도 상태 텍스트/상태 점·아이콘·버튼·통화/오디오/위험/저장 handler는 그대로 유지합니다. 독립 HTML은 최신 src로 재생성했습니다.
+- 허용된 Production GET5개와 n8n 읽기 POST3개를 각각1회 실행: **8/8 HTTP200**, 매장5/재고12/대여27, `{ok:true,data:배열}` 및 필수 행 계약 유효. 실제 통화·상담 저장 Webhook·DB 변경·알림은 실행하지 않았습니다. 원문/비밀값은 기록하지 않았습니다.
+- Render runtime에서 이전 `GET_STORES`/`GET_RENTALS`의 **HTTP_404 18건**(10월6일 UI 표시12:53:37~13:24:36)을 확인했습니다. 과거502는 당시 Webhook 경로 등록·게시 문제(A)가 유력하며 정확한 세부 원인은 미확정입니다. 현재502는 재현되지 않았고 DB credential/query 오류 근거도 없습니다. Render·n8n workflow·환경값은 변경하지 않았습니다.
+- 새 Production 탭의9경로 smoke는 모두 정상 표시, 스마트재고2표/18행·오류 안내0, 콘솔 error/warning0/0. 이전 메시지 채널 오류6건은 공식 Chromium 확장 메시지 오류 문구로 분류하며 구체 발신자·영향은 미확정입니다. 재현되지 않았다는 이유로 무시 가능 판정/로그 숨김은 하지 않습니다.
+- `npm.cmd run check`: **392/392**, 실패·건너뜀0. 프런트/백엔드 타입 검사와 production build 성공. 기존 SDK 청크 크기 경고 유지. 기존 테스트 변경0.
+- 격리된 로컬 SDK/오디오 fixture에서1920×1080/1366×768/390×844/320×720의 대기·연결·통화·종료·재상담: avatar점0, 별도 상태표시 유지, 중앙정렬/원형/버튼위치 유지, 바깥 overflow·세로스크롤 증가0, 종료후 track/AudioContext0/0. 실제 음성 통화 성공 검증과 구분합니다. 독립 HTML 직접 실행은 미검증입니다.
+- 상세 원인/검증은 `docs/FINAL_PRODUCTION_DIAGNOSTICS.md`, 내일 사람이 따라 할 A~E 기대 결과·실패 위치는 `docs/FINAL_PRODUCTION_E2E_CHECKLIST.md`에 기록했습니다. 안전 요약/캡처/fixture는 Git 제외 `.cache/production-diagnostics/`에만 보관합니다.
+- 이번 수정은 진단 브랜치에만 commit/push합니다. Render는 기존eef5648 그대로이며 **Production avatar 점은 아직 표시**됩니다. 실제 Retell/customer_9999/n8n 저장/Supabase 전문·요약/스마트재고 변경·역할별 처리/수정본 검토후 별도배포·촬영은 남은 범위입니다.
+
 ## 스마트재고 통합 검증 / 2026-10-06
 
 - 시작 working tree는 clean이었고 main/origin main `bf84b62e13baa3c5c205773f70a87c9ed58b9f47`를 확인했습니다. `integration/smart-inventory-final`을 만든 뒤 feature `8484affa746b1e66c40b9b1711c9982175516bfa`(ahead 8 / behind 0)를 fast-forward 병합했습니다. 충돌은 없었으며 main·기존 release/feature 브랜치는 유지합니다. 이번 통합 브랜치만 commit/push합니다.

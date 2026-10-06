@@ -1,0 +1,187 @@
+# 최종 Production E2E 체크리스트
+
+작성일: 2026-10-06 · 실행 예정: 다음 담당자 검증 시간 · **현재 상태: 재고 API 조회 정상 / 통화 E2E·재고 변경 미검증**
+
+이 문서는 사람이 실제 연동을 확인하기 위한 실행 계획입니다. **이번 문서 작성에서는** 실제 Retell 통화, Production Webhook 호출, Supabase 조회·쓰기, 재고 변경, 환경변수 변경을 수행하지 않았습니다. 팀의 별도 읽기 진단 결과는 아래와 구분합니다. 기존 자동 검사·격리 화면 검증은 통화·저장·변경 E2E의 통과 근거가 아닙니다.
+
+### 이번 diagnostic의 읽기 결과와 미수행 범위
+
+- 별도 담당자의 승인된 Production 진단에서 **5개 GET과 n8n의 읽기 action 3개 POST가 모두 HTTP 200**이었고, 매장 5개·재고 12개·대여 27개 응답이 계약에 맞았습니다. 이는 진단 당시의 조회 결과이며 내일도 같은 건수를 요구하는 기준이 아닙니다.
+- Render 과거 로그의 `GET_STORES`·`GET_RENTALS`에는 2026-10-06 표시 시각 12:53~13:24의 HTTP 404 기록이 있었습니다. 시간대는 로그 기준으로 별도 확인합니다. 과거 미게시·경로 등록 문제 가능성은 있으나 실제 workflow 원인을 확정한 결과는 아닙니다. 현재 진단에서는 재고 502가 재현되지 않았습니다.
+- **실제 통화 A/B, 상담 결과 전송·저장 C/D, 재고 수량·대여 변경 E1~E5는 이번 diagnostic에서 미수행입니다.** 기존 읽기 성공을 쓰기·알림·점수·DB 전문/요약 저장 성공으로 확대하지 않습니다. 내일 실행 시 아래 E0 gate를 먼저 다시 확인합니다.
+
+**진행 순서:** 사전 승인·계약 확인 → A 고객 통화와 B 직원 SSE 동시 확인 → C n8n → D Supabase → E 재고 읽기 gate → 승인된 재고 변경.
+
+## 0. 실행 전 확인과 기록
+
+- [ ] 담당자, 실행 시간, 배포된 코드 식별값, 허용한 테스트 통화 수를 기록했습니다. 로컬 작업 코드와 Production 배포 코드가 같은지 담당자가 확인했습니다.
+- [ ] Retell·n8n·Supabase 대상과 테스트 고객 `customer_9999`의 사용 승인을 확인했습니다. 실제 고객의 통화나 개인정보를 테스트에 사용하지 않습니다.
+- [ ] 담당자가 승인된 권한으로 `customer_9999`의 존재와 테스트 매장 연결 조건을 확인했습니다. 이 코드가 고객을 DB에서 찾거나 생성해 주는 것은 아닙니다.
+- [ ] `KCM_DEMO_CUSTOMER_ID=customer_9999` 적용이 필요하면 **사람의 사전 승인 후 담당자가 직접** 적용합니다. 이번 문서 작성 작업에서는 적용하지 않았습니다. 값은 새로 생성되는 통화에 적용되며 기존 통화의 고객 ID를 바꾸지 않습니다.
+- [ ] 고객·매장 식별 설정과 Retell/n8n 설정의 준비 여부를 담당자가 확인했습니다. 실제 키·Webhook URL·환경파일 내용을 보고서에 붙이지 않습니다. 설정 반영·재시작·배포가 필요하면 진행 중 통화가 없는 시점과 별도 승인 범위를 먼저 확인합니다.
+- [ ] 고객 탭 `#/retell-test`와 직원 탭 `#/home`, `#/customers`를 같은 승인된 서비스에서 준비했습니다. 고객 탭의 마이크 권한과 입력 장치를 통화 전에 확인했습니다.
+- [ ] 담당자에게 기존 n8n 실행 조회 및 Supabase 읽기 권한이 있습니다. 권한이 없으면 해당 단계는 `BLOCKED`이며, RLS·grants·키 권한을 임의로 바꾸지 않습니다.
+- [ ] 실제 n8n의 상담·위험 저장 노드와 DB 대상·연결 키를 아래 계약 확인표에 적었습니다. 확인되지 않은 테이블·컬럼·정책을 추측한 SQL은 실행하지 않습니다.
+- [ ] 재고 쓰기 승인은 별도로 확인합니다. **재고 조회 gate가 통과하기 전에는 수량 수정·대여 요청·승인·배송·도착·반납을 실행하지 않습니다.**
+
+| 실제 계약 확인 항목 | 담당자가 확인할 내용 | 확인 상태 |
+|---|---|---|
+| 고객 식별 | 승인된 고객 `customer_9999` 및 실제 고객 연결 키 | 미확인 |
+| 상담 저장 | 사용자 지정 `CreateConsultation`에 해당하는 실제 노드, 대상, 상담 연결 키 | 미확인 |
+| 위험 저장 | 사용자 지정 `CreateRisk`에 해당하는 실제 노드, 대상, 상담/고객 연결 키 | 미확인 |
+| `consultations` / `risks` | 실제 schema·객체 종류·컬럼·외래 키·유일성 조건 | 미확인 |
+| `ai_transcription` / `ai_summary` | 실제 테이블인지 컬럼인지, 생성·저장 담당 노드, 상담 연결 방식 | 미확인 |
+| 재고 요청자·제공자 | 각각의 실제 home 매장과 승인된 처리 화면·담당자 | 미확인 |
+| 재고 수량 계약 | 실제 workflow의 수정·승인·배송·수령·반납 수량 처리와 알림 범위 | 미확인 |
+
+`PASS`: 기대 결과와 해당 계층의 증거를 확인함. `FAIL`: 확인된 계약과 실제 결과가 다름. `BLOCKED`: 승인·권한·설정·계약이 부족하여 실행하거나 판정하지 못함. 실행하지 않은 항목은 체크하지 않습니다.
+
+### 증거 기록 원칙
+
+통화 별칭 `T1`, `T2`와 테스트용 `call_id`, `consultation_id`, 고객 연결 일치 여부, 단계별 시각·HTTP 상태·고정 오류 코드·신호 횟수·점수·행 수만 남깁니다. 실제 시스템에서 필요한 부분을 권한 범위 안에서 확인하되 원시 응답 전체, HAR, 토큰, Authorization 헤더, 키, Webhook URL, 직원 전화번호를 출력·공유하지 않습니다. 캡처에는 불필요한 ID·대화·개인정보를 가립니다.
+
+| 통화 | 생성/종료 시각 | call ID / 상담 ID | 고객 연결 | 신호 5개 횟수 / 최종 점수 | n8n 실행 건수 | DB 확인 | 판정 |
+|---|---|---|---|---|---|---|---|
+| T1 신호 확인 | 미실행 | 미실행 | 미확인 | 미확인 | 미확인 | 미확인 | 미수행 |
+| T2 동일 고객 반복 | 미실행 | 미실행 | 미확인 | 미확인 | 미확인 | 미확인 | 미수행 |
+
+## A. 고객 Retell 통화 · transcript · 신호 · 최종 점수
+
+B의 직원 담당자가 SSE를 먼저 열고 A를 동시에 관찰합니다. 통화 중 고객 페이지 이동·새로고침·보조 마이크 중지는 측정 누락을 만들 수 있으므로 정상 종료 검증에서는 하지 않습니다.
+
+| 체크 | 사람이 할 일 | 기대 결과 | 실패 시 확인 위치 |
+|---|---|---|---|
+| [ ] A1 준비 | 고객 화면을 열고 마이크 허용·입력 장치를 확인합니다. 시작 버튼이 준비된 상태인지 확인합니다. | 고객 전화 UI가 보이고 직원 화면은 별도 탭에서 열려 있습니다. 준비 상태만으로 실제 Retell 인증 성공을 판정하지 않습니다. | 고객 화면의 안전 안내, 브라우저 사이트 마이크 권한, `/retell/config`의 준비 여부만 확인. `src/dev/RetellTestPage.tsx`, `src/dev/customerCopy.ts`. |
+| [ ] A2 통화 생성 | 승인된 T1을 시작하고 직원 화면의 통화 식별 정보를 펼칩니다. | 연결 중 → 통화 중. 실제 `call_id`와 새로운 `consultation_<숫자>`가 연결되고 `customer_id`는 `customer_9999`, 매장은 승인된 설정과 일치합니다. ID를 브라우저에서 주입하거나 기존 ID를 재사용하지 않습니다. | 백엔드 `call created` 로그, 고정 Retell 오류 코드, Retell의 해당 통화 존재, `server/app.mjs`, `server/call-identity.mjs`. 생성 응답의 토큰은 복사하지 않습니다. |
+| [ ] A3 전문 | 합성 테스트 문장을 짧게 말하고 AI 답변을 기다립니다. | 직원 모달에 user/agent 발화가 실제 수신 순서대로 보입니다. 수정된 같은 turn은 기존 내용이 교체되고 같은 발화가 SSE 수신 횟수만큼 중복되지 않습니다. | Retell 해당 통화의 전사 여부 → 백엔드 Monitor → 직원 SSE `transcript` 순서로 확인. `server/monitor.mjs`, `server/live-calls.mjs`, `src/live/liveCalls.ts`. |
+| [ ] A4 텍스트 4신호 | 담당자가 승인한 합성 문장으로 욕설·위협·비난·성적 발언 각 범주를 확인합니다. 먼저 **실제로 전사된 user 문장**을 기준으로 분석 결과를 비교합니다. | 네 범주의 횟수와 근거가 전사 내용에 맞게 표시됩니다. agent 발화는 집계하지 않습니다. 말한 문장이 ASR에서 누락·변형되면 인식 문제와 규칙 분석 문제를 구분합니다. | `server/text-risk.mjs`의 현재 규칙과 `server/tests/text-risk.test.mjs`의 합성 fixture, `risk_analysis.analysisByTurn`, 직원 위험 신호 영역. |
+| [ ] A5 고성 | 승인된 음성 테스트로 높은 레벨 구간과 낮은 레벨 구간을 구분하고, 정상 종료까지 마이크 측정을 유지합니다. | 현재 기준은 RMS 0.12 이상 350ms 유지 시 1회 진입, 0.08 이하 300ms 유지 시 해제입니다. 연속 높은 구간은 매 샘플마다 추가하지 않고 해제 후 다음 진입에서 추가합니다. 수신된 고성 횟수와 상태가 직원 화면에 반영됩니다. | `src/dev/shouting.ts`, `src/dev/auxMic.ts`, `src/dev/liveAudioReporter.ts`, `/api/live-calls/:call_id/audio-signals`의 상태·고정 오류 코드, 직원 `audio_signal`. 일반 고객 UI의 숨겨진 내부 버튼을 열 필요는 없습니다. |
+| [ ] A6 정상 종료 | 고객 화면의 통화 종료 버튼을 한 번 누르고 직원 화면을 관찰합니다. | 종료 중 → 통화 종료. Monitor 종료와 마지막 고성 상태의 도착 순서와 무관하게, 텍스트 분석 및 `closed=true`, `available=true`, `coverage_complete=true`가 충족되면 최종 결과가 한 번 확정됩니다. 종료 시각과 마지막 대화가 유지됩니다. | Retell 종료 상태 → Monitor `call_ended` → 최종 `audio_signal` → `final_result` 순서. `server/live-calls.mjs`, `src/dev/RetellTestPage.tsx`, `src/dev/liveAudioReporter.ts`. |
+| [ ] A7 점수 대조 | 실제 최종 횟수 5개로 아래 `call-risk-v2` 표를 대조합니다. | 직원 최종 점수·등급과 최종 결과가 일치합니다. 진행 중 값을 확정 점수로 취급하지 않습니다. | `src/lib/riskPolicy.js`, `server/live-calls.mjs`, `src/live/liveCalls.ts`, `src/live/LiveRiskSignals.tsx`. |
+
+**고성 판정은 교정된 데시벨이나 검증된 음성 분류 모델이 아닙니다.** 장치·거리·소음·샘플 간격에 영향을 받습니다. 샘플 간격이 400ms를 초과하면 측정 연속성이 깨질 수 있습니다. 마이크 시작 지연·중단·측정 누락이 있으면 최종 점수 보류가 기대 동작이며, 임의의 0점으로 통과시키지 않습니다. 조건을 정리한 뒤 별도로 승인한 새 통화로 재검증합니다.
+
+### 현재 점수 기준: `call-risk-v2`
+
+각 범주는 횟수가 도달한 가장 높은 단계 점수를 사용합니다. 새 고객 누적 점수를 계산하는 규칙이 아니라 **이번 통화만의 점수**입니다.
+
+| 신호 | 횟수 → 점수 |
+|---|---|
+| 욕설 `profanity` | 0→0, 1→3, 2~3→6, 4~6→10, 7 이상→15 |
+| 위협 `threat` | 0→0, 1→20, 2→30, 3 이상→40 |
+| 비난 `blame` | 0→0, 1→4, 2~3→8, 4~6→14, 7 이상→20 |
+| 성적 발언 `sexual` | 0→0, 1→5, 2→10, 3 이상→15 |
+| 고성 `shouting` | 0→0, 1→2, 2→5, 3~4→8, 5 이상→10 |
+
+5개 점수 합계가 `raw_score`입니다. 위협 2회는 최소 40점, 3회 이상은 최소 60점을 적용하여 `adjusted_score`를 구하고 최종 점수는 최대 99점으로 제한합니다. 등급은 0~19 정상, 20~39 주의, 40~59 경계, 60~79 위험, 80~99 매우 위험입니다. 예를 들어 **관측된 최종 횟수가 모두 정확히 1회라면** 합계 34점·주의입니다. 발화 계획만으로 이 횟수를 보장하지 않습니다.
+
+## B. 직원 SSE · 전문 · 신호 · 동일 고객 반복
+
+| 체크 | 사람이 할 일 | 기대 결과 | 실패 시 확인 위치 |
+|---|---|---|---|
+| [ ] B1 연결 | 직원 홈을 열고 실시간 AI 상담 패널을 확인합니다. 승인된 개발자 도구에서 SSE의 경로·상태만 확인합니다. | `GET /api/live-calls/events`가 200, `text/event-stream`이고 최초 `snapshot`이 도착합니다. 같은 서비스의 고객 T1이 새 행으로 나타납니다. | Network의 SSE 연결, 배포 host/origin 일치, `server/live-events.mjs`, `src/live/liveCalls.ts`. 전문 전체를 내보내지 않습니다. |
+| [ ] B2 실시간 반영 | T1의 실시간 상담 보기에서 A3~A5를 관찰합니다. | user/agent 대화와 신호 변화가 수신되며 고객·통화 ID가 A2와 같습니다. 화면의 분석 불가·연결 재시도 상태를 정상 0회·0점으로 바꾸지 않습니다. | SSE의 `call_started`, `transcript`, `audio_signal`과 화면의 같은 call ID, `src/live/LiveConsultations.tsx`, `src/live/LiveRiskSignals.tsx`. |
+| [ ] B3 종료 보존 | T1 종료 후 기록을 열고 고객관리로 이동합니다. | 마지막 전문·최종 신호·점수·종료 상태가 유지됩니다. `#/customers`에서 고객 `customer_9999` 아래 해당 통화가 표시됩니다. | SSE `call_ended`/`risk_finalized` 또는 그 상태를 포함한 snapshot, `src/live/livePresentation.ts`, `src/pages/SecondaryPages.tsx`. |
+| [ ] B4 직원 재연결 | 통화가 정상 종료된 뒤 **직원 탭만** 새로고침하거나 화면의 다시 연결을 사용합니다. | 동일 서버 프로세스의 snapshot으로 같은 ID·전문·점수가 복원되고 같은 통화 행이 늘어나지 않습니다. C에서 같은 통화의 추가 전송이 없는지도 확인합니다. | `server/live-events.mjs`, `src/live/liveCalls.ts`, C의 실행 건수. 이 단계에 서버 재시작은 포함하지 않습니다. |
+| [ ] B5 반복 통화 | 추가 통화 승인 범위에서 동일 고객 T2를 새로 시작합니다. 이번에는 다른 합성 내용 또는 중립적인 문장으로 종료까지 A를 반복합니다. | 고객 ID는 계속 `customer_9999`, call ID와 상담 ID는 T1과 다릅니다. 전문·5신호·최종 점수는 T2만으로 계산되며 T1의 신호·점수를 더하지 않습니다. | 두 통화 식별 정보·최종 결과, `server/call-identity.mjs`, `server/live-calls.mjs`, `src/lib/riskPolicy.js`. |
+| [ ] B6 고객 이력 | 고객관리에서 T1·T2 각각의 기록을 엽니다. | 동일 고객에 두 개의 독립 통화가 보이고 T1 결과가 바뀌지 않습니다. 최근 완료 위험도는 T2의 확정 값이며 T2가 보류이면 과거 T1 점수를 대신 보여주지 않습니다. | `src/live/livePresentation.ts`, `src/live/LiveConsultations.tsx`. 고객 단위 영구 누적 점수 기능과 혼동하지 않습니다. |
+
+현재 직원 이력은 서버 메모리의 수신 통화 기록입니다. 서버 재시작 전 이력을 Supabase에서 다시 읽는 화면 기능은 확인되지 않았으므로, 재시작 후 빈 화면을 DB 데이터 삭제의 증거로 사용하지 않습니다.
+
+## C. n8n 최종 payload · 1회 수신 · 저장 노드
+
+각 T1·T2에 대해 별도로 수행합니다. 외부 Webhook을 브라우저나 API 도구로 다시 POST하지 않습니다.
+
+| 체크 | 사람이 할 일 | 기대 결과 | 실패 시 확인 위치 |
+|---|---|---|---|
+| [ ] C1 전송 상태 | 종료·최종 점수 확정 후 직원 화면의 전달 상태와 백엔드 고정 로그를 확인합니다. | 통화별 `webhook_delivery`: 미전송 → `pending` → `sent` 또는 `failed`. `sent`는 HTTP 2xx 수신 확인이며 DB 저장 완료 표시는 아닙니다. | `server/n8n-delivery.mjs`, `[n8n] delivered call result: <call_id>` 또는 고정 실패 코드, `src/live/livePresentation.ts`. |
+| [ ] C2 수신 건수 | n8n Executions에서 승인된 workflow의 실행 시간 범위를 좁히고 해당 call ID·상담 ID로 찾습니다. | 같은 서버 프로세스의 정상 통화당 KCM의 전송 시도는 1회입니다. 직원 SSE 재연결·중복 종료 반영이 추가 전송을 만들지 않습니다. 실제 Webhook 수신 실행과 저장 노드의 건수도 각각 확인합니다. | 백엔드 전달 로그와 n8n 실행 이력. workflow 재시도·노드 재실행·다른 송신자의 호출은 원인을 분리하여 확인하며 임의 재실행하지 않습니다. |
+| [ ] C3 payload | 수신 실행에서 필요한 필드만 권한 범위 안에서 대조합니다. | 아래 계약과 A/B의 ID·횟수·점수·최종 전문이 일치합니다. 고객은 `customer_9999`, 매장은 승인된 서버 설정값입니다. | `server/n8n-delivery.mjs`의 `callResultPayload`, [N8N_DELIVERY.md](N8N_DELIVERY.md). 실제 URL·전체 JSON은 보고서에 복사하지 않습니다. |
+| [ ] C4 상담 저장 노드 | 사용자 지정 `CreateConsultation`에 해당하는 실제 노드가 해당 실행에서 성공했는지, 반환한 상담 연결 키가 무엇인지 확인합니다. | 승인된 실제 매핑으로 상담 저장이 처리되고 D에서 해당 상담을 찾을 수 있습니다. 노드 이름·대상·키를 아직 모르면 `BLOCKED`입니다. | 실제 workflow의 수신 이후 경로, 해당 노드의 실행 상태·고정 오류 코드·반환 키. KCM 저장 성공 로그만으로 대신 판정하지 않습니다. |
+| [ ] C5 위험 저장 노드 | 사용자 지정 `CreateRisk`에 해당하는 실제 노드와 연결 값을 확인합니다. | 같은 상담·고객에 이번 통화 신호 5개·점수·등급이 승인된 실제 매핑으로 저장됩니다. 최종 결과 한 건이 불필요하게 중복 저장되지 않습니다. | 실제 위험 저장 노드의 상태와 상담 연결, 이후 D의 DB 결과. 실제 DB 유일성 정책은 사전에 확인한 조건으로 판정합니다. |
+
+최상위 POST 계약은 `call_id`, `consultation_id`, `customer_id`, `signals`, `scores`, `risk_score`, `risk_level`, `consultation`입니다. KCM이 보내는 본문을 추가 `body` 또는 배열로 감싸지 않습니다. n8n Webhook 노드 출력이 요청 본문을 `body` 아래 표시하는 것은 별개의 수신 표현입니다.
+
+- `signals`: `profanity_count`, `threat_count`, `blame_count`, `sexual_count`, `shouting_count`.
+- `scores`: 위 5개에 대응하는 `*_score`.
+- `consultation`: `store_id`, `status: 완료`, `used_ai: true`, `started_at`, `ended_at`, `transcript`.
+- `transcript` 각 발화: `turn_id`, `role`, `content`, `start_sec`만 투영. 실제 발화 순서·내용·공백·줄바꿈·null 시점은 유지합니다.
+- KCM은 `purpose`·`ai_summary`를 생성하거나 전송하지 않습니다. DB 컬럼 변환·전문 저장·요약 생성은 실제 n8n 계약에서 별도로 확인해야 합니다.
+- 토큰·키·Webhook URL·원본 음성·RMS 레벨 샘플·내부 규칙 메타데이터는 이 payload에 포함되지 않습니다.
+
+10초 전송 timeout, 비2xx, 네트워크 실패 또는 설정 누락이면 `failed`가 기대 동작입니다. 최종 결과는 유지되며 자동 재전송·수동 최종 결과 재전송 API는 없습니다. **응답을 못 받았어도 n8n이 처리했을 수 있으므로**, Executions와 D를 먼저 확인하고 Webhook 재호출·노드 재실행은 하지 않습니다. 서버 재시작을 포함한 영구 exactly-once 보장은 현재 계약이 아닙니다.
+
+## D. Supabase 고객 연결 · 상담/위험 · 전문/요약
+
+**이 절은 승인된 읽기 전용 확인입니다.** 기존 데이터와 실제 schema·정책을 확인한 뒤 필터를 적용합니다. 테이블·컬럼을 만들거나 수정하고, 테스트 성공을 위해 직접 INSERT/UPDATE/DELETE 하는 절차가 아닙니다.
+
+| 체크 | 사람이 할 일 | 기대 결과 | 실패 시 확인 위치 |
+|---|---|---|---|
+| [ ] D1 실제 schema | 승인된 Studio에서 `consultations`, `risks`, `ai_transcription`, `ai_summary`가 실제로 어디에 있는지 정의를 확인합니다. C에서 사용한 객체·연결 키와 맞춥니다. | 테이블/컬럼/관계 및 조회 조건이 확인됩니다. 확인되지 않은 객체를 네 개 테이블이라고 단정하지 않습니다. | Supabase 객체 정의와 실제 n8n 노드 매핑. 이름·키가 불명확하면 조회를 꾸며내지 않고 `BLOCKED`. |
+| [ ] D2 상담·고객 | 실제 연결 키로 T1/T2 상담을 한 통화씩 조회하고 고객 연결을 확인합니다. | 각각 `customer_9999`에 연결된 독립 상담이며 C의 ID·매장·시작/종료 시각·완료 상태와 승인된 컬럼 매핑이 일치합니다. 중복 여부는 실제 유일성·관계 계약과 대조합니다. | CreateConsultation 결과 → 실제 상담 행 → 고객 연결 순서. 권한 부족·0행 반환·노드 실패를 구분합니다. |
+| [ ] D3 위험 결과 | 실제 상담/고객 연결 키로 각 위험 결과를 조회합니다. | T1/T2의 신호 5개·항목 점수·최종 점수·등급이 각각 A/B/C와 같습니다. T2 저장이 T1을 덮어쓰거나 과거 점수를 합산하지 않습니다. | CreateRisk 실제 입력 매핑·실행 결과·관계/제약·해당 위험 데이터. 정책·누적 계산식을 추측하여 수정하지 않습니다. |
+| [ ] D4 전문 | 확인한 `ai_transcription` 저장 위치에서 해당 상담의 마지막 전사를 조회합니다. | 승인된 저장 형식에 따라 user/agent 발화 내용·순서·상담 연결이 최종 `consultation.transcript`와 일치합니다. 같은 turn의 중간 수정본을 별도 최종 발화로 중복하지 않습니다. | 실제 전문 변환/저장 노드와 해당 데이터. 문자열·JSON·별도 발화 행 등 저장 형식은 실제 계약으로 판정합니다. |
+| [ ] D5 요약 | 확인한 `ai_summary` 위치와 실제 요약 생성·저장 담당 노드를 조회합니다. | **기존에 승인된 요약 생성 계약이 있는 경우에만** 이번 통화의 전문을 바탕으로 생성된 결과와 상담 연결을 확인합니다. 다른 통화의 요약을 재사용하지 않습니다. | 실제 요약 생성 경로·노드 상태·저장 위치. KCM payload에는 요약이 없으므로 노드/계약이 없으면 미구현·`BLOCKED`로 기록하고 E2E 요약 성공으로 체크하지 않습니다. |
+| [ ] D6 반복 통화 대조 | T1·T2 결과를 다시 읽어 비교합니다. | 고객 연결은 같지만 상담·위험·전문·요약의 통화 연결은 각각 독립입니다. 최근 표시 점수와 실제 저장 점수의 통화가 일치합니다. | 상담·위험·전문/요약 관계와 B6. 현재 화면의 최근 값이 영구 고객 누적 점수라는 해석을 하지 않습니다. |
+
+조회 결과가 없으면 시간대·schema·연결 키·실행 대상부터 확인하고, 이후 해당 역할의 Data API 노출·grants·RLS를 담당자가 **읽기 전용으로** 확인합니다. Grants는 객체 접근, RLS는 해당 역할이 볼 수 있는 행을 제어하므로 서로 구분해야 합니다. 자동 해결을 위해 RLS를 끄거나 service-role 키를 브라우저에 넣지 않습니다. [Supabase 공식 Data API 보안 안내](https://supabase.com/docs/guides/api/securing-your-api)
+
+오류는 승인된 Supabase Logs에서 같은 시간 범위와 해당 서비스/상태로 좁혀 확인합니다. 로그에 행이 없다는 사실만으로 DB 쓰기가 없었다고 판정하지 않습니다. 원시 JSON·비밀을 내보내지 않고 고정 오류 코드·노드 상태·건수만 기록합니다. [Supabase 공식 Logs 안내](https://supabase.com/docs/guides/observability/logs)
+
+## E. 재고 조회 정상화 gate → 승인된 수량·대여 흐름
+
+통화 A~D 검증과 재고 쓰기의 승인은 별개입니다. 재고 API는 브라우저 → KCM 백엔드 → n8n으로 연결되고 KCM이 DB에 직접 쓰지 않습니다. 아래 action 이름은 **현재 코드의 n8n 계약**이며 실제 SQL·테이블 컬럼·원자성을 검증한 증거가 아닙니다. 상세 계약은 [SMART_INVENTORY_INTEGRATION.md](SMART_INVENTORY_INTEGRATION.md)에 있습니다.
+
+### E0. 읽기 gate — 하나라도 미통과이면 E1~E5 중단
+
+| 체크 | 사람이 할 일 | 기대 결과 | 실패 시 확인 위치 |
+|---|---|---|---|
+| [ ] E0-1 매장 | `#/inventory`에서 매장 목록과 우리 매장 표시를 확인합니다. | `GET /api/inventory/stores` 200, 실제 계약에 맞는 매장 배열. home이 승인된 매장과 일치합니다. 참고 화면은 정상 조회 성공으로 세지 않습니다. | Network 상태/고정 오류 코드, n8n `GET_STORES`, 백엔드 `server/inventory.mjs`. |
+| [ ] E0-2 재고 | 우리 매장과 승인된 타 매장을 조회합니다. | `GET /api/inventory/stock?store_id=...` 200. ID·모델·안전한 정수 수량이 실제 읽기 데이터와 맞으며 타 매장은 읽기 전용입니다. 화면의 가용 값은 `재고−예약−이동 중`, 응답 `quantity`는 가용 수량입니다. | n8n `GET_INVENTORY`, 실제 응답 필드 계약, 프런트 `src/services/inventoryApi.ts`. |
+| [ ] E0-3 대여 | 보낸 요청·받은 요청·빌려준 건을 조회합니다. | `GET /api/inventory/rentals` 200, 유효한 역할·상태와 ID. 실제로 대여가 없다는 근거가 확인된 빈 배열도 정상일 수 있습니다. 오류/잘못된 데이터의 빈 화면은 통과가 아닙니다. | n8n `GET_RENTALS`, `server/inventory.mjs`, `src/lib/inventory.ts`. |
+| [ ] E0-4 쓰기 준비 | 허용 모델·수량·요청자·제공자·수신자와 실제 workflow 상태/수량 조건을 담당자와 확인합니다. baseline 수량·대여 건수를 기록합니다. | 읽기 3개와 계약 확인이 모두 PASS이며 담당자의 구체적 쓰기 승인 범위가 있습니다. 잘못된 모델·다른 운영 고객/매장·연락처를 선택하지 않습니다. | 승인 범위와 실제 workflow의 actor·수량·상태 검사. 미확인 시 `BLOCKED`. |
+
+재고 읽기에서 503 `INVENTORY_NOT_CONFIGURED` 또는 `HOME_STORE_NOT_CONFIGURED`, 502 `DB_UNAVAILABLE`, 프런트 `INVALID_RESPONSE` 등이 나오면 **쓰기 중단**입니다. 담당자가 실제 설정 준비 여부·Production endpoint 활성·n8n 실행·응답 envelope/필수 필드를 확인한 뒤, 별도 승인 아래 원인을 해결하고 E0부터 다시 확인합니다. 실제 설정값을 보고서에 붙이지 않습니다.
+
+**actor gate:** 선택한 타 매장은 조회 대상일 뿐 변경 actor가 아닙니다. 모든 변경의 actor는 해당 백엔드의 서버 home입니다. 요청 매장과 제공 매장의 각 승인된 처리 환경·담당자가 준비되어야 합니다. 타 매장 드롭다운 선택이나 body 조작으로 대신 승인하지 않습니다. 하나의 서버 설정을 바꾸어 매장을 전환하는 것은 별도 운영 변경 승인 없이는 하지 않습니다. 제공자 처리 환경이 없으면 승인·배송·반납 항목은 `BLOCKED`입니다.
+
+### 승인된 변경 — 단계별 결과 확인 후 다음 단계
+
+| 체크 | 사람이 할 일 / 코드 계약 | 기대 결과 | 실패 시 확인 위치 |
+|---|---|---|---|
+| [ ] E1 수량 수정 | 승인된 우리 매장 모델의 총 재고만 승인 수량으로 수정합니다. `POST /stock/adjust` → `ADJUST_INVENTORY`. | 정수 0~9999, 예약+이동 중보다 작은 값은 차단됩니다. 성공 후 수정 행을 다시 조회해 실제 총 재고·예약·이동·가용을 확인합니다. 다른 매장 수량이 바뀌지 않습니다. 소수/음수는 조용히 다른 정수로 변환되지 않습니다. | POST 상태/고정 코드, n8n 수정 실행, 승인된 실제 재고 행, `src/pages/SmartInventoryPage.tsx`, `server/inventory.mjs`. |
+| [ ] E2 대여 요청 | 요청 매장 환경에서 승인된 모델·수량으로 한 번 요청합니다. `POST /rentals` → `CREATE_RENTAL`. | 새로운 대여 ID, `requested` 상태, 우리 매장이 요청자로 표시됩니다. 반환 후보·거리·적용 반경은 실제 검색 결과와 일치합니다. 동일 요청을 반복 클릭하거나 네트워크 실패 후 바로 다시 만들지 않습니다. | n8n 생성 실행, 반환 rental/candidates/radius, 실제 요청 행·후보 조건. |
+| [ ] E3 승인·배송 | 제공 매장 담당자가 받은 요청을 승인한 뒤 배송 시작합니다. `approve` → `APPROVE_RENTAL`, `ship` → `SHIP_RENTAL`. | `requested→approved→shipping`. 제공자가 실제 actor이고 승인된 수량이 이동 중으로 반영되어 가용이 감소하는지 실제 계약과 조회로 확인합니다. 다른 제공자가 같은 요청을 다시 승인하지 못하는 조건은 실제 workflow에서 확인합니다. | 해당 action 실행·반환 상태·제공 매장 연결·실제 재고 수량. 동시 승인 검증은 별도 승인된 시나리오가 있을 때만 실행합니다. |
+| [ ] E4 도착 | 요청 매장 담당자가 도착 확인합니다. `deliver` → `DELIVER_RENTAL`. | `shipping→delivered`. 현재 응답 계약의 배송 완료와 반납 전 상태가 맞습니다. 요청자 actor와 대여 ID가 맞고 이미 도착한 요청을 중복 처리하지 않습니다. 수령 시 실제 재고 변동은 확인한 workflow 계약으로 판정합니다. | 수령 노드·반환 상태·요청 매장 연결. `deliveryStatus`/`returnStatus`는 응답 계약 명칭이며 실제 DB 컬럼이라고 가정하지 않습니다. |
+| [ ] E5 반납 완료 | 제공 매장 담당자가 실제 테스트 단말 반환 확인과 승인 범위에 따라 완료합니다. `return` → `RETURN_RENTAL`. | `delivered` 또는 `returning→returned`. 제공자 이동 중 수량이 해제되고 가용으로 돌아오는지 조회합니다. 다른 업무의 동시 변경이 있으면 baseline과 단순 차감만으로 결론내리지 않습니다. | 반납 실행·실제 반환 조건·제공자 재고 조회·변경 이력. 상태만 성공이라고 체크하지 않습니다. |
+
+위 경로는 모두 `/api/inventory` 아래입니다. 각 단계에서 HTTP 2xx, 응답 ID·actor·상태, 다시 읽은 실제 데이터가 함께 맞아야 PASS입니다. 재고 수량 보존·음수 방지·첫 승인 확정·상태 전이의 최종 검사는 실제 n8n SQL/트랜잭션에서 확인합니다. 화면 성공 문구는 이를 대신하지 않습니다.
+
+재고 요청·승인·배송·반납 또는 임계값 통과 시 외부 알림이 발생할 수 있으므로 승인 범위에 수신자도 포함합니다. 알림 Webhook 2xx는 문자/알림의 실제 배달 확인과 다릅니다. 요청 취소·수령에는 현재 코드상 알림이 없습니다. 수량/대여 API 실패·timeout 시 이미 DB가 변경됐을 가능성을 먼저 확인하며 **자동 재시도·즉시 반복 클릭·수동 SQL 보정은 하지 않습니다.**
+
+테스트 뒤 삭제·수량 복원·요청 취소·환경변수 원복은 별도의 담당자 승인과 실제 처리 계약에 따릅니다. `/reset` 호출이나 일괄 삭제를 정리 절차로 사용하지 않습니다.
+
+## 최종 판정과 인계
+
+- [ ] T1과 T2 각각 A~D 증거가 연결되고 통화별 점수 독립성이 확인되었습니다.
+- [ ] C의 1회 전송과 D의 실제 저장을 별도로 확인했습니다. 전송 성공을 DB/요약 성공으로 대신 판정하지 않았습니다.
+- [ ] 재고 E0 읽기 gate 통과 여부를 기록했고, 승인된 E1~E5만 실행했습니다.
+- [ ] 미확인/실패 항목에 단계 ID, 고정 오류 코드, 담당자, 다음 확인 위치를 기록했습니다. 비밀·원시 응답은 첨부하지 않았습니다.
+- [ ] 실패 또는 `BLOCKED`가 남으면 전체 E2E 완료라고 표시하지 않고, 완료된 범위만 인계했습니다.
+
+| 구간 | 결과 | 최소 증거 / 다음 확인 | 담당자 |
+|---|---|---|---|
+| A Retell·신호·종료 | 미수행 | 미확인 | 미지정 |
+| B SSE·동일 고객 반복 | 미수행 | 미확인 | 미지정 |
+| C n8n 1회 수신·저장 노드 | 미수행 | 미확인 | 미지정 |
+| D Supabase·전문·요약 | 미수행 | 실제 schema/요약 계약 미확인 | 미지정 |
+| E0 재고 읽기 gate | 당시 API 조회 PASS / 실행 시 gate 재확인 필요 | 현재 200·계약 유효, 현장 UI·home·승인 범위 재확인 | 미지정 |
+| E1~E5 승인된 재고 변경 | 미수행 | 승인·읽기 gate 확인 전 실행 금지 | 미지정 |
+
+## 코드 기준과 공식 확인 자료
+
+현재 코드 계약: `server/app.mjs`, `server/call-identity.mjs`, `server/monitor.mjs`, `server/live-calls.mjs`, `server/live-events.mjs`, `server/text-risk.mjs`, `server/n8n-delivery.mjs`, `server/inventory.mjs`, `src/dev/RetellTestPage.tsx`, `src/dev/shouting.ts`, `src/dev/liveAudioReporter.ts`, `src/lib/riskPolicy.js`, `src/live/liveCalls.ts`, `src/live/livePresentation.ts`, `src/services/inventoryApi.ts`.
+
+Supabase 확인 방법은 [Supabase 스킬](C:/Users/rmsgh/.codex/plugins/cache/openai-curated-remote/supabase/1.0.0/skills/supabase/SKILL.md), [공식 changelog](https://supabase.com/changelog), [공식 Logs](https://supabase.com/docs/guides/observability/logs), [공식 Data API 보안 안내](https://supabase.com/docs/guides/api/securing-your-api)를 참고했습니다. 공개 문서 확인일은 2026-10-06입니다. 실제 프로젝트의 정책·schema·권한·데이터는 이번 작성에서 확인하지 않았습니다. changelog Markdown 경로는 도구의 콘텐츠 형식 제한으로 읽지 못해 공식 HTML 경로를 확인했습니다.
+
+**실제 통화 E2E·상담 저장·재고 변경 검증은 이번 diagnostic에서 미수행입니다.** 재고 API 읽기 진단만 현재 정상이며, 문서 작성으로 실행 승인을 대신하거나 실제 DB·workflow 변경 성공을 보증하지 않습니다.

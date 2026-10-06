@@ -89,7 +89,7 @@ export default function RetellTestPage() {
       <header className="retell-customer-header"><Icon name="store" size={18}/><span>{workspaceMock.store}</span></header>
       <div className="retell-customer-main">
         <div className="retell-customer-brand"><span>KCM<span className="retell-brand-dot">.</span></span><h1 id="retell-title">AI 상담 도우미</h1></div>
-        <div className="retell-customer-avatar" aria-hidden="true"><Icon name="phone" size={42}/><span className="retell-avatar-dot"/></div>
+        <div className="retell-customer-avatar" aria-hidden="true"><Icon name="phone" size={42}/></div>
         <div className="retell-test-status" role="status" aria-live="polite" aria-atomic="true">
           <span className="retell-status-dot" aria-hidden="true"/><strong>{labels[view.status]}</strong>
         </div>
