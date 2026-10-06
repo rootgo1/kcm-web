@@ -21,10 +21,13 @@ export interface RentalRow {
 /** Team rule: alert when only 1 unit (or none) is available. */
 export const LOW_STOCK_THRESHOLD = 1;
 
-export const rentalStatusLabels: Record<RentalStatus, string> = {
+const ownLabels = <Key extends string>(labels: Record<Key, string>): Record<Key, string> =>
+  Object.assign(Object.create(null) as Record<Key, string>, labels);
+
+export const rentalStatusLabels: Record<RentalStatus, string> = ownLabels({
   requested: '요청 중', approved: '승인', shipping: '배송 중', delivered: '도착', returning: '반납 중', returned: '반납 완료', cancelled: '취소됨', rejected: '거절', unknown: '확인 필요',
-};
-export const rentalRoleLabels: Record<RentalRole, string> = { sent: '보낸 요청', incoming: '받은 요청', lending: '빌려준 건' };
+});
+export const rentalRoleLabels: Record<RentalRole, string> = ownLabels({ sent: '보낸 요청', incoming: '받은 요청', lending: '빌려준 건' });
 export const rentalRoles: RentalRole[] = ['sent', 'incoming', 'lending'];
 
 export function availableOf(row: StockRow): number { return row.available ?? row.quantity; }
@@ -38,12 +41,12 @@ export function stockLevel(row: StockRow): StockLevel {
   const available = availableOf(row);
   return available <= 0 ? 'empty' : available <= LOW_STOCK_THRESHOLD ? 'low' : 'ok';
 }
-export const stockLevelLabels: Record<StockLevel, string> = { empty: '재고 없음', low: '재고 부족', ok: '정상' };
-export const stockLevelPill: Record<StockLevel, string> = { empty: 'danger', low: 'warning', ok: 'completed' };
+export const stockLevelLabels: Record<StockLevel, string> = ownLabels({ empty: '재고 없음', low: '재고 부족', ok: '정상' });
+export const stockLevelPill: Record<StockLevel, string> = ownLabels({ empty: 'danger', low: 'warning', ok: 'completed' });
 
 /** DB mode sends `role`; memory mode doesn't, so derive it from the stores. */
 export function rentalRole(rental: RentalRow, homeStoreId: string): RentalRole {
-  if (rental.role) return rental.role;
+  if (rental.role && rentalRoles.includes(rental.role)) return rental.role;
   if (rental.to_store_id === homeStoreId) return 'sent';
   return rental.status === 'requested' ? 'incoming' : 'lending';
 }
@@ -62,8 +65,8 @@ export function validateStockInput(text: string, row: StockRow): string | null {
 }
 
 const errorMessages: Record<string, string> = {
-  NETWORK: '백엔드에 연결하지 못했습니다. 백엔드 서버(npm run server)가 실행 중인지 확인해 주세요.',
-  DB_UNAVAILABLE: '재고 DB(n8n)에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+  NETWORK: '재고 서비스에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+  DB_UNAVAILABLE: '재고 정보를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.',
   INVALID_QUANTITY: '수량을 확인해 주세요. 예약·이동 중인 수량보다 적게 입력할 수 없습니다.',
   STORE_NOT_ALLOWED: '우리 매장이 할 수 없는 작업입니다.',
   NO_LENDER_AVAILABLE: '빌려줄 수 있는 매장이 없습니다. 주변 매장에 재고가 없거나 부족합니다.',
@@ -75,11 +78,17 @@ const errorMessages: Record<string, string> = {
   STORE_NOT_FOUND: '매장을 찾을 수 없습니다.',
   MODEL_NOT_FOUND: '모델을 찾을 수 없습니다.',
   INVENTORY_NOT_FOUND: '이 매장에는 해당 모델의 재고 정보가 없습니다.',
-  HOME_STORE_NOT_CONFIGURED: '우리 매장 설정(KCM_DEMO_STORE_ID)이 없습니다.',
-  INVENTORY_NOT_CONFIGURED: '스마트 재고 서버 설정(N8N_INVENTORY_BASE_URL)이 없습니다. .env를 확인해 주세요.',
-  NOT_IMPLEMENTED: '아직 연결되지 않은 기능입니다.',
+  HOME_STORE_NOT_CONFIGURED: '우리 매장 정보를 확인할 수 없습니다. 관리자에게 문의해 주세요.',
+  INVENTORY_NOT_CONFIGURED: '재고 서비스를 이용할 수 없습니다. 관리자에게 문의해 주세요.',
+  NOT_IMPLEMENTED: '현재 이 작업을 이용할 수 없습니다. 관리자에게 문의해 주세요.',
+  INVALID_RESPONSE: '재고 응답을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+  UNKNOWN_ERROR: '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.',
 };
-export function inventoryErrorMessage(code: string): string { return errorMessages[code] ?? `요청을 처리하지 못했습니다. (${code})`; }
+/** Only documented codes may cross into user-facing errors; received details can contain private data. */
+export function inventoryErrorCode(value: unknown): string {
+  return typeof value === 'string' && Object.hasOwn(errorMessages, value) ? value : 'UNKNOWN_ERROR';
+}
+export function inventoryErrorMessage(code: string): string { return errorMessages[inventoryErrorCode(code)]; }
 
 /** e.g. "10/2 15:00" in Korea time. */
 export function formatRequestedAt(iso: string | null | undefined): string {

@@ -208,7 +208,7 @@ test('api POST /stock/adjust: validates input, sends ADJUST_INVENTORY, accepts b
   // Rejected before calling n8n.
   const before = calls.length;
   assert.equal((await post({ store_id: 'store_001', model_id: 'product_001', quantity: 1 }))?.body.error_message, 'STORE_NOT_ALLOWED');
-  assert.equal((await post({ store_id: 'DEMO-S001', model_id: 'product_001', quantity: 1 }))?.body.error_message, 'STORE_NOT_FOUND');
+  assert.equal((await post({ store_id: 'DEMO-S001', model_id: 'product_001', quantity: 1 }))?.body.error_message, 'STORE_NOT_ALLOWED');
   assert.equal((await post({ model_id: 'DEMO-I001', quantity: 1 }))?.body.error_message, 'MODEL_NOT_FOUND');
   for (const quantity of [-1, 1.5, 10000, '3']) assert.equal((await post({ model_id: 'product_001', quantity }))?.body.error_message, 'INVALID_QUANTITY');
   assert.equal((await post([]))?.status, 400);
@@ -221,7 +221,7 @@ test('api POST /rentals: home store asks nearby stores via CREATE_RENTAL; phones
   const { sent, notify } = recorder();
   const calls = [];
   const logs = [];
-  const created = { ...dbRental, rentalId: 'stock_041', provideStoreId: null, provideStoreName: null, deliveryStatus: '요청 중', returnStatus: null,
+  const created = { ...dbRental, rentalId: 'stock_041', productId: 'product_001', provideStoreId: null, provideStoreName: null, deliveryStatus: '요청 중', returnStatus: null,
     approver: null, provideInventory: null, role: undefined };
   const candidates = [
     { storeId: 'store_001', storeName: '테스트 1호점', distanceKm: 1.2, available: 3, manager: { name: '점장1', phone: '000-0000-0101' }, noStore: false, appliedRadiusKm: 3 },
@@ -290,7 +290,7 @@ test('api POST /rentals/:id/approve: lender approves via APPROVE_RENTAL, low sto
     deliveryStatus: '요청 승인', returnStatus: null, returnedAt: null, provideInventory: { stockQty: 15, reservedQty: 2, transferQty: 1, available: 12 }, role: undefined };
   let reply = { ok: true, data: approved };
   const api = createDbInventoryApi({ db: { call: async (action, fields = {}) => { calls.push({ action, ...fields }); return reply; }, close() {} },
-    homeStoreId: 'store_005', log: line => logs.push(line), notify });
+    homeStoreId: 'store_001', log: line => logs.push(line), notify });
   const approve = (/** @type {string} */ id, /** @type {unknown} */ body) => api.handle('POST', `/api/inventory/rentals/${id}/approve`, new URLSearchParams(), body);
 
   const res = await approve('stock_041', { store_id: 'store_001' });
@@ -307,8 +307,8 @@ test('api POST /rentals/:id/approve: lender approves via APPROVE_RENTAL, low sto
   // Lender drops from 2 to 1 available → low stock crossing is logged once.
   reply = { ok: true, data: [{ ...approved, provideInventory: { stockQty: 3, reservedQty: 1, transferQty: 1, available: 1 } }] };
   await approve('stock_041', {});
-  assert.deepEqual(calls[1], { action: 'APPROVE_RENTAL', rentalId: 'stock_041', storeId: 'store_005' }, 'default: home store acts');
-  assert.equal(logs.at(-1), '[inventory] low stock: store_005 product_001 available=1');
+  assert.deepEqual(calls[1], { action: 'APPROVE_RENTAL', rentalId: 'stock_041', storeId: 'store_001' }, 'default: server-configured lender acts');
+  assert.equal(logs.at(-1), '[inventory] low stock: store_001 product_001 available=1');
   assert.deepEqual(sent.at(-1), ['low', { event: 'INVENTORY_CHANGED', storeName: '테스트 1호점', productName: '모델 B', storageGb: 512, color: '실버',
     stockQuantity: 3, reservedQuantity: 1, transferQuantity: 1, threshold: 1, recipients: [{ name: '승인자', phone: '000-0000-0002' }] }], 'low stock goes to the lender');
 
@@ -322,7 +322,7 @@ test('api POST /rentals/:id/approve: lender approves via APPROVE_RENTAL, low sto
   assert.equal((await approve('stock_041', { store_id: 'store_001' }))?.status, 502);
 
   const before = calls.length;
-  assert.equal((await approve('stock_041', { store_id: 'DEMO-S002' }))?.body.error_message, 'STORE_NOT_FOUND');
+  assert.equal((await approve('stock_041', { store_id: 'DEMO-S002' }))?.body.error_message, 'STORE_NOT_ALLOWED');
   assert.equal((await approve('rental_1', { store_id: 'store_001' }))?.status, 404, 'old demo id format is not a DB rental');
   assert.equal(calls.length, before);
 });
@@ -338,9 +338,11 @@ test('api POST /rentals/:id/(cancel|ship|deliver|return): one rule each, notific
     DELIVER_RENTAL: { ...base, deliveryStatus: '배송 완료', returnStatus: '반납 전' },
     RETURN_RENTAL: { ...base, deliveryStatus: '배송 완료', returnStatus: '반납 완료', returnedAt: '2026-10-05T06:47:21.270Z' },
   };
-  const api = createDbInventoryApi({ db: { call: async (action, fields = {}) => { calls.push({ action, ...fields }); return { ok: true, data: [replies[action]] }; }, close() {} },
-    homeStoreId: 'store_005', log: line => logs.push(line), notify });
-  const act = (/** @type {string} */ name, /** @type {unknown} */ body) => api.handle('POST', `/api/inventory/rentals/stock_041/${name}`, new URLSearchParams(), body);
+  const db = { call: async (action, fields = {}) => { calls.push({ action, ...fields }); return { ok: true, data: [replies[action]] }; }, close() {} };
+  const requesterApi = createDbInventoryApi({ db, homeStoreId: 'store_005', log: line => logs.push(line), notify });
+  const lenderApi = createDbInventoryApi({ db, homeStoreId: 'store_001', log: line => logs.push(line), notify });
+  const act = (/** @type {string} */ name, /** @type {unknown} */ body) =>
+    (name === 'cancel' || name === 'deliver' ? requesterApi : lenderApi).handle('POST', `/api/inventory/rentals/stock_041/${name}`, new URLSearchParams(), body);
 
   const cancelled = await act('cancel', {});
   assert.equal(cancelled?.body.status, 'cancelled'); assert.equal(cancelled?.body.role, 'sent');
@@ -367,7 +369,7 @@ test('api POST /rentals/:id/(cancel|ship|deliver|return): one rule each, notific
   assert.deepEqual(await failing.handle('POST', '/api/inventory/rentals/stock_041/ship', new URLSearchParams(), {}), { status: 403, body: { error_message: 'STORE_NOT_ALLOWED' } });
   const mismatch = createDbInventoryApi({ db: { call: async () => ({ ok: false, code: 'INVENTORY_MISMATCH' }), close() {} }, homeStoreId: 'store_005' });
   assert.equal((await mismatch.handle('POST', '/api/inventory/rentals/stock_041/return', new URLSearchParams(), {}))?.status, 502, 'unknown-to-browser codes are upstream failures');
-  assert.equal((await api.handle('POST', '/api/inventory/rentals/stock_041/reject', new URLSearchParams(), {}))?.status, 404, 'reject no longer exists');
+  assert.equal((await requesterApi.handle('POST', '/api/inventory/rentals/stock_041/reject', new URLSearchParams(), {}))?.status, 404, 'reject no longer exists');
 });
 
 test('notifier: posts to the two alert webhooks, skips empty recipients, logs codes only', async () => {
@@ -397,7 +399,7 @@ test('HTTP: in DB mode the backend sends alerts to n8n after a successful change
   const posted = [];
   const detail = { ...dbRental, rentalId: 'stock_041', requestStoreId: 'store_005', provideStoreId: 'store_001', deliveryStatus: '배송 중', returnStatus: null, role: undefined };
   const server = createBackend({ key: '', agentId: '', monitors: { start() {}, close() {}, release() {} }, log: () => {},
-    demoStoreId: 'store_005', inventoryBaseUrl: baseUrl,
+    demoStoreId: 'store_001', inventoryBaseUrl: baseUrl,
     webhookFetchImpl: async (url, init) => {
       const body = JSON.parse(String(init?.body));
       if (String(url).endsWith(INVENTORY_DB_PATH)) return json(body.rentalId === 'stock_999' ? { ok: false, code: 'RENTAL_NOT_FOUND' } : { ok: true, data: detail });
@@ -412,4 +414,126 @@ test('HTTP: in DB mode the backend sends alerts to n8n after a successful change
   assert.equal((await post('/rentals/stock_999/ship')).status, 404);
   await new Promise(resolve => setTimeout(resolve, 20));
   assert.deepEqual(posted, [{ url: `${baseUrl}/kcm-rental-status`, event: 'RENTAL_SHIPPED', to: ['000-0000-0020'] }]);
+});
+
+test('every inventory mutation fixes the actor to a valid server home store before calling n8n', async () => {
+  const calls = [];
+  const { sent, notify } = recorder();
+  const db = { call: async (action, fields = {}) => { calls.push({ action, fields }); return { ok: true, data: [] }; }, close() {} };
+  const mutations = [
+    ['/api/inventory/stock/adjust', { model_id: 'product_001', quantity: 3 }],
+    ['/api/inventory/rentals', { model_id: 'product_001', quantity: 1 }],
+    ...['approve', 'cancel', 'ship', 'deliver', 'return'].map(action => [`/api/inventory/rentals/stock_041/${action}`, {}]),
+  ];
+  const api = createDbInventoryApi({ db, homeStoreId: 'store_005', notify, log: () => {} });
+  for (const [path, body] of mutations) {
+    for (const store_id of ['store_001', 'DEMO-S001', null, 5]) {
+      assert.deepEqual(await api.handle('POST', path, new URLSearchParams(), { ...body, store_id }),
+        { status: 403, body: { error_message: 'STORE_NOT_ALLOWED' } }, `${path}: browser cannot choose another actor`);
+    }
+    for (const homeStoreId of [null, '', 'not-a-db-store', 'store_abc']) {
+      const unconfigured = createDbInventoryApi({ db, homeStoreId, notify, log: () => {} });
+      assert.deepEqual(await unconfigured.handle('POST', path, new URLSearchParams(), { ...body, store_id: 'store_001' }),
+        { status: 503, body: { error_message: 'HOME_STORE_NOT_CONFIGURED' } }, `${path}: body cannot supply missing server identity`);
+    }
+  }
+  assert.deepEqual(calls, [], 'neither denied actor overrides nor invalid server identities reach n8n');
+  assert.deepEqual(sent, [], 'denied requests never alert staff');
+});
+
+test('malformed stock responses are upstream errors on reads and adjustments, without low-stock alerts', async () => {
+  const { sent, notify } = recorder();
+  let reply = { ok: true, data: [adjustRow()] };
+  const api = createDbInventoryApi({ db: { call: async () => reply, close() {} }, homeStoreId: 'store_005', notify, log: () => {} });
+  const malformed = [
+    { code: 'OK' }, adjustRow({ storeId: 'invalid' }), adjustRow({ productId: undefined }),
+    adjustRow({ stockQty: -1 }), adjustRow({ reservedQty: '1' }), adjustRow({ transferQty: 1.5 }),
+    adjustRow({ available: null }), adjustRow({ available: NaN }), adjustRow({ available: Infinity }),
+  ];
+  for (const row of malformed) {
+    reply = { ok: true, data: [row] };
+    assert.equal((await api.handle('GET', '/api/inventory/stock', new URLSearchParams(), {}))?.status, 502);
+    assert.deepEqual(await api.handle('POST', '/api/inventory/stock/adjust', new URLSearchParams(), { model_id: 'product_001', quantity: 4 }),
+      { status: 502, body: { error_message: 'DB_UNAVAILABLE' } });
+  }
+  for (const row of [adjustRow({ storeId: 'store_001' }), adjustRow({ productId: 'product_002' })]) {
+    reply = { ok: true, data: row };
+    assert.equal((await api.handle('POST', '/api/inventory/stock/adjust', new URLSearchParams(), { model_id: 'product_001', quantity: 4 }))?.status, 502,
+      'a different stock identity is not a successful adjustment of the requested row');
+  }
+  assert.deepEqual(sent, []);
+});
+
+test('rental reads and mutations reject missing identifiers, invalid quantities and invalid status combinations before alerts', async () => {
+  const { sent, notify } = recorder();
+  const approved = { ...dbRental, rentalId: 'stock_041', quantity: 1, deliveryStatus: '요청 승인', returnStatus: null,
+    provideInventory: { stockQty: 3, reservedQty: 1, transferQty: 1, available: 1 } };
+  let reply = { ok: true, data: approved };
+  const api = createDbInventoryApi({ db: { call: async () => reply, close() {} }, homeStoreId: 'store_001', notify, log: () => {} });
+  const malformed = [
+    { rentalId: 'stock_041' }, { ...approved, rentalId: 'invalid' }, { ...approved, productId: undefined },
+    { ...approved, requestStoreId: 'invalid' }, { ...approved, provideStoreId: null },
+    ...[0, -1, 1.5, '1', NaN].map(quantity => ({ ...approved, quantity })),
+    { ...approved, deliveryStatus: 'unknown' }, { ...approved, returnStatus: '반납 완료' },
+  ];
+  for (const row of malformed) {
+    reply = { ok: true, data: [row] };
+    assert.equal((await api.handle('GET', '/api/inventory/rentals', new URLSearchParams(), {}))?.status, 502);
+    assert.equal((await api.handle('POST', '/api/inventory/rentals/stock_041/approve', new URLSearchParams(), {}))?.status, 502);
+  }
+  for (const row of [
+    { ...approved, rentalId: 'stock_999' }, { ...approved, provideStoreId: 'store_002' },
+    { ...approved, deliveryStatus: '배송 중' },
+  ]) {
+    reply = { ok: true, data: row };
+    assert.equal((await api.handle('POST', '/api/inventory/rentals/stock_041/approve', new URLSearchParams(), {}))?.status, 502,
+      'the successful result must belong to the requested rental, server actor and action');
+  }
+  assert.deepEqual(sent, [], 'malformed success bodies emit neither rental nor low-stock alerts');
+});
+
+test('CREATE_RENTAL validates its returned rental before notifying candidate stores', async () => {
+  const { sent, notify } = recorder();
+  const created = { ...dbRental, rentalId: 'stock_041', productId: 'product_001', quantity: 1, provideStoreId: null,
+    deliveryStatus: '요청 중', returnStatus: null };
+  let rental = created;
+  const api = createDbInventoryApi({ db: { call: async () => ({ ok: true, data: { rental, candidates: [
+    { storeId: 'store_001', manager: { name: 'fixture', phone: '000-0000-0000' } },
+  ] } }), close() {} }, homeStoreId: 'store_005', notify, log: () => {} });
+  for (const bad of [
+    { rentalId: 'stock_041' }, { ...created, quantity: 0 }, { ...created, requestStoreId: 'store_001' },
+    { ...created, productId: 'product_002' }, { ...created, provideStoreId: 'store_001', deliveryStatus: '요청 승인' },
+  ]) {
+    rental = bad;
+    assert.equal((await api.handle('POST', '/api/inventory/rentals', new URLSearchParams(), { model_id: 'product_001', quantity: 1 }))?.status, 502);
+  }
+  assert.deepEqual(sent, []);
+});
+
+test('valid required columns still succeed without optional names, contact details or display metadata', async () => {
+  const minimalStock = { storeId: 'store_001', productId: 'product_001', stockQty: 3, reservedQty: 0, transferQty: 0, available: 3 };
+  const minimalRental = { rentalId: 'stock_041', productId: 'product_001', quantity: 1, requestStoreId: 'store_005',
+    provideStoreId: 'store_001', deliveryStatus: '요청 승인', returnStatus: null };
+  const api = createDbInventoryApi({ db: { call: async action => ({ ok: true, data: action === 'ADJUST_INVENTORY' ? minimalStock
+    : action === 'GET_INVENTORY' ? [minimalStock] : action === 'GET_RENTALS' ? [minimalRental] : minimalRental }), close() {} },
+    homeStoreId: 'store_001', log: () => {} });
+  assert.equal((await api.handle('GET', '/api/inventory/stock', new URLSearchParams('store_id=store_001'), {}))?.status, 200);
+  assert.equal((await api.handle('GET', '/api/inventory/rentals', new URLSearchParams('store_id=store_005'), {}))?.status, 200,
+    'other-store read access is preserved');
+  assert.equal((await api.handle('POST', '/api/inventory/stock/adjust', new URLSearchParams(), { store_id: 'store_001', model_id: 'product_001', quantity: 3 }))?.status, 200);
+  assert.equal((await api.handle('POST', '/api/inventory/rentals/stock_041/approve', new URLSearchParams(), { store_id: 'store_001' }))?.status, 200);
+});
+
+test('HTTP inventory mutations cannot bypass server store identity using an allowed Origin', async t => {
+  const calls = [];
+  const server = createBackend({ key: '', agentId: '', monitors: { start() {}, close() {}, release() {} }, log: () => {},
+    demoStoreId: 'store_005', inventoryBaseUrl: baseUrl,
+    webhookFetchImpl: async (_url, init) => { calls.push(JSON.parse(String(init?.body))); return json({ ok: true, data: [] }); } });
+  server.listen(0, '127.0.0.1'); await once(server, 'listening');
+  t.after(() => { server.closeAllConnections(); server.close(); });
+  const result = await fetch(`http://127.0.0.1:${server.address().port}/api/inventory/rentals/stock_041/approve`,
+    { method: 'POST', headers: { Origin: 'http://127.0.0.1:5173', 'Content-Type': 'application/json' }, body: JSON.stringify({ store_id: 'store_001' }) });
+  assert.equal(result.status, 403);
+  assert.deepEqual(await result.json(), { error_message: 'STORE_NOT_ALLOWED' });
+  assert.deepEqual(calls, [], 'denial happens before any DB or alert webhook request');
 });

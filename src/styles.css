@@ -1189,6 +1189,37 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
 .inventory-name small, .inventory-count > span, .inventory-count strong small { font-size: 10px; }
 .loan-notice strong { font-size: 11px; }
 .loan-notice p { font-size: 10px; }
+
+/* Smart inventory uses the existing cards and tables without changing other pages. */
+.smart-inventory-card .card-heading { flex-wrap: wrap; gap: 10px; padding-block: 14px 12px; }
+.inventory-heading-controls { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 8px; min-width: 0; max-width: 100%; }
+.inventory-heading-controls .search-field { min-width: 0; }
+.inventory-heading-controls select { min-width: 0; width: 100%; font-size: 12px; }
+.smart-inventory-table { min-width: 760px; }
+.smart-inventory-table th { font-size: 11px; }
+.smart-inventory-table td { font-size: 12px; line-height: 1.5; padding-block: 12px; cursor: default; }
+.smart-inventory-table td:first-child > strong { font-size: 13px; }
+.smart-inventory-table small { font-size: 10px; }
+.smart-inventory-table td { overflow-wrap: anywhere; }
+.smart-inventory-card .button, .smart-inventory-card .text-button { min-height: 32px; font-size: 12px; }
+.smart-inventory-card .segmented-control { flex-wrap: wrap; max-width: 100%; }
+.smart-inventory-card .segmented-control button { font-size: 11px; min-height: 32px; }
+.smart-inventory-card .status-pill { font-size: 10px; }
+.smart-inventory-card .table-footer { flex-wrap: wrap; gap: 6px; padding-block: 10px; font-size: 10px; line-height: 1.5; }
+.inventory-step-button { width: 32px; height: 32px; flex-shrink: 0; }
+.inventory-step-button:focus-visible { outline: 2px solid var(--red); outline-offset: -2px; }
+.inventory-stepper input:focus-visible { outline: 2px solid var(--red) !important; outline-offset: -2px; }
+@media (max-width: 640px) {
+  .inventory-heading-controls { flex-basis: 100%; justify-content: flex-start; }
+  .inventory-heading-controls .search-field { flex: 1; }
+  .inventory-heading-controls select { max-width: 100% !important; }
+  .smart-inventory-card .card-heading > .segmented-control { flex-basis: 100%; }
+  .smart-inventory-card .button, .smart-inventory-card .text-button,
+  .smart-inventory-card .segmented-control button { min-height: 40px !important; }
+  .inventory-step-button { width: 40px; height: 40px; }
+  .inventory-stepper input { min-height: 40px; }
+  .inventory-request-fields select { width: 100%; min-width: 0; }
+}
 @media (max-width: 530px) {
   .call-table .text-button, .support-call-table .text-button, .aftercare-table .text-button { min-height: 40px; }
 }

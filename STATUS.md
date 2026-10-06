@@ -1,5 +1,19 @@
 # KCM 작업 상태 — v0.3 / 2026-10-06
 
+## 스마트재고 통합 검증 / 2026-10-06
+
+- 시작 working tree는 clean이었고 main/origin main `bf84b62e13baa3c5c205773f70a87c9ed58b9f47`를 확인했습니다. `integration/smart-inventory-final`을 만든 뒤 feature `8484affa746b1e66c40b9b1711c9982175516bfa`(ahead 8 / behind 0)를 fast-forward 병합했습니다. 충돌은 없었으며 main·기존 release/feature 브랜치는 유지합니다. 이번 통합 브랜치만 commit/push합니다.
+- Browser → `/api/inventory` → KCM Backend → n8n → DB 구조를 연결했습니다. 매장/재고 조회, 우리 매장 수량 수정, 대여 요청/승인/취소/배송 시작/도착 확인/반납 완료와 역할·상태별 버튼을 재사용합니다. 기존 `InventoryPanel`은 설정 미준비 시 읽기 전용 참고 화면으로 유지합니다.
+- 재고에 한정한 보완: 서버 home 매장을 실제 변경 처리자로 고정하고 다른 actor 입력을 차단했습니다. 필수 응답 ID·정수 수량·상태·요청과의 일치를 검사하며 잘못된 성공 응답은 실패 처리하고 알림을 보내지 않습니다. 프런트도 응답 구조와 알려진 오류 코드만 사용합니다. 소수/음수 입력을 다른 숫자로 변환하지 않고 검증하며 매장 전환·해제 후 늦은 응답이 재고 화면을 덮어쓰지 않게 했습니다.
+- main의 typography/spacing/문구 정리는 보존했습니다. 공통 CSS는 삭제 없이 재고 전용 31줄만 추가했고, 재고 본문12px/모델13px/보조10px/배지10px/버튼12px와 데스크톱32px·모바일40px 클릭 영역, 제목/매장 선택/대여 탭 줄바꿈을 적용했습니다. `InventoryPanel`, Retell/Monitor/SSE/위험/기존 상담 n8n·전화·예약·지원·마케팅·상품·고객 업무 파일, 의존성·lockfile·환경설정은 변경하지 않았습니다.
+- 최종 `npm.cmd run check`: **392/392 통과**, 실패/건너뜀0, 프런트 `tsc --noEmit`·백엔드 `tsc -p tsconfig.server.json`·Vite production build 성공. 기존357 + 재고 백엔드21 + 프런트14입니다. feature의 프런트 재고 테스트를 전체 실행에 등록했습니다. 첫 Vite 실행의 샌드박스 상위 경로 접근 오류는 원인 확인 후 승인 실행으로 해결했습니다. 기존 SDK 큰 청크/MockTimers 경고만 남습니다.
+- 실제 Chrome에서 격리 n8n 응답과 production dist를 사용해 `#/inventory`의 **1920×1080 / 1366×768 / 390×844**를 직접 확인했습니다. 데스크톱 표/제목은 가로 넘침 없고, 모바일은 표 영역 내부 가로 스크롤만 허용합니다. 매장 선택·대여 탭이 잘리거나 겹치지 않고 모바일 요청 모달/닫기·Escape·40px 버튼이 정상입니다. 정상 재고 화면의 브라우저 오류 로그는0입니다.
+- 격리 화면에서 수량 수정 성공, 소수/예약·이동 수량 제한, 편집 Escape 취소, 저장 중 매장 전환 후 응답 분리, 타 매장 읽기 전용, 대여 요청·승인·배송·수령·취소·반납 완료, 확인 취소·완료 후 버튼 조건, 빈 재고·DB 오류·복구를 확인했습니다. 도착 확인에 사용한 첫 모의 응답의 반납 상태가 계약과 달라 거절되는 것을 확인한 후, 모의 응답을 `반납 전`으로 고쳐 정상 도착을 검증했습니다. 제품 코드는 이 응답 오류 때문에 변경하지 않았습니다.
+- 직원8메뉴와 고객 전화의9개 route에 직접 진입하여 제목/직원·고객 title/빈 화면 없음을 확인했습니다. 기존 업무의 전체 자동 회귀와 보호 파일 diff0을 확인했으며, 실제 Retell 음성·기존 상담의 외부 저장은 이번에 실행하지 않았습니다. 사용자 저장 데이터 초기화·실제 외부 요청은 없습니다.
+- `N8N_INVENTORY_BASE_URL` 미설정의 정상 재고 요청은 **503 `INVENTORY_NOT_CONFIGURED`**, home 미설정/잘못된 형식의 변경 요청은 **503 `HOME_STORE_NOT_CONFIGURED`**입니다. 브라우저에서 설정 없는 별도 서버의 안내·읽기 전용 참고 화면을 확인했습니다. 두 변수의 실제 값·`.env`·Render 환경·n8n workflow는 읽거나 변경하지 않았습니다. 상세 endpoint/action·알림·오류 계약은 `docs/SMART_INVENTORY_INTEGRATION.md`에 기록했습니다.
+- `npm.cmd run preview:standalone`으로 독립 HTML을 갱신했습니다. 갱신 HTML의 HTTP 직접 진입은 브라우저의 `ERR_BLOCKED_BY_CLIENT`로 중단되어 **직접 실행 미검증**이며, 위 production dist 검증과 구분합니다. 로그/캡처/격리 fixture는 Git 제외 `.cache/inventory-integration/`에만 보관합니다.
+- 남은 범위: 실제 Production n8n/DB CRUD·상태 전이·재고 수량 원자성·동시 승인·취소 반환 계약·알림 수신자/배달, 실제 통화 회귀, 검토 후 main 병합 및 Render 배포. 실제 비밀값/환경변수/서비스 설정을 변경하거나 main에 병합하지 않았습니다.
+
 ## 추가 UI Polish + Release Hardening / 2026-10-06
 
 - 기존 `release/kcm-final-polish`/`c1aaba00453a4101e5b94be6804980608f106f1e`와 모든 변경을 보존하고 같은 브랜치에서 추가 작업했습니다. 시작 상태 clean, 기준 main `4808bc135c4efb6d3234afefbf273306ee4f594f`입니다. 브랜치 재생성/초기화·main·Render·환경변수·외부 데이터 변경은 없습니다.
