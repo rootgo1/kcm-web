@@ -293,3 +293,223 @@ test('new rule version reanalyzes unchanged turns instead of reusing pre-expansi
   assert.notEqual(result.ruleVersion, previous.ruleVersion);
   assert.deepEqual(totals(result), [1, 1, 0, 0]);
 });
+
+for (const text of [
+  '매장 뒤집어 놓을 거야', '매장 뒤집어 놓을 거예요',
+  '매장 뒤집어 놓을 거니까 알아서 해', '매장 뒤집어 놓을 거니까 알아서 하세요',
+  '매장 뒤집어놓을거야', '매장 뒤집어놓을거예요', '매장 뒤집어놓을거니까 알아서 하세요',
+  '매장 부숴버릴 거예요', '매장 부숴 버릴 거니까', '가게 가서 난리칠 거야',
+  '가게 가서 난리칠거야', '매장 가서 난리 칠 거예요', '찾아 가서 난리칠거니까',
+  '너 찾아가서 팬다', '너 찾아가서 팰 거야', '너 찾아가서 패버린다',
+  '직원 찾아가서 팬다', '상담사 찾아가서 팬다', '찾아가서 팬다',
+  '가서 팬다', '가서 팰 거야', '가서 패버린다', '가서 때린다',
+  '찾아가서 때린다', '찾아가서 패준다', '두들겨 팬다',
+  '너 찾아 가서 팬다', '너 찾아가서 팰거야', '직원 찾아가서 패 버린다',
+  '상담사 찾아가서 때릴 거야', '상담사 찾아가서 때릴거야', '너 가서 두들겨팬다',
+  '너 팬다', '직원을 팰 거예요', '가서 패 버릴 거야', '직원도 가만 안 둘 거야',
+]) {
+  test('future statements and explicit assault with person/visit context: ' + text, () => {
+    const result = analyzeRiskText(text);
+    assert.deepEqual(totals(result), [0, 1, 0, 0]);
+    assert.equal(result.signals.length, 1);
+    assert.ok(text.includes(result.signals[0].matchedText));
+  });
+}
+
+for (const text of [
+  '“너 찾아가서 팬다”라는 말을 들었습니다.', '고객이 직원을 찾아가서 팬다고 했습니다.',
+  '직원을 때리겠다는 뜻이 아닙니다.', '너 찾아가서 팬다고 신고했습니다.',
+  '가서 때릴 거야라는 뜻이 아닙니다.', '“매장 뒤집어 놓을 거니까”라는 말을 들었어요.',
+  '매장 부숴버릴 거예요라고 보고했습니다.', '팬다', '장작을 팬다',
+  '숲에 가서 장작을 팬다', '골프장에 가서 공을 때릴 거야', '나는 이 팀의 팬이다',
+]) {
+  test('future/assault report, negation and unrelated usage remain nonthreatening: ' + text, () => {
+    assert.deepEqual(totals(analyzeRiskText(text)), [0, 0, 0, 0]);
+  });
+}
+
+test('exact video scenario records the clear USER threat once, without expanding an ambiguous first question', () => {
+  const text = '아니 찾아와서 팬다?\n그래 그때까지 없으면 너 찾아가서 팬다?';
+  const result = analyzeRiskText(text);
+  assert.deepEqual(totals(result), [0, 1, 0, 0]);
+  assert.equal(result.signals.length, 1);
+  assert.equal(result.signals[0].matchedText, '너 찾아가서 팬다');
+});
+
+for (const [label, first, intervention, action, expected] of [
+  ['A', '아 씨발 장난해요?', '욕설은 삼가 주세요.', '일 처리 진짜 개판이네.', [2, 0, 0, 0]],
+  ['B', '그날도 없으면 매장', '위협적인 발언은 삼가 주세요.', '뒤집어 놓을 거니까 알아서 하세요.', [0, 1, 0, 0]],
+  ['C', '내가 가서', '위협적인 말씀은 삼가 주세요.', '매장 부숴버릴 거야.', [0, 1, 0, 0]],
+  ['D', '그때까지 없으면 너', '위협적인 발언은 삼가 주세요.', '찾아가서 팬다.', [0, 1, 0, 0]],
+  ['E', '매장에', '확인해 드리겠습니다.', '가서 확인할게요.', [0, 0, 0, 0]],
+]) {
+  test('USER-only interrupted sequence ' + label + ' attributes the finding to the action turn', () => {
+    const messages = [message('u1', first), message('a1', intervention, 'agent'), message('u2', action)];
+    const result = analyzeTranscriptRisk(messages);
+    assert.deepEqual(totals(result), expected);
+    assert.deepEqual(Object.keys(result.analysisByTurn), ['u1', 'u2']);
+    if (expected[1]) {
+      assert.equal(result.analysisByTurn.u1.threatCount, 0);
+      assert.equal(result.analysisByTurn.u2.threatCount, 1);
+      assert.ok(result.analysisByTurn.u2.signals.every(signal => action.includes(signal.matchedText)));
+    }
+    if (label === 'B') assert.match(result.analysisByTurn.u2.signals[0].reason, /이전 USER/);
+  });
+}
+
+test('AGENT attacks/warnings cannot contribute a target, action or any of the four counts', () => {
+  for (const messages of [
+    [message('a1', '씨발. 매장 뒤집어 놓을 거야. 일을 왜 이렇게 못해요? 너랑 섹스하자', 'agent')],
+    [message('a1', '매장', 'agent'), message('u1', '뒤집어 놓을 거니까 알아서 하세요')],
+    [message('u1', '너'), message('a1', '찾아가서 팬다', 'agent')],
+    [message('a1', '욕설은 삼가 주세요. 위협적인 발언은 삼가 주세요.', 'agent'), message('u1', '안녕하세요')],
+  ]) assert.deepEqual(totals(analyzeTranscriptRisk(messages)), [0, 0, 0, 0]);
+});
+
+test('independent threats and context-assisted threats never count the same action twice', () => {
+  for (const [prefix, action, expected] of [
+    ['너', '찾아가서 팬다', 1], ['매장', '가서 다 부숴버릴 거야', 1],
+    ['너', '패버린다', 1], ['매장', '뒤집어 놓을 거야. 너 찾아가서 팬다', 2],
+  ]) {
+    const result = analyzeTranscriptRisk([message('u1', prefix), message('u2', action)]);
+    assert.equal(result.threatCount, expected);
+    assert.equal(result.analysisByTurn.u1.threatCount, 0);
+    assert.equal(result.analysisByTurn.u2.threatCount, expected);
+    assert.equal(result.analysisByTurn.u2.signals.length, expected);
+  }
+});
+
+test('two unfinished USER fragments can bridge a target and visit but never use AGENT content', () => {
+  const result = analyzeTranscriptRisk([
+    message('u1', '그때까지 없으면 매장'), message('a1', '안내해 드리겠습니다', 'agent'),
+    message('u2', '가서'), message('a2', '그런 표현은 자제해 주세요', 'agent'), message('u3', '부숴버릴 거야'),
+  ]);
+  assert.deepEqual(totals(result), [0, 1, 0, 0]);
+  assert.equal(result.analysisByTurn.u3.threatCount, 1);
+  assert.equal(result.analysisByTurn.u3.signals[0].matchedText, '부숴버릴 거야');
+});
+
+test('bounded context respects two fragments, 120 characters, 30 known seconds and 160 action-prefix characters', () => {
+  const timed = (id, content, start) => ({ ...message(id, content), start_sec: start });
+  for (const [messages, expected] of [
+    [[timed('u1', '매장', 1), timed('u2', '뒤집어 놓을 거야', 31)], 1],
+    [[timed('u1', '매장', 1), timed('u2', '뒤집어 놓을 거야', 31.01)], 0],
+    [[timed('u1', '매장', 31), timed('u2', '뒤집어 놓을 거야', 1)], 0],
+    [[timed('u1', '매장', null), timed('u2', '뒤집어 놓을 거야', null)], 1],
+    [[message('u1', '그'.repeat(118) + '매장'), message('u2', '뒤집어 놓을 거야')], 1],
+    [[message('u1', '그'.repeat(119) + '매장'), message('u2', '뒤집어 놓을 거야')], 0],
+    [[message('u1', '매장'), message('u2', '내가 가서'), message('u3', '가서'), message('u4', '부숴버릴 거야')], 0],
+    [[message('u1', '매장'), message('u2', ' '.repeat(160) + '뒤집어 놓을 거야')], 0],
+  ]) assert.equal(analyzeTranscriptRisk(messages).threatCount, expected);
+});
+
+test('completed or reported/quoted fragments cannot seed a later unrelated threat', () => {
+  for (const [prefix, action] of [
+    ['너.', '팬다'], ['너와 상담했습니다', '팬다'], ['매장에 방문하겠습니다', '뒤집어 놓을 거야'],
+    ['“매장', '뒤집어 놓을 거야'], ['고객이 매장', '뒤집어 놓을 거야'],
+    ['신고 내용은 매장', '뒤집어 놓을 거야'], ['매장이라고 들었어요', '뒤집어 놓을 거야'],
+    ['“너', '찾아가서 팬다”라는 말을 들었습니다.'],
+    ['매장', '부수지 않겠습니다'], ['매장', '뒤집어 놓을 거야라는 뜻이 아닙니다'],
+  ]) assert.deepEqual(totals(analyzeTranscriptRisk([message('u1', prefix), message('u2', action)])), [0, 0, 0, 0]);
+  assert.equal(analyzeTranscriptRisk([message('u1', '매장'), message('u2', '확인 부탁드립니다'), message('u3', '뒤집어 놓을 거야')]).threatCount, 0);
+});
+
+test('full current report suffix protects a bounded-prefix context candidate even when the report is beyond 160 characters', () => {
+  const action = '뒤집어 놓을 거야' + ' '.repeat(170) + '라고 말했습니다';
+  assert.equal(analyzeTranscriptRisk([message('u1', '매장'), message('u2', action)]).threatCount, 0);
+});
+
+test('context-dependent cache follows parent corrections/removal/role changes and recalculates only adjacent USER turns', () => {
+  const analyzed = [];
+  const analyze = text => { analyzed.push(text); return analyzeRiskText(text); };
+  const history = Array.from({ length: 200 }, (_, n) => message('earlier_' + n, '안녕하세요'));
+  let previousMessages = [...history, message('u1', '매장'), message('u2', '가서'), message('u3', '부숴버릴 거야'), message('u4', '감사합니다')];
+  let result = analyzeTranscriptRisk(previousMessages, [], undefined, analyze);
+  assert.equal(result.threatCount, 1);
+  const firstCount = analyzed.length;
+  for (let n = 0; n < 10; n++) result = analyzeTranscriptRisk(previousMessages, previousMessages, result, analyze);
+  assert.equal(analyzed.length, firstCount);
+  let current = [...history, message('u1', '공원'), ...previousMessages.slice(-3)];
+  result = analyzeTranscriptRisk(current, previousMessages, result, analyze);
+  assert.equal(result.threatCount, 0);
+  assert.equal(analyzed.length - firstCount, 3);
+  previousMessages = current;
+  current = [...history, message('u1', '매장'), ...previousMessages.slice(-3)];
+  result = analyzeTranscriptRisk(current, previousMessages, result, analyze);
+  assert.equal(result.threatCount, 1);
+  previousMessages = current;
+  current = [...history, ...previousMessages.slice(-3)];
+  result = analyzeTranscriptRisk(current, previousMessages, result, analyze);
+  assert.equal(result.threatCount, 0);
+  previousMessages = current;
+  current = [...history, message('u1', '매장', 'agent'), ...previousMessages.slice(-3)];
+  result = analyzeTranscriptRisk(current, previousMessages, result, analyze);
+  assert.equal(result.threatCount, 0);
+  assert.equal(Object.hasOwn(result.analysisByTurn, 'u1'), false);
+});
+
+test('AGENT changes preserve USER cache; action correction/deletion replaces dependent findings without stale totals', () => {
+  let analyzed = 0;
+  const analyze = text => { analyzed++; return analyzeRiskText(text); };
+  let previousMessages = [message('u1', '매장'), message('a1', '위협적인 발언은 삼가 주세요', 'agent'), message('u2', '뒤집어 놓을 거니까')];
+  let result = analyzeTranscriptRisk(previousMessages, [], undefined, analyze);
+  assert.equal(result.threatCount, 1);
+  const firstCount = analyzed;
+  let current = previousMessages.map(item => item.role === 'agent' ? { ...item, content: '너 찾아가서 팬다. 씨발' } : item);
+  result = analyzeTranscriptRisk(current, previousMessages, result, analyze);
+  assert.equal(analyzed, firstCount); assert.equal(result.threatCount, 1);
+  previousMessages = current;
+  current = current.map(item => item.turn_id === 'u2' ? { ...item, content: '매장에 방문하겠습니다' } : item);
+  result = analyzeTranscriptRisk(current, previousMessages, result, analyze);
+  assert.equal(result.threatCount, 0);
+  previousMessages = current;
+  current = current.filter(item => item.turn_id !== 'u2');
+  result = analyzeTranscriptRisk(current, previousMessages, result, analyze);
+  assert.deepEqual(totals(result), [0, 0, 0, 0]);
+  assert.equal(Object.hasOwn(result.analysisByTurn, 'u2'), false);
+});
+
+test('actual independent threats in u1 through u4 count 1/2/3/4 despite AI interjections and ten duplicate snapshots', () => {
+  const store = createLiveCallStore(); store.connecting('repeat'); store.connecting('other');
+  const statements = ['매장 뒤집어 놓을 거야.', '가서 다 부숴버릴 거야.', '직원도 가만 안 둘 거야.', '너 찾아가서 팬다.'];
+  const turns = [];
+  statements.forEach((text, index) => {
+    turns.push(turn('u' + (index + 1), text), turn('a' + (index + 1), '위협적인 발언은 삼가 주세요.', 'agent'));
+    for (let n = 0; n < 10; n++) store.transcript('repeat', turns);
+    assert.equal(store.snapshot()[0].risk_analysis.threatCount, index + 1);
+    assert.equal(store.snapshot()[0].risk_analysis.analyzedUserTurns, index + 1);
+  });
+  store.transcript('other', [turn('u1', '안녕하세요')]);
+  assert.equal(store.snapshot()[1].risk_analysis.threatCount, 0);
+  store.transcript('repeat', [turn('u1', '매장에 방문하겠습니다')]);
+  assert.equal(store.snapshot()[0].risk_analysis.threatCount, 0);
+});
+
+for (const text of [
+  '직원을 찾아가서 팬다는 건 아닙니다.',
+  '너 찾아가서 팬다는 게 아니라 상담하러 간다는 말입니다.',
+  '고객이 너 찾아가서 팬다는 얘기를 했어요.',
+  '고객이 너 찾아가서 팬다는 이야기를 했어요.',
+  '너 찾아가서 팬다는 것은 아닙니다.',
+  '매장 뒤집어 놓을 거야라는 건 아니에요.',
+  '좆같다는 건 아닙니다.',
+]) {
+  test('explicit colloquial negation/report suffix remains a nonassertion: ' + text, () => {
+    assert.deepEqual(totals(analyzeRiskText(text)), [0, 0, 0, 0]);
+  });
+}
+
+test('colloquial negative/report action fragments stay nonthreatening across USER turns', () => {
+  for (const action of ['팬다는 건 아닙니다.', '팬다는 게 아니라 상담하러 간다는 말입니다.', '팬다는 얘기를 했어요.']) {
+    const result = analyzeTranscriptRisk([
+      message('u1', '직원을 찾아가서'), message('a1', '위협적인 발언은 삼가 주세요.', 'agent'), message('u2', action),
+    ]);
+    assert.deepEqual(totals(result), [0, 0, 0, 0]);
+    assert.equal(result.analysisByTurn.u2.threatCount, 0);
+  }
+});
+
+test('a colloquial assertion without explicit negation is still a threat', () => {
+  assert.equal(analyzeRiskText('너 찾아가서 팬다는 건 결정됐어.').threatCount, 1);
+  assert.equal(analyzeTranscriptRisk([message('u1', '직원을 찾아가서'), message('u2', '팬다는 건 결정됐어.')]).threatCount, 1);
+});

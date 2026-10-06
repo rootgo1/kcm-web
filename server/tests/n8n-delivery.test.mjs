@@ -64,7 +64,7 @@ test('final audio before end never posts early; finalized JSON matches the exact
     call_id: 'call_test', consultation_id: consultationId, customer_id: customerId,
     signals: { profanity_count: 2, threat_count: 1, blame_count: 3, sexual_count: 0, shouting_count: 2 },
     scores: { profanity_score: 6, threat_score: 20, blame_score: 8, sexual_score: 0, shouting_score: 5 },
-    risk_score: 39, risk_level: '주의',
+    risk_score: 40, risk_level: '경계',
     consultation: {
       store_id: storeId, status: '완료', used_ai: true,
       started_at: getCall(store).started_at, ended_at: getCall(store).ended_at,
@@ -153,11 +153,11 @@ test('timeout and server close abort pending work and preserve final results', a
   prepare(a.store); finish(a.store);
   await new Promise(resolve => setTimeout(resolve, 30));
   assert.equal(getCall(a.store).webhook_delivery.error, 'TIMEOUT');
-  assert.equal(getCall(a.store).final_result.risk_score, 39);
+  assert.equal(getCall(a.store).final_result.risk_score, 40);
   const b = fixture(t, { fetchImpl: pendingFetch });
   prepare(b.store); finish(b.store); b.delivery.close(); await tick();
   assert.equal(getCall(b.store).webhook_delivery.error, 'SERVER_STOPPED');
-  assert.equal(getCall(b.store).final_result.risk_score, 39);
+  assert.equal(getCall(b.store).final_result.risk_score, 40);
   prepare(b.store, 'after_close'); finish(b.store, 'after_close');
   assert.equal(getCall(b.store, 'after_close').webhook_delivery, null);
 });
@@ -168,7 +168,7 @@ for (const [url, expected] of [['', 'N8N_WEBHOOK_URL_MISSING'], ['not a URL', 'N
     const { store, requests } = fixture(t, { webhookUrl: url });
     prepare(store); finish(store); await tick();
     assert.equal(requests.length, 0); assert.equal(getCall(store).webhook_delivery.error, expected);
-    assert.equal(getCall(store).final_result.risk_score, 39);
+    assert.equal(getCall(store).final_result.risk_score, 40);
   });
 }
 

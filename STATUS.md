@@ -1,5 +1,18 @@
 # KCM 작업 상태 — v0.3 / 2026-10-06
 
+## 추가 팀 통화 피드백 · USER 분절/폭행 위협/40·60·80 하한 / 2026-10-06
+
+- 기존 `fix/risk-detection-test-feedback`의 1차 commit `e227a2c605be158cef25ca634b51873e1b451433`을 보존하고 같은 브랜치에서만 추가 보정합니다. 최신 main/origin main은 `86508324e33a59e4a74e508bb354f9ef09c86a96` 그대로입니다. 원본 checkout의 사용자 STATUS 변경/미추적 deliverables와 별도 실제 데이터 연동 브랜치를 보존하며 main·Render·환경변수·Production 데이터는 변경하지 않습니다.
+- `server/text-risk.mjs`: `local-text-rules-v4`. 기존 v3 욕설/시설 규칙에 놓을 거야·거예요·거니까/부숴버릴 거야·거니까/난리칠 거야와 사람·방문 문맥의 팬다·팰 거야·패버린다·때린다·패준다/직원도 가만 안 둘 거야를 보완했습니다. 명시 부정·전언 guard는 profanity/threat에만 최소 확장하고 비난·선정 규칙은 유지합니다.
+- 최근 USER 미완성 fragment 최대2개·각120자·알려진 start_sec 간격30초·현재 행동 앞160자만 연결합니다. Agent는 분석/대상 문맥에서 제외합니다. 독립 탐지와 연결 탐지 중복을 막고 근거는 현재 USER 행동 turn에 귀속합니다. 이전/current 제한 문맥 fingerprint로 부모 정정·삭제·role/time 변경에 따른 종속 결과를 재평가하며 외부 분석/SSE DTO는 유지합니다.
+- `src/lib/riskPolicy.js`: `call-risk-v4`. 욕설≥1 최소20점 유지, 위협≥1/≥2/≥3 최소40/60/80점으로 변경했습니다. raw 표·5등급·99 상한·통화별 독립0점·최종화/audio gate·n8n 필드는 유지합니다. 진행 중 대응 경고와 종료 후 종합 최종 점수는 기존처럼 구분합니다.
+- A~E는 욕설2/위협1/1/1/0, 반복 위협u1~u4는1→2→3→4, 영상 기본은 욕설2·위협1·최종40(raw26), 강한 버전은 욕설2·위협2·최종60(raw36), 추가 폭행 정확 원문은 위협1·최종40입니다. 정상 방문·반려견·시발점/시발역·판·명시 인용/신고/부정은 제외합니다.
+- 변경 파일: `server/text-risk.mjs`, `src/lib/riskPolicy.js`, `server/tests/text-risk.test.mjs`, `server/tests/call-risk.test.mjs`, `server/tests/risk-feedback-pipeline.test.mjs`, `server/tests/n8n-delivery.test.mjs`, `tests/riskPolicy.test.ts`, `tests/liveCalls.test.ts`, `tests/callWorkflow.test.ts`, `server/README.md`, `docs/FINAL_PRODUCTION_E2E_CHECKLIST.md`, `docs/RISK_DETECTION_SEQUENCE_FEEDBACK.md`, `00_KCM_미리보기.html`, `STATUS.md`입니다. UI 소스/스타일·Retell·Monitor·SSE·n8n 구현·IDs·재고·RMS·audio 최종화·package/env 파일은 변경하지 않았습니다.
+- 전체 `npm.cmd test` **599/599**, 실패/skip0. 직전507개+신규92개(텍스트72/정책3/서버점수2/프런트1/Monitor-SSE14), 기존 테스트 삭제/약화0. 첫 전체 실행에서 새 C-004 raw 기대값 오기40을 보존된 threat2 항목값30으로 수정하고 최종60을 검사했습니다. 텍스트221/221, 실제 SDK+FakeWS→Monitor→analyzer→SSE14/14, correction/삭제/10회반복/역할변경·최종 gate·n8n 계약을 확인했습니다.
+- `npm.cmd run build`: 프런트·백엔드 타입 검사와 production build 성공. 초기 샌드박스 Vite 상위 경로 접근 제한은 동일 명령 승인 실행으로 해결했습니다. 기존 Retell SDK 596.72kB 청크 경고 유지. `npm.cmd run preview:standalone` 갱신, 독립 HTML 직접 실행은 이번에 미검증입니다.
+- 격리된 production dist+기존 Backend/store/SSE 브라우저에서 욕설2, 위협1/2/3, 폭행1, 정상 방문0, USER 배지/Agent 배지0, 부모 정정 시UI0·복원/10반복1, 종료 후20/40/60/80/40/0을 확인했습니다. 1366×768·390×844 모달/근거/점수/닫기 및 바깥 overflow 없음,9경로 기본 표시 정상, console error/warn0. 외부 fetch를 차단하여 실제 통화/n8n/DB 호출이 없었고 fixture의 n8n failed는 URL 미설정 상태입니다. 임시 fixture는 정상 종료했습니다.
+- 상세 결과는 `docs/RISK_DETECTION_SEQUENCE_FEEDBACK.md`, 캡처/로그는 Git 제외 `.cache/risk-feedback-v4/`에 기록했습니다. 실제 음성/STT/Production 수신은 미검증이며 main/Render에는 적용하지 않습니다. 수정 브랜치 commit/push와 clean 상태를 확인하고 멈춥니다. 아래 v3 항목은 이전 보정 당시 기록입니다.
+
 ## 실제 팀 통화 피드백 · 욕설/시설 위협 탐지 보정 / 2026-10-06
 
 - 최신 main/origin main `86508324e33a59e4a74e508bb354f9ef09c86a96` 확인 후 clean worktree에서 `fix/risk-detection-test-feedback`을 생성했습니다. 원본 작업 폴더의 사용자 STATUS 변경·미추적 산출물과 별도 실제 데이터 연동 브랜치는 보존합니다. main·기존 브랜치·환경변수·Render·Production 데이터는 변경하지 않습니다.

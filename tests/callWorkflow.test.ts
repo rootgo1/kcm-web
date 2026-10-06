@@ -138,12 +138,12 @@ test('analysis and support changes retain the draft; completion retains outstand
   assert.equal(applyCallSupport(state.calls,'C-003',{type:'request',requestId:'again',reason:'other',memo:'',actor},laterAt),state.calls);
   assert.equal(startCallConsultation(state.calls,'C-003',laterAt),state.calls);assert.equal(updateCallDraft(state,'C-003','content','수정 금지'),state);
 });
-test('C-004 completion removes live threat alert from metrics, preserves support and final 40 boundary', () => {
+test('C-004 completion removes live threat alert from metrics, preserves support and final 60 danger', () => {
   const state=completeDemoCall(ready(createCallDemoState(),'C-004'),'C-004',doneAt,actor);
   assert.equal(getCallMetrics(state.calls).dangerous,0); assert.equal(getCallMetrics(state.calls).pendingSupport,1);
-  assert.equal(state.calls[3].scoreRecord?.risk_score,40); assert.equal(filterCalls(state.calls,'completed','boundary')[0].id,'C-004');
+  assert.equal(state.calls[3].scoreRecord?.raw_score,30); assert.equal(state.calls[3].scoreRecord?.risk_score,60); assert.equal(filterCalls(state.calls,'completed','danger')[0].id,'C-004');
 });
-test('47 → independent 80 → independent 26 histories remain; fourth call starts zero', () => {
+test('47 → independent 80 → independent 40 histories remain; fourth call starts zero', () => {
   let state=ready();
   state.calls[2].analysis=analysis(7,1,0,2,1); //15+20+0+10+2=47
   state=completeDemoCall(state,'C-003',doneAt,actor);const first=state.calls[2];
@@ -158,11 +158,12 @@ test('47 → independent 80 → independent 26 histories remain; fourth call sta
   state=createNextDemoCall(state,second.id);const third=state.calls.at(-1)!;
   state=ready(state,third.id);state.calls.at(-1)!.analysis=analysis(2,1,0,0,0);
   state=completeDemoCall(state,third.id,'2026-09-30T06:15:00Z',actor);
-  assert.deepEqual(customerRiskHistory(state.calls,first.customerId).map(r=>r.risk_score),[26,80,47]);
-  assert.equal(latestCustomerRisk(state.calls,first.customerId)?.risk_score,26);
+  assert.equal(state.calls.at(-1)!.scoreRecord?.raw_score,26);
+  assert.deepEqual(customerRiskHistory(state.calls,first.customerId).map(r=>r.risk_score),[40,80,47]);
+  assert.equal(latestCustomerRisk(state.calls,first.customerId)?.risk_score,40);
   assert.equal(state.calls[2],first);assert.equal(first.scoreRecord?.risk_score,47);
   state=createNextDemoCall(state,third.id);assert.equal(state.calls.at(-1)!.initialScore,0);
-  assert.equal(latestCustomerRisk(state.calls,first.customerId)?.risk_score,26);
+  assert.equal(latestCustomerRisk(state.calls,first.customerId)?.risk_score,40);
 });
 test('no next call before finalization; same names do not merge customer IDs; latest is by completion time', () => {
   const initial=createCallDemoState();assert.equal(createNextDemoCall(initial,'C-003'),initial);
