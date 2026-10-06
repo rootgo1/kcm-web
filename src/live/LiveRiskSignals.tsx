@@ -1,5 +1,5 @@
 import type { LiveCall, LiveTextRisk } from './types';
-import { formatRiskScore } from '../lib/riskScoring';
+import { formatRiskScore, RISK_RULE } from '../lib/riskScoring';
 import { deliveryLabel } from './livePresentation';
 import { liveFinalizationNotice } from './liveNotices';
 
@@ -20,7 +20,7 @@ export function LiveRiskSignals({ call }: { call: LiveCall }) {
     {audio && !audio.coverage_complete && <p className="live-risk-note">일부 음성 구간 미측정 · 고성은 관측된 구간만 반영하며 최종 점수는 보류합니다.</p>}
     {call.status === 'ended' ? final ? <div className="live-final-risk">
       <h3>이 통화 최종 위험도</h3><strong>{formatRiskScore(final.risk_score)}</strong>
-      <p className="live-risk-note">항목 합계 {final.raw_score}점 · 위협 보정 {final.threat_floor ? '최소 ' + final.threat_floor + '점' : '없음'}{final.adjusted_score > 99 && ' · 99점 상한 적용'}</p>
+      <p className="live-risk-note">항목 합계 {final.raw_score}점{final.signals.profanity_count >= 1 && final.rule_version === RISK_RULE.version && ' · 욕설 최소 ' + RISK_RULE.profanityFloor + '점 보정'} · 위협 보정 {final.threat_floor ? '최소 ' + final.threat_floor + '점' : '없음'}{final.adjusted_score > 99 && ' · 99점 상한 적용'}</p>
       <dl className="live-risk-counts">{(['profanity', 'threat', 'blame', 'sexual', 'shouting'] as const).map((key, index) => <div key={key}><dt>{['욕설', '위협 발언', '비난 표현', '선정적 표현', '고성'][index]}</dt><dd>{final.scores[(key + '_score') as keyof typeof final.scores]}점</dd></div>)}</dl>
       <details hidden aria-hidden="true"><summary>확정 위험 결과</summary><pre>{JSON.stringify(final, null, 2)}</pre></details>
     </div> : <p className="live-risk-note" role="status">{liveFinalizationNotice(call.finalization_reason)}</p>

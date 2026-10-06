@@ -1,5 +1,17 @@
 # KCM 작업 상태 — v0.3 / 2026-10-06
 
+## 실제 팀 통화 피드백 · 욕설/시설 위협 탐지 보정 / 2026-10-06
+
+- 최신 main/origin main `86508324e33a59e4a74e508bb354f9ef09c86a96` 확인 후 clean worktree에서 `fix/risk-detection-test-feedback`을 생성했습니다. 원본 작업 폴더의 사용자 STATUS 변경·미추적 산출물과 별도 실제 데이터 연동 브랜치는 보존합니다. main·기존 브랜치·환경변수·Render·Production 데이터는 변경하지 않습니다.
+- `server/text-risk.mjs`의 누락된 개판/개같/엿같/좆같 및 단순 ASR 띄어쓰기, 시설 파괴/뒤집기/난동 그룹을 추가했습니다. 정상 방문·시발점/시발역·강아지·인용/신고/부정은 제외합니다. USER만 분석, 같은 turn 정정 시 교체, snapshot 중복 및 중첩 규칙의 동일 발생 중복 방지, 기존 비난/선정 규칙은 보존합니다. 분석 버전은 `local-text-rules-v3`입니다.
+- `src/lib/riskPolicy.js`: 기존 항목표/raw_score/위협 하한/99점 상한/통화별 독립 계산을 유지하고 욕설1회 이상 최종 최소20점만 추가했습니다(`call-risk-v3`, `RISK_RULE.profanityFloor=20`). `adjusted_score`에 반영하며 최종 객체/SSE/n8n 필드 구조는 그대로입니다. 욕설1회는 항목3점·최종20점/주의입니다. 두 결과 UI의 기존 설명 줄에 욕설 보정 근거만 추가하여 레이아웃/CSS는 유지했습니다.
+- 변경: `server/text-risk.mjs`, `src/lib/riskPolicy.js`, `src/live/LiveRiskSignals.tsx`, `src/components/CallRiskDetails.tsx`, `server/tests/text-risk.test.mjs`, `server/tests/call-risk.test.mjs`, `tests/riskPolicy.test.ts`, `tests/liveCalls.test.ts`, `tests/callWorkflow.test.ts`, `server/README.md`, `docs/FINAL_PRODUCTION_E2E_CHECKLIST.md`, `docs/RISK_DETECTION_TEST_FEEDBACK.md`, `00_KCM_미리보기.html`, `STATUS.md`입니다. C-003의 항목 합계14점은 유지하고 새 하한에 해당하는 기존 최종 기대값8개만20점으로 갱신했습니다.
+- 최종 전체 `npm.cmd test`: **507/507**, 실패/건너뜀0. 기존392개 + 신규115개(텍스트108/정책4/서버2/프런트1). 텍스트149/149, 기존 테스트 삭제·skip·검증 축소0. `npm.cmd run build`의 프런트 `tsc --noEmit`·백엔드 `tsc -p tsconfig.server.json`·production build 통과. 기존 Retell SDK 청크596.72kB 경고만 유지합니다.
+- 실제 production dist와 기존 createBackend/liveCallStore/SSE를 사용하는 격리 브라우저에서4가지 USER 모의 발화 확인: 씨발→욕설1/20점·주의, 매장 뒤집어 놓는다→위협1, 매장 부숴버린다→위협1, 매장에 방문하겠습니다→위협0/0점. 근거 발화·배지, 진행 중 대응 경고와 종료 후 점수의 구분 정상. 같은u1 욕설/위협을 정상 문장으로 정정하면 횟수·배지·경고 제거, snapshot5회 반복에도 누적 없음, 종료 반복에도 최초 결과 유지입니다.
+- 1366×768·390×844에서 신호/근거/점수/닫기 표시와 바깥 overflow 없음, 콘솔 error/warn0. 기존9경로 기본 표시 정상이며 재고는 격리 서버의 환경 미설정503/참고 화면입니다. 실제 .env·Retell·n8n·DB 요청 없이 검증했습니다. fixture의 n8n failed는 URL 미설정의 의도된 상태로 실제 전송 실패와 구분합니다.
+- `npm.cmd run preview:standalone` 갱신 완료, 독립 HTML 직접 실행은 이번 작업에서 미검증입니다. 전체26개 팀 문장 결과표·오탐/정정/정책·검증 범위는 `docs/RISK_DETECTION_TEST_FEEDBACK.md`에 기록했습니다. 캡처/로그/모의 서버는 Git 제외 `.cache/risk-feedback/`에만 보관합니다.
+- 수정 브랜치에만 commit/push하며 main 병합/Render 배포/실제 음성은 미실행입니다. 검토 후 별도 배포 및 실제 STT/음성 재검증이 필요합니다. 이미 확정된 과거 통화는 재산정하지 않으며 서버 v3 적용 시 직원 화면 새로고침이 필요합니다.
+
 ## Production 비파괴 진단 + 고객 avatar 점 제거 / 2026-10-06
 
 - 최신 main/origin main `eef5648758d3358bb856bf11b43c7f714d3103da`를 확인했습니다. 기존 작업 폴더의 사용자 STATUS 변경·미추적 산출물을 보존하기 위해 동일 저장소의 별도 worktree `_worktrees/final-production-diagnostics`에서 `fix/final-production-diagnostics`를 생성했습니다. main·기존 브랜치·사용자 파일 초기화/이동은 없습니다.

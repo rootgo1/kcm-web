@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateCallRisk, riskBand, signalScore } from '../src/lib/riskPolicy.js';
+import { calculateCallRisk, riskBand, signalScore, RISK_RULE } from '../src/lib/riskPolicy.js';
 const zero = { profanity_count: 0, threat_count: 0, blame_count: 0, sexual_count: 0, shouting_count: 0 };
 for (const [kind, rows] of Object.entries({
   profanity: [[0,0],[1,3],[2,6],[3,6],[4,10],[6,10],[7,15],[10000,15]],
@@ -37,4 +37,50 @@ test('a quiet call is zero with no historical deduction and no input mutation', 
   const before = { ...zero }; const result = calculateCallRisk(zero);
   assert.equal(result.risk_score, 0); assert.deepEqual(zero, before);
   assert.ok(!('before' in result) && !('discount' in result) && !('actualDelta' in result));
+});
+
+test('profanity counts of one or more reach the 20-point final floor without changing item points', () => {
+  for (const [count, raw] of [[1,3],[2,6],[3,6],[4,10],[6,10],[7,15],[10000,15]]) {
+    const result = calculateCallRisk({ ...zero, profanity_count: count });
+    assert.equal(result.scores.profanity_score, raw);
+    assert.equal(result.raw_score, raw); assert.equal(result.adjusted_score, 20);
+    assert.equal(result.threat_floor, 0); assert.equal(result.risk_score, 20); assert.equal(result.risk_level, '주의');
+    assert.equal(result.rule_version, 'call-risk-v3');
+  }
+  assert.equal(RISK_RULE.profanityFloor, 20);
+  assert.deepEqual(Object.keys(calculateCallRisk(zero)).sort(), ['signals','scores','raw_score','adjusted_score','threat_floor','risk_score','risk_level','rule_version'].sort());
+});
+
+test('composite raw scores below, at and above 20 apply the profanity minimum without replacing larger sums', () => {
+  const cases = [
+    { signals: { ...zero, profanity_count: 2, blame_count: 2, sexual_count: 1 }, raw: 19, final: 20 },
+    { signals: { ...zero, profanity_count: 1, blame_count: 1, sexual_count: 1, shouting_count: 3 }, raw: 20, final: 20 },
+    { signals: { ...zero, profanity_count: 4, blame_count: 1, sexual_count: 1, shouting_count: 1 }, raw: 21, final: 21 },
+    { signals: { ...zero, blame_count: 4, sexual_count: 1 }, raw: 19, final: 19 },
+  ];
+  for (const { signals, raw, final } of cases) {
+    const result = calculateCallRisk(signals);
+    assert.equal(result.raw_score, raw); assert.equal(result.adjusted_score, final); assert.equal(result.risk_score, final);
+    assert.equal(result.risk_level, final < 20 ? '정상' : '주의');
+  }
+});
+
+test('threat floors remain stronger than profanity floor and the 99-point cap stays last', () => {
+  for (const [threatCount, raw, final] of [[1,23,23],[2,33,40],[3,43,60]]) {
+    const result = calculateCallRisk({ ...zero, profanity_count: 1, threat_count: threatCount });
+    assert.equal(result.raw_score, raw); assert.equal(result.adjusted_score, final); assert.equal(result.risk_score, final);
+    assert.equal(result.threat_floor, threatCount === 1 ? 0 : threatCount === 2 ? 40 : 60);
+  }
+  const capped = calculateCallRisk({ profanity_count: 7, threat_count: 3, blame_count: 7, sexual_count: 3, shouting_count: 5 });
+  assert.equal(capped.raw_score, 100); assert.equal(capped.adjusted_score, 100); assert.equal(capped.risk_score, 99);
+});
+
+test('a corrected profanity count removes its floor without mutating the original or carrying it to another call', () => {
+  const original = { ...zero, profanity_count: 1 };
+  const before = { ...original }; const flagged = calculateCallRisk(original);
+  const corrected = calculateCallRisk({ ...original, profanity_count: 0 });
+  assert.equal(flagged.risk_score, 20); assert.equal(flagged.raw_score, 3);
+  assert.equal(corrected.raw_score, 0); assert.equal(corrected.adjusted_score, 0); assert.equal(corrected.risk_score, 0);
+  assert.equal(calculateCallRisk(zero).risk_score, 0); assert.deepEqual(original, before);
+  original.profanity_count = 0; assert.equal(flagged.signals.profanity_count, 1); assert.equal(flagged.risk_score, 20);
 });

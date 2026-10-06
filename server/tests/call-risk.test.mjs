@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { createLiveCallStore } from '../live-calls.mjs';
 import { createBackend } from '../app.mjs';
+import { callResultPayload } from '../n8n-delivery.mjs';
 const turn=(id,content)=>({id,content,role:'user',time_sec:1});
 const audio=(sequence,count=0,closed=false)=>({sequence,shouting_count:count,is_shouting:false,available:true,coverage_complete:true,closed});
 const text39='씨발 씨발. 내가 너 찾아간다. 일을 왜 이렇게 못해요? 말이 안 통하네. 이것도 제대로 못해요?';
@@ -62,6 +63,42 @@ test('same customer results are independent records and latest is by completion 
   assert.equal(store.historyForCustomer('customer-A')[0].risk_score,26);
   assert.deepEqual(store.historyForCustomer(''),[]);
   const copy=store.historyForCustomer('customer-A');copy[0].risk_score=99;assert.equal(store.historyForCustomer('customer-A')[0].risk_score,26);
+});
+
+test('one profanity finalizes at 20, keeps raw item score 3 and preserves internal/external result fields',()=>{
+  let clock=0;const store=createLiveCallStore(()=>new Date(1000*(++clock)).toISOString());
+  store.connecting('floor','customer_001','consultation_900','store_005');store.live('floor');
+  store.transcript('floor',[turn('u','씨발')]);store.audio('floor',audio(1,0,true));store.ended('floor');
+  const call=store.snapshot()[0],result=call.final_result;
+  assert.equal(result.signals.profanity_count,1);assert.equal(result.scores.profanity_score,3);
+  assert.equal(result.raw_score,3);assert.equal(result.adjusted_score,20);assert.equal(result.threat_floor,0);
+  assert.equal(result.risk_score,20);assert.equal(result.risk_level,'주의');assert.equal(result.rule_version,'call-risk-v3');
+  assert.deepEqual(Object.keys(result).sort(),['signals','scores','raw_score','adjusted_score','threat_floor','risk_score','risk_level','rule_version','call_id','customer_id','completed_at'].sort());
+  const payload=callResultPayload(call);
+  assert.deepEqual(Object.keys(payload),['call_id','consultation_id','customer_id','signals','scores','risk_score','risk_level','consultation']);
+  assert.equal(payload.risk_score,20);assert.equal(payload.scores.profanity_score,3);
+  assert.ok(!('profanity_floor' in payload)&&!('adjusted_score' in payload)&&!('rule_version' in payload));
+  store.transcript('floor',[turn('u','안녕하세요.')]);assert.deepEqual(store.snapshot()[0].final_result,result);
+  store.connecting('quiet','customer_001');store.live('quiet');store.transcript('quiet',[turn('u','문의드립니다.')]);store.audio('quiet',audio(1,0,true));store.ended('quiet');
+  assert.equal(store.snapshot()[1].final_result.risk_score,0);
+  assert.deepEqual(store.historyForCustomer('customer_001').map(row=>row.risk_score),[0,20]);
+});
+
+test('same-turn corrections before end remove or add profanity floor; removed/user-to-agent turns do not retain it',()=>{
+  const store=createLiveCallStore();
+  for(const [id,before,after,expected] of [
+    ['removed',[turn('u','씨발')],[],0],
+    ['corrected',[turn('u','씨발')],[turn('u','안녕하세요.')],0],
+    ['added',[turn('u','안녕하세요.')],[turn('u','씨발')],20],
+    ['agent',[turn('u','씨발')],[{...turn('u','씨발'),role:'agent'}],0],
+  ]){
+    store.connecting(id);store.live(id);store.transcript(id,before);store.transcript(id,after);
+    assert.equal(store.snapshot().at(-1).final_result,null);
+    store.audio(id,audio(1,0,true));store.ended(id);
+    const result=store.snapshot().at(-1).final_result;
+    assert.equal(result.signals.profanity_count,expected===20?1:0);
+    assert.equal(result.raw_score,expected===20?3:0);assert.equal(result.risk_score,expected);
+  }
 });
 test('HTTP audio endpoint validates origin/body/call, uses existing SSE and never calls Retell REST',async t=>{
   const store=createLiveCallStore();store.connecting('owned');store.live('owned');

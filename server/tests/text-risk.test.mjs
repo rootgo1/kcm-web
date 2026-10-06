@@ -172,3 +172,124 @@ test('Retell STT spaced blame remains one finding and corrections replace it', (
   store.transcript('spacing', [turn('u1', '다시 설명해 주세요.')]);
   assert.equal(store.snapshot()[0].risk_analysis.blameCount, 0);
 });
+
+for (const [text, count] of [
+  ['씨발', 1], ['씨팔', 1], ['시발', 1], ['씨발 씨발 씨발', 3],
+  ['개판', 1], ['개판이네', 1], ['개판이야', 1], ['개판이군', 1],
+  ['개같네', 1], ['개같다', 1], ['개같은', 1], ['엿같네', 1], ['엿같다', 1],
+  ['좆같네', 1], ['좆같다', 1], ['좆같아서 화가 난다', 1], ['좆같이 처리했네', 1],
+  ['병신', 1], ['지랄', 1], ['개새끼', 1], ['씹새끼', 1],
+  ['씨발, 개판이네', 2], ['개판 이네', 1], ['개 같네', 1], ['좆 같네', 1],
+  ['개 판 이네', 1], ['엿 같다', 1], ['씨 발 씨 발 씨 발', 3],
+  ['개 새끼', 1], ['씹 새끼', 1], ['병 신', 1], ['지 랄', 1],
+]) {
+  test('expanded profanity lexical groups: ' + text, () => {
+    const result = analyzeRiskText(text);
+    assert.deepEqual(totals(result), [count, 0, 0, 0]);
+    assert.equal(result.signals.length, count);
+    assert.ok(result.signals.every(signal => signal.type === 'profanity' && text.includes(signal.matchedText)));
+  });
+}
+
+for (const text of [
+  '매장 뒤집어 놓는다', '매장 뒤집어놓는다', '매장 뒤집어버린다', '가게 뒤집어 놓는다',
+  '매장 엎어버린다', '가게 엎어버린다', '찾아가서 난리친다', '매장 가서 난리친다',
+  '다 부숴버린다', '매장 박살낸다', '매장 부숴버린다', '매장 부셔버린다',
+  '가게 부숴버린다', '매장 부순다', '매장 부숴 놓겠다', '매장 부숴놓겠다',
+  '매장 부숴버릴 거야', '매장 부숴버릴거야', '가서 다 부숴버린다',
+  '내가 매장 가서 뒤집어 놓는다', '매장 뒤집어 버린다', '매장 부숴 버린다',
+  '매장 부셔 버린다', '매장 엎어 버린다', '매장 부숴 버릴 거야',
+  '매장에 가서 부수겠다', '매장에 가서 뒤집겠다', '매장에 가서 난리치겠다',
+  '시설을 부수겠다', '점포를 엎어버린다', '사무실을 박살내겠다',
+  '매장에 가서 난동을 부리겠다', '찾아 가서 난리 친다',
+  // The existing generic violence rule overlaps this facility rule; it is still one occurrence.
+  '매장 박살내버린다', '매장에 가서 다 부숴버린다',
+]) {
+  test('explicit facility destruction or disturbance: ' + text, () => {
+    const result = analyzeRiskText(text);
+    assert.deepEqual(totals(result), [0, 1, 0, 0]);
+    assert.equal(result.threatDetected, true);
+    assert.equal(result.signals.length, 1);
+    assert.equal(result.signals[0].type, 'threat');
+    assert.ok(text.includes(result.signals[0].matchedText));
+  });
+}
+
+for (const text of [
+  '시발점', '시발역', '개가 귀엽다', '개를 키우고 있습니다', '강아지 새끼가 귀엽네요',
+  '판이 바뀌었다', '판을 다시 짜겠습니다', '시발점을 설명해 주세요', '시 발 점을 설명해 주세요',
+  '내일 매장에 방문하겠습니다', '매장에 찾아가겠습니다', '매장 찾아갈게요',
+  '매장에 가서 확인하겠습니다', '매장 위치를 알려주세요', '직접 매장에 가겠습니다',
+  '내일 매장에 찾아가겠습니다', '매장에 방문하겠습니다',
+  '“매장 부숴버린다”는 말을 들었어요.', '고객이 매장을 부숴버린다고 협박했습니다.',
+  '“매장 뒤집어 놓는다”라고 말하면 안 됩니다.', '저는 매장을 부수겠다는 뜻이 아닙니다.',
+  '매장을 부수겠다는 뜻이 아닙니다',
+  '매장을 부수지 않겠습니다.', '매장 부숴버린다는 말을 들었어요',
+  '매장을 부숴버린다고 신고했습니다.', '찾아가서 난리친다고 신고하려고요.',
+  '매장 가서 난리친다는 말을 들었어요.', '매장 안 부순다.',
+  '매장 부숴버린다라는 문장은 위협 표현입니다.',
+  '“개판이네”라고 들었어요.', '씨발이라고 신고했습니다.',
+  '씨발이라는 단어는 욕설입니다.', '씨팔이라고 말하지 않았어요.',
+  '“개 같네”라고 신고했습니다.', '“엿같네”라는 표현을 들었습니다.',
+  '좆같지 않아요.', '좆같다는 말을 들었어요.',
+]) {
+  test('expanded rules exclude normal visits, reports, quotation and negation: ' + text, () => {
+    const result = analyzeRiskText(text);
+    assert.deepEqual(totals(result), [0, 0, 0, 0]);
+    assert.equal(result.threatDetected, false);
+    assert.deepEqual(result.signals, []);
+  });
+}
+
+test('expanded profanity/threat corrections replace one turn and identical snapshots never accumulate', () => {
+  const store = createLiveCallStore(); store.connecting('feedback');
+  for (const [text, expected] of [
+    ['씨발', [1, 0, 0, 0]], ['씨발', [1, 0, 0, 0]], ['안녕하세요', [0, 0, 0, 0]],
+    ['매장 부숴버린다', [0, 1, 0, 0]], ['매장 부숴버린다', [0, 1, 0, 0]],
+    ['매장 부숴 버린다', [0, 1, 0, 0]], ['매장에 방문하겠습니다', [0, 0, 0, 0]],
+    ['개판이네. 매장 뒤집어 놓는다', [1, 1, 0, 0]],
+    ['개판이네. 매장 뒤집어 놓는다', [1, 1, 0, 0]], ['다시 설명해 주세요', [0, 0, 0, 0]],
+  ]) {
+    store.transcript('feedback', [turn('u1', text)]);
+    const result = store.snapshot()[0].risk_analysis;
+    assert.deepEqual(totals(result), expected);
+    assert.equal(result.analyzedUserTurns, 1);
+  }
+});
+
+test('expanded findings remain independent across turns/calls and ignore AGENT speech', () => {
+  const store = createLiveCallStore(); store.connecting('A'); store.connecting('B');
+  const userTurns = [turn('u1', '개판이네. 매장 부숴버린다'), turn('u2', '개판이네. 매장 부숴버린다')];
+  store.transcript('A', [...userTurns, turn('a1', '씨발. 매장 부숴버린다', 'agent')]);
+  store.transcript('A', [...userTurns, turn('a1', '씨발. 매장 부숴버린다', 'agent')]);
+  store.transcript('B', [turn('u1', '매장에 방문하겠습니다')]);
+  assert.deepEqual(totals(store.snapshot()[0].risk_analysis), [2, 2, 0, 0]);
+  assert.deepEqual(totals(store.snapshot()[1].risk_analysis), [0, 0, 0, 0]);
+  store.transcript('A', [turn('u1', '개판이네. 매장 부숴버린다', 'agent'), turn('u2', '안녕하세요')]);
+  assert.deepEqual(totals(store.snapshot()[0].risk_analysis), [0, 0, 0, 0]);
+});
+
+test('overlapping facility alternatives count once per occurrence while consecutive real occurrences stay separate', () => {
+  for (const [text, expected] of [
+    ['개판이네', [1, 0, 0, 0]],
+    ['개판이네 개판 이네', [2, 0, 0, 0]],
+    // Generic violence, facility destruction and '다' destruction all overlap the same occurrence.
+    ['매장에 가서 다 박살내버린다', [0, 1, 0, 0]],
+    ['매장에 가서 다 박살내버린다. 매장에 가서 다 박살내버린다', [0, 2, 0, 0]],
+    ['씨발, 개판이네. 매장 박살내버린다. 매장에 가서 다 부숴버린다', [2, 2, 0, 0]],
+  ]) {
+    const result = analyzeRiskText(text);
+    assert.deepEqual(totals(result), expected);
+    assert.equal(result.signals.length, expected.reduce((sum, count) => sum + count, 0));
+  }
+});
+
+test('new rule version reanalyzes unchanged turns instead of reusing pre-expansion findings', () => {
+  const messages = [message('u1', '개판이네. 매장 부숴버린다')];
+  const previous = analyzeTranscriptRisk([message('u1', '안녕하세요')]);
+  previous.ruleVersion = 'local-text-rules-v2';
+  const result = analyzeTranscriptRisk(messages, messages, previous);
+  assert.equal(result.ruleVersion, TEXT_RISK_RULE_VERSION);
+  assert.notEqual(result.ruleVersion, previous.ruleVersion);
+  assert.deepEqual(totals(result), [1, 1, 0, 0]);
+});
