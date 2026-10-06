@@ -5096,6 +5096,30 @@ function sendAftercare(state, item, at, actor) {
 }
 
 },
+"src/lib/briefingNarrative":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.isLegacyBriefingPlaceholder = isLegacyBriefingPlaceholder;
+exports.confirmedBriefingNarrative = confirmedBriefingNarrative;
+// Only confirmed legacy placeholders are excluded; ordinary mentions of tests remain valid.
+const legacyPlaceholders = new Set([
+    'KCM AI 상담 DB 저장 테스트',
+    'KCM AI 상담 연동 테스트 종료',
+]);
+/** @param {unknown} value */
+function isLegacyBriefingPlaceholder(value) {
+    return typeof value === 'string'
+        && legacyPlaceholders.has(value.normalize('NFC').trim().replace(/\s+/gu, ' '));
+}
+/** Display projection only. Never rewrite the stored narrative or invent a replacement summary.
+ * @param {string | null} value
+ * @returns {string | null}
+ */
+function confirmedBriefingNarrative(value) {
+    return isLegacyBriefingPlaceholder(value) ? null : value;
+}
+
+},
 "src/lib/callConsultation":function(module,exports,require){const __React=require('react');
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -5934,7 +5958,7 @@ function LiveCallBriefing({ callId, customerId }) {
         __React.createElement("div", { className: "live-briefing-heading" },
             __React.createElement("div", null,
                 __React.createElement("h3", null, "\uACE0\uAC1D \uC0AC\uC804 \uBE0C\uB9AC\uD551"),
-                __React.createElement("p", null, "\uC774\uC804 \uC800\uC7A5 \uC0C1\uB2F4 \uAE30\uC900")),
+                __React.createElement("p", null, "\uD1B5\uD654 \uC2DC\uC791 \uC804\uC758 \uC644\uB8CC \uC0C1\uB2F4 \uAE30\uC900")),
             __React.createElement("button", { className: "button button-secondary live-briefing-reload", disabled: !customerId || state.status === 'loading', onClick: () => controller.current?.reload() }, "\uB2E4\uC2DC \uC870\uD68C")),
         state.status === 'missing-customer' && __React.createElement("p", { className: "live-briefing-state", role: "status" }, "\uACE0\uAC1D\uC774 \uD655\uC778\uB418\uC9C0 \uC54A\uC544 \uC0AC\uC804 \uBE0C\uB9AC\uD551\uC744 \uC870\uD68C\uD558\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4."),
         state.status === 'loading' && __React.createElement("p", { className: "live-briefing-state", role: "status" }, "\uC0AC\uC804 \uBE0C\uB9AC\uD551\uC744 \uBD88\uB7EC\uC624\uB294 \uC911\uC785\uB2C8\uB2E4."),
@@ -5964,18 +5988,18 @@ function LiveCallBriefing({ callId, customerId }) {
                                 data.currentPlan.monthlyFee.toLocaleString('ko-KR'),
                                 "\uC6D0")) : '등록된 요금제가 없습니다.'))),
                 __React.createElement("section", { className: "live-briefing-section" },
-                    __React.createElement("h4", null, "\uCD5C\uADFC \uC644\uB8CC \uC0C1\uB2F4"),
+                    __React.createElement("h4", null, "\uC774\uC804 \uC644\uB8CC \uC0C1\uB2F4"),
                     recent ? __React.createElement(__React.Fragment, null,
-                        __React.createElement("p", { className: "live-briefing-purpose" }, recent.purpose || '저장된 상담 목적이 없습니다.'),
+                        __React.createElement("p", { className: "live-briefing-purpose" }, recent.purpose || '확인할 수 있는 상담 목적이 없습니다.'),
                         __React.createElement("p", { className: "live-briefing-date" },
-                            "\uC885\uB8CC ",
+                            "\uC774\uC804 \uC0C1\uB2F4 \uC885\uB8CC ",
                             __React.createElement("time", { dateTime: recent.endedAt }, (0, realDataApi_1.formatRealDataDate)(recent.endedAt))),
                         recent.summary ? __React.createElement(__React.Fragment, null,
                             __React.createElement("p", { className: "live-briefing-summary-preview" }, recent.summary),
                             __React.createElement("details", { className: "live-briefing-summary" },
                                 __React.createElement("summary", null, "\uC804\uCCB4 \uC694\uC57D \uBCF4\uAE30"),
                                 __React.createElement("p", null, recent.summary)))
-                            : __React.createElement("p", { className: "live-briefing-note" }, "\uC800\uC7A5\uB41C \uC0C1\uB2F4 \uC694\uC57D\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.")) : __React.createElement("p", { className: "live-briefing-note" }, "\uC774\uC804 \uC800\uC7A5 \uC0C1\uB2F4 \uC774\uB825\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.")),
+                            : __React.createElement("p", { className: "live-briefing-note" }, "\uD655\uC778\uD560 \uC218 \uC788\uB294 \uC0C1\uB2F4 \uC694\uC57D\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.")) : __React.createElement("p", { className: "live-briefing-note" }, "\uC774\uC804 \uC800\uC7A5 \uC0C1\uB2F4 \uC774\uB825\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.")),
                 __React.createElement("section", { className: "live-briefing-section" },
                     __React.createElement("h4", null, "\uC774\uC804 \uD1B5\uD654 \uC704\uD5D8\uB3C4"),
                     previous ? __React.createElement(__React.Fragment, null,
@@ -5990,7 +6014,7 @@ function LiveCallBriefing({ callId, customerId }) {
                         __React.createElement("dl", { className: "live-briefing-counts" }, countLabels.map(([key, label]) => __React.createElement("div", { key: key },
                             __React.createElement("dt", null, label),
                             __React.createElement("dd", null, previous[key] === null ? '확인되지 않음' : previous[key] + '회'))))) : __React.createElement("p", { className: "live-briefing-note" }, "\uC774\uC804 \uC704\uD5D8 \uAE30\uB85D\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."),
-                    __React.createElement("p", { className: "live-briefing-note" }, "\uD604\uC7AC \uD1B5\uD654\uC758 \uC704\uD5D8 \uC2E0\uD638\uB294 \uB300\uD654 \uC601\uC5ED\uC5D0\uC11C \uD655\uC778\uD569\uB2C8\uB2E4.")),
+                    __React.createElement("p", { className: "live-briefing-note" }, "\uC774\uBC88 \uD1B5\uD654 \uACB0\uACFC\uC640 \uBCC4\uB3C4\uB85C \uC870\uD68C\uD55C \uC774\uC804 \uAE30\uB85D\uC785\uB2C8\uB2E4.")),
                 __React.createElement("section", { className: "live-briefing-section" },
                     __React.createElement("h4", null, "\uC751\uB300 \uC720\uC758\uC0AC\uD56D"),
                     __React.createElement("ul", { className: "live-briefing-guidance" }, data.guidance.map((line, index) => __React.createElement("li", { key: index }, line)))))));
@@ -6172,6 +6196,7 @@ function LiveConversation({ call, connection, onClose }) {
         __React.createElement("div", { className: "live-conversation" },
             __React.createElement("div", { className: "live-conversation-layout" },
                 __React.createElement("div", { className: "live-conversation-current" },
+                    __React.createElement("h3", { className: "live-current-heading" }, "\uC774\uBC88 \uD1B5\uD654"),
                     __React.createElement("div", { className: "live-conversation-meta" },
                         __React.createElement("strong", { className: call.customer_id ? 'live-identifier' : undefined }, call.customer_id || '고객 확인 전'),
                         __React.createElement("span", { className: `live-badge ${call.status}` }, liveCalls_1.liveStatusLabels[call.status]),
@@ -7859,6 +7884,7 @@ exports.parseLiveBriefing = parseLiveBriefing;
 exports.fetchLiveBriefing = fetchLiveBriefing;
 exports.createLiveBriefingController = createLiveBriefingController;
 const realDataApi_js_1 = require("./realDataApi.js");
+const briefingNarrative_js_1 = require("../lib/briefingNarrative.js");
 const errorMessages = {
     REAL_DATA_NOT_CONFIGURED: '저장 자료 조회가 아직 준비되지 않았습니다.',
     REAL_DATA_CONFIG_INVALID: '저장 자료 조회 설정을 확인해 주세요.',
@@ -7920,7 +7946,8 @@ function recent(value) {
     if (!record(value) || !validId('consultation', value.id) || !narrative(value.purpose) || !narrative(value.summary)
         || !(0, realDataApi_js_1.validRealDataTimestamp)(value.endedAt))
         return invalid();
-    return { id: value.id, purpose: value.purpose, summary: value.summary, endedAt: value.endedAt };
+    return { id: value.id, purpose: (0, briefingNarrative_js_1.confirmedBriefingNarrative)(value.purpose),
+        summary: (0, briefingNarrative_js_1.confirmedBriefingNarrative)(value.summary), endedAt: value.endedAt };
 }
 function risk(value) {
     if (value === null)

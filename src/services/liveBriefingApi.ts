@@ -1,4 +1,5 @@
 import { validRealDataTimestamp, type StoredPlan, type StoredProduct } from './realDataApi.js';
+import { confirmedBriefingNarrative } from '../lib/briefingNarrative.js';
 
 export interface LiveBriefingRisk {
   id: string; score: number; level: '정상' | '주의' | '경계' | '위험' | '매우 위험';
@@ -67,7 +68,8 @@ function recent(value: unknown): LiveBriefing['recentConsultation'] {
   if (value === null) return null;
   if (!record(value) || !validId('consultation', value.id) || !narrative(value.purpose) || !narrative(value.summary)
     || !validRealDataTimestamp(value.endedAt)) return invalid();
-  return { id: value.id, purpose: value.purpose, summary: value.summary, endedAt: value.endedAt };
+  return { id: value.id, purpose: confirmedBriefingNarrative(value.purpose),
+    summary: confirmedBriefingNarrative(value.summary), endedAt: value.endedAt };
 }
 function risk(value: unknown): LiveBriefingRisk | null {
   if (value === null) return null;

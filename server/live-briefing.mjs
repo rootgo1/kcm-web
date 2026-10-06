@@ -1,4 +1,5 @@
 import { isStoredTimestamp, maskStoredName, projectStoredNarrative } from './real-data.mjs';
+import { confirmedBriefingNarrative } from '../src/lib/briefingNarrative.js';
 
 /** @typedef {Record<string, any>} Row */
 /** @typedef {{currentCallId?: string, currentConsultationId?: string | null, currentStartedAt?: string, customerId?: string, storeId?: string}} LiveBriefingContext */
@@ -186,8 +187,8 @@ export function createLiveBriefingApi({ provider, homeStoreId = null }) {
             filters: { id: 'eq.' + recent.id, customer_id: 'eq.' + customerId, store_id: 'eq.' + home } });
           valid(summary && summary.id === recent.id && summary.customer_id === customerId && summary.store_id === home
             && (summary.ai_summary === null || typeof summary.ai_summary === 'string'));
-          recentConsultation = { id: recent.id, purpose: projectStoredNarrative(recent.purpose, people, 300),
-            summary: projectStoredNarrative(summary.ai_summary, people, 1200), endedAt: recent.ended_at };
+          recentConsultation = { id: recent.id, purpose: projectStoredNarrative(confirmedBriefingNarrative(recent.purpose), people, 300),
+            summary: projectStoredNarrative(confirmedBriefingNarrative(summary.ai_summary), people, 1200), endedAt: recent.ended_at };
           const risks = await read('risks', { select: riskSelect, filters: { consultation_id: 'eq.' + recent.id, customer_id: 'eq.' + customerId },
             order: 'created_at.desc,id.desc', limit: 1000 });
           for (const risk of risks) valid(object(risk) && risk.consultation_id === recent.id && risk.customer_id === customerId);

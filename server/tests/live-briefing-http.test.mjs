@@ -256,6 +256,134 @@ test('live briefing HTTP: server live-call IDs and start time exclude current, e
   assert.deepEqual(f.store.snapshot(), before, 'Briefing reads must not mutate live risk or transcript state');
 });
 
+test('live briefing HTTP: a finalized 60-point call keeps prior 20 on reload and becomes prior 60 only for the next call', async t => {
+  const data = rowsFixture();
+  data.consultations = [data.consultations[0]];
+  data.risks = [{ ...data.risks[0], risk_score: 20, risk_level: '주의',
+    profanity_count: 1, threat_violence_count: 0, sexual_count: 0, shouting_count: 0 }];
+  const f = await setup(t, { data }); f.start();
+  const prior = await f.get();
+  assert.equal(prior.status, 200);
+  assert.equal(prior.body.recentConsultation.id, 'consultation_100');
+  assert.equal(prior.body.previousRisk.score, 20);
+
+  // Finalize through the real in-memory analyzer/audio path, never an external call.
+  f.store.transcript(callId, [{ id: 'u1', role: 'user', time_sec: 1,
+    content: '씨발. 처리 진짜 개판이네. 매장 뒤집어 놓을 테니까 알아서 하세요.' }]);
+  assert.equal(f.store.audio(callId, { sequence: 1, shouting_count: 0, is_shouting: false,
+    available: true, coverage_complete: true, closed: true }), 'accepted');
+  f.setTime('2026-10-06T10:05:00.000Z'); f.store.ended(callId);
+  const finished = f.store.snapshot().find(call => call.call_id === callId);
+  assert.equal(finished.status, 'ended');
+  assert.equal(finished.final_result.risk_score, 60);
+  assert.equal(finished.final_result.risk_level, '위험');
+  assert.equal(finished.final_result.threat_floor, 60);
+  assert.deepEqual(finished.final_result.signals, { profanity_count: 2, threat_count: 1,
+    blame_count: 0, sexual_count: 0, shouting_count: 0 });
+
+  // Stand in for completed persistence using only this test's mutable row fixture.
+  data.consultations.push({ ...data.consultations[0], id: finished.consultation_id, call_id: finished.call_id,
+    started_at: finished.started_at, ended_at: finished.ended_at, purpose: '기기변경 조건 문의',
+    ai_summary: '기기변경 조건과 방문 가능 시간을 문의했습니다.' });
+  data.risks.push({ ...data.risks[0], id: 'risk_900', consultation_id: finished.consultation_id,
+    risk_score: 60, risk_level: '위험', created_at: '2026-10-06T10:05:01.000Z',
+    profanity_count: 2, threat_violence_count: 1 });
+  const savedRows = structuredClone(data);
+  for (const path of [currentRoute, route]) {
+    const reloaded = await f.get(path);
+    assert.equal(reloaded.status, 200);
+    assert.deepEqual(reloaded.body.recentConsultation, prior.body.recentConsultation);
+    assert.deepEqual(reloaded.body.previousRisk, prior.body.previousRisk);
+  }
+  assert.deepEqual(f.store.snapshot().find(call => call.call_id === callId), finished);
+
+  f.setTime('2026-10-06T10:06:00.000Z');
+  f.start('live_briefing_next', customerId, home, 'consultation_910');
+  const beforeReads = f.store.snapshot();
+  for (const path of [route + '?call_id=live_briefing_next', route]) {
+    const next = await f.get(path);
+    assert.equal(next.status, 200);
+    assert.equal(next.body.recentConsultation.id, finished.consultation_id);
+    assert.equal(next.body.recentConsultation.endedAt, finished.ended_at);
+    assert.equal(next.body.previousRisk.id, 'risk_900');
+    assert.equal(next.body.previousRisk.stage, 'AI');
+    assert.equal(next.body.previousRisk.score, 60);
+    assert.equal(next.body.previousRisk.level, '위험');
+    assert.equal(next.body.previousRisk.profanityCount, 2);
+    assert.equal(next.body.previousRisk.threatCount, 1);
+    assert.equal(next.body.previousRisk.shoutingCount, 0);
+  }
+  // Opening the old call still uses that call's original cutoff after a new call exists.
+  assert.equal((await f.get(currentRoute)).body.previousRisk.score, 20);
+  assert.deepEqual(f.store.snapshot(), beforeReads);
+  assert.deepEqual(f.store.snapshot().find(call => call.call_id === callId).final_result, finished.final_result);
+  assert.equal(f.store.snapshot().find(call => call.call_id === 'live_briefing_next').final_result, null);
+  assert.deepEqual(data, savedRows, 'All briefing GETs must preserve stored row fixtures');
+});
+
+test('live briefing HTTP: a newly stored consultation waits for its own delayed risk instead of falling back to older risk', async t => {
+  const data = rowsFixture();
+  data.consultations = [data.consultations[0]];
+  data.risks = [{ ...data.risks[0], risk_score: 20, risk_level: '주의',
+    profanity_count: 1, threat_violence_count: 0, sexual_count: 0, shouting_count: 0 }];
+  const f = await setup(t, { data }); f.start();
+  assert.equal((await f.get()).body.previousRisk.score, 20);
+  const beforeReads = f.store.snapshot();
+
+  data.consultations.push({ ...data.consultations[0], id: 'consultation_800', call_id: 'previous_delayed_call',
+    started_at: '2026-10-06T09:00:00.000Z', ended_at: '2026-10-06T09:30:00.000Z',
+    purpose: '데이터 이용 조건 문의', ai_summary: '데이터 이용 조건을 확인했습니다.' });
+  const waiting = await f.get();
+  assert.equal(waiting.status, 200);
+  assert.equal(waiting.body.recentConsultation.id, 'consultation_800');
+  assert.equal(waiting.body.previousRisk, null, 'The older consultation risk must not fill the new consultation gap');
+  const riskRead = f.reads.filter(read => read.table === 'risks').at(-1);
+  assert.equal(riskRead.query.get('consultation_id'), 'eq.consultation_800');
+  assert.equal(riskRead.query.get('customer_id'), 'eq.' + customerId);
+
+  data.risks.push({ ...data.risks[0], id: 'risk_800', consultation_id: 'consultation_800',
+    risk_score: 60, risk_level: '위험', created_at: '2026-10-06T09:31:00.000Z',
+    profanity_count: 2, threat_violence_count: 1 });
+  const savedRows = structuredClone(data), reloaded = await f.get();
+  assert.equal(reloaded.status, 200);
+  assert.deepEqual(reloaded.body.recentConsultation, waiting.body.recentConsultation);
+  assert.equal(reloaded.body.previousRisk.id, 'risk_800');
+  assert.equal(reloaded.body.previousRisk.stage, 'AI');
+  assert.equal(reloaded.body.previousRisk.score, 60);
+  assert.equal(reloaded.body.previousRisk.threatCount, 1);
+  assert.deepEqual(f.store.snapshot(), beforeReads);
+  assert.deepEqual(data, savedRows);
+});
+
+test('live briefing HTTP: exact legacy test narratives are hidden without changing rows or suppressing normal summaries', async t => {
+  for (const { purpose, summary, expectedPurpose, expectedSummary } of [
+    { purpose: 'KCM AI 상담 연동 테스트 종료', summary: 'KCM AI 상담 DB 저장 테스트',
+      expectedPurpose: null, expectedSummary: null },
+    { purpose: '  KCM AI 상담 연동 테스트 종료\n', summary: '\n KCM AI 상담 DB 저장 테스트  ',
+      expectedPurpose: null, expectedSummary: null },
+    { purpose: '통신요금 비교 문의', summary: '고객이 데이터 사용량과 월 요금 차이를 문의했습니다.',
+      expectedPurpose: '통신요금 비교 문의', expectedSummary: '고객이 데이터 사용량과 월 요금 차이를 문의했습니다.' },
+    { purpose: 'KCM AI 상담 연동 테스트 종료 여부 문의',
+      summary: '고객이 "KCM AI 상담 DB 저장 테스트"라는 안내 문구의 뜻을 문의했습니다.',
+      expectedPurpose: 'KCM AI 상담 연동 테스트 종료 여부 문의',
+      expectedSummary: '고객이 "KCM AI 상담 DB 저장 테스트"라는 안내 문구의 뜻을 문의했습니다.' },
+  ]) {
+    const data = rowsFixture();
+    data.consultations[0] = { ...data.consultations[0], purpose, ai_summary: summary };
+    const originalRows = structuredClone(data), f = await setup(t, { data }); f.start();
+    const response = await f.get();
+    assert.equal(response.status, 200);
+    assert.equal(response.body.recentConsultation.purpose, expectedPurpose);
+    assert.equal(response.body.recentConsultation.summary, expectedSummary);
+    assert.equal(response.body.recentConsultation.id, 'consultation_100');
+    assert.equal(response.body.recentConsultation.endedAt, data.consultations[0].ended_at);
+    assert.equal(response.body.previousRisk.score, 60);
+    assert.equal(response.body.previousRisk.threatCount, 2);
+    assert.deepEqual(data, originalRows, 'Narrative projection must not rewrite stored rows');
+    if (expectedSummary === null) assert.doesNotMatch(response.body.guidance.join(' '), /중복 질문/);
+  }
+});
+
 test('live briefing HTTP: browser-supplied context, duplicate parameters and unsupported query fields are rejected before reads', async t => {
   const f = await setup(t); f.start();
   for (const query of [

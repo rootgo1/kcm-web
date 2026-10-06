@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createLiveBriefingController, fetchLiveBriefing, liveBriefingErrorCode, liveBriefingErrorMessage,
   LiveBriefingApiError, parseLiveBriefing, type LiveBriefing, type LiveBriefingState } from '../src/services/liveBriefingApi.js';
+import { confirmedBriefingNarrative, isLegacyBriefingPlaceholder } from '../src/lib/briefingNarrative.js';
 
 // Synthetic contracts and mocked GETs only; no database, external API or real customer records.
 const at = '2026-10-06T09:00:00+09:00';
@@ -32,6 +33,53 @@ test('통화 브리핑: 저장 상품·요금제·완료 상담·이전 위험�
 test('통화 브리핑: 요약과 목적 부재는 null이며 임의 상담 요약을 만들지 않는다', () => {
   const data = parseLiveBriefing(fixture({ recentConsultation: { id: 'consultation_001', purpose: null, summary: null, endedAt: at } }));
   assert.equal(data.recentConsultation?.summary, null); assert.equal(data.recentConsultation?.purpose, null);
+});
+
+test('통화 브리핑 서술: 알려진 두 저장 안내와 NFC·공백 변형만 placeholder로 판별한다', () => {
+  for (const exact of ['KCM AI 상담 DB 저장 테스트', 'KCM AI 상담 연동 테스트 종료']) {
+    for (const value of [exact, ` \t${exact}\n `, exact.replaceAll(' ', '  \t\n'), exact.normalize('NFD')]) {
+      assert.equal(isLegacyBriefingPlaceholder(value), true);
+      assert.equal(confirmedBriefingNarrative(value), null);
+    }
+  }
+  assert.equal(confirmedBriefingNarrative(null), null);
+  for (const value of [undefined, null, false, 1, {}, []]) assert.equal(isLegacyBriefingPlaceholder(value), false);
+});
+
+test('통화 브리핑 서술: 정상 요약·인용·유사 표현·일반 테스트 단어는 원문 그대로 보존한다', () => {
+  for (const value of ['청구 요금 확인 후 다음 주 다시 안내하기로 했습니다.', '“KCM AI 상담 DB 저장 테스트”',
+    '고객이 "KCM AI 상담 연동 테스트 종료" 문구에 관해 문의했습니다.', 'KCM AI 상담 DB 저장 테스트 결과 확인',
+    'KCM AI 상담 연동 테스트 종료 요청', '요금제 테스트 이용 문의', 'kcm AI 상담 DB 저장 테스트',
+    '  고객이 요청한 테스트 안내\n  후속 연락 필요  ']) {
+    assert.equal(isLegacyBriefingPlaceholder(value), false);
+    assert.equal(confirmedBriefingNarrative(value), value);
+  }
+});
+
+test('통화 브리핑: 저장 안내는 nullable 서술로만 투영하며 원본 DTO·상담·60점 위험 기록을 변경하지 않는다', () => {
+  for (const [purpose, summary, expectedPurpose, expectedSummary] of [
+    ['KCM AI 상담 DB 저장 테스트', 'KCM AI 상담 연동 테스트 종료', null, null],
+    [' \tKCM  AI\n상담 DB 저장 테스트 ', '요금 차이를 확인한 상담입니다.', null, '요금 차이를 확인한 상담입니다.'],
+    ['요금 확인', 'KCM AI 상담 연동 테스트 종료'.normalize('NFD'), '요금 확인', null],
+  ]) {
+    const original = fixture({ recentConsultation: { ...fixture().recentConsultation, purpose, summary } });
+    const untouched = structuredClone(original);
+    const data = parseLiveBriefing(original);
+    assert.deepEqual(original, untouched);
+    assert.deepEqual(data.recentConsultation, { ...untouched.recentConsultation, purpose: expectedPurpose, summary: expectedSummary });
+    assert.deepEqual(data.previousRisk, untouched.previousRisk);
+    assert.equal(data.previousRisk?.score, 60); assert.equal(data.previousRisk?.level, '위험');
+    assert.deepEqual(Object.keys(data).sort(), Object.keys(untouched).sort());
+    assert.deepEqual(data.customer, untouched.customer); assert.deepEqual(data.currentProduct, untouched.currentProduct);
+    assert.deepEqual(data.currentPlan, untouched.currentPlan); assert.deepEqual(data.guidance, untouched.guidance);
+  }
+});
+
+test('통화 브리핑: 정상 상담 서술에 포함된 저장 안내 인용과 공백을 파싱 중 변경하지 않는다', () => {
+  const purpose = 'KCM AI 상담 DB 저장 테스트 관련 안내 문의';
+  const summary = '  고객이 “KCM AI 상담 연동 테스트 종료” 표시를 문의했습니다.\n확인 후 재안내합니다.  ';
+  const original = fixture({ recentConsultation: { ...fixture().recentConsultation, purpose, summary } });
+  assert.deepEqual(parseLiveBriefing(original), original);
 });
 
 test('통화 브리핑: 이전 상담·위험·현재 이용 정보가 없는 상태를 0으로 채우지 않는다', () => {
@@ -181,6 +229,71 @@ test('통화 브리핑 controller: 동일 통화 transcript 10회 변경은 재�
   controller.select('call_001', 'customer_001'); await tick();
   for (let index = 0; index < 10; index++) controller.select('call_001', 'customer_001');
   await tick(); assert.equal(count, 1); controller.reload(); await tick(); assert.equal(count, 2); assert.equal(states.at(-1)?.status, 'ready'); controller.dispose();
+});
+
+test('통화 브리핑 controller: 20점 조회 이후 저장된 60점은 수동 재조회와 같은 고객의 새 통화에서만 최신 기록으로 표시한다', async () => {
+  const earlier = parseLiveBriefing(fixture({ previousRisk: { ...fixture().previousRisk, score: 20, level: '주의', threatCount: 0 } }));
+  const laterAt = '2026-10-06T09:02:00+09:00';
+  const later = parseLiveBriefing(fixture({ recentConsultation: { ...fixture().recentConsultation, id: 'consultation_002', endedAt: laterAt },
+    previousRisk: { ...fixture().previousRisk, id: 'risk_002', createdAt: laterAt } }));
+  let stored = earlier;
+  const requests: { customerId: string; callId: string }[] = [], states: LiveBriefingState[] = [];
+  const controller = createLiveBriefingController(state => states.push(state), async (customerId, callId) => {
+    requests.push({ customerId, callId }); return stored;
+  });
+  const ready = () => {
+    const state = states.at(-1);
+    assert.ok(state?.status === 'ready'); return state;
+  };
+  try {
+    controller.select('call_before-save', 'customer_001'); await tick();
+    assert.equal(ready().data.previousRisk?.score, 20);
+    stored = later;
+    for (let index = 0; index < 10; index++) controller.select('call_before-save', 'customer_001');
+    await tick(); assert.equal(requests.length, 1); assert.strictEqual(ready().data, earlier);
+
+    controller.reload(); assert.equal(states.at(-1)?.status, 'loading'); await tick();
+    assert.equal(ready().callId, 'call_before-save'); assert.equal(ready().customerId, 'customer_001');
+    assert.equal(ready().data.previousRisk?.score, 60); assert.equal(ready().data.previousRisk?.id, 'risk_002');
+    assert.equal(ready().data.recentConsultation?.id, 'consultation_002');
+    assert.equal(ready().data.recentConsultation?.endedAt, laterAt); assert.equal(ready().data.previousRisk?.createdAt, laterAt);
+
+    controller.select('call_after-save', 'customer_001'); await tick();
+    assert.equal(ready().callId, 'call_after-save'); assert.equal(ready().customerId, 'customer_001');
+    assert.strictEqual(ready().data, later);
+    assert.deepEqual(requests, [
+      { customerId: 'customer_001', callId: 'call_before-save' },
+      { customerId: 'customer_001', callId: 'call_before-save' },
+      { customerId: 'customer_001', callId: 'call_after-save' },
+    ]);
+    assert.equal(earlier.previousRisk?.score, 20); assert.equal(earlier.previousRisk?.id, 'risk_001');
+    assert.equal(earlier.recentConsultation?.id, 'consultation_001'); assert.equal(earlier.previousRisk?.createdAt, at);
+    assert.ok(Date.parse(laterAt) > Date.parse(at));
+  } finally { controller.dispose(); }
+});
+
+test('통화 브리핑 controller: 같은 고객의 다음 통화 컨트롤러는 이전 화면 상태와 독립적으로 최신 60점을 조회한다', async () => {
+  const earlier = parseLiveBriefing(fixture({ previousRisk: { ...fixture().previousRisk, score: 20, level: '주의' } }));
+  const later = parseLiveBriefing(fixture({ recentConsultation: { ...fixture().recentConsultation, id: 'consultation_002' },
+    previousRisk: { ...fixture().previousRisk, id: 'risk_002' } }));
+  const firstStates: LiveBriefingState[] = [], secondStates: LiveBriefingState[] = [];
+  const requests: string[] = [];
+  let stored = earlier;
+  const load = async (customerId: string, callId: string) => { requests.push(`${customerId}/${callId}`); return stored; };
+  const first = createLiveBriefingController(state => firstStates.push(state), load);
+  const second = createLiveBriefingController(state => secondStates.push(state), load);
+  try {
+    first.select('call_previous', 'customer_001'); await tick();
+    stored = later;
+    second.select('call_next', 'customer_001'); await tick();
+    const previous = firstStates.at(-1), next = secondStates.at(-1);
+    assert.ok(previous?.status === 'ready'); assert.ok(next?.status === 'ready');
+    assert.equal(previous.callId, 'call_previous'); assert.equal(previous.data.previousRisk?.score, 20);
+    assert.equal(next.callId, 'call_next'); assert.equal(next.customerId, 'customer_001');
+    assert.equal(next.data.previousRisk?.score, 60); assert.equal(next.data.previousRisk?.id, 'risk_002');
+    assert.equal(next.data.recentConsultation?.id, 'consultation_002');
+    assert.deepEqual(requests, ['customer_001/call_previous', 'customer_001/call_next']);
+  } finally { first.dispose(); second.dispose(); }
 });
 
 test('통화 브리핑 controller: 새 통화·고객 변경은 각각 조회한다', async () => {

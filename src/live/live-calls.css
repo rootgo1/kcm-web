@@ -71,6 +71,7 @@
 .live-conversation-layout { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 16px; flex: 1; min-height: 0; }
 .live-conversation-current { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; padding-right: 3px; }
 .live-conversation-current > :not(.live-messages) { flex-shrink: 0; }
+.live-current-heading { margin: 0 0 8px; font-size: 14px; }
 .live-conversation-current > .live-messages { flex: 1 1 180px; max-height: none; min-height: 140px; }
 .live-conversation-modal .modal-actions { flex-shrink: 0; margin-top: 12px; }
 .live-briefing { min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: #fafbfc; font-size: 12px; line-height: 1.55; overflow-wrap: anywhere; }

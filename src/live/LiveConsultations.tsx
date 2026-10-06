@@ -28,6 +28,7 @@ function LiveConversation({ call, connection, onClose }: { call: LiveCall; conne
     <div className="live-conversation">
       <div className="live-conversation-layout">
       <div className="live-conversation-current">
+      <h3 className="live-current-heading">이번 통화</h3>
       <div className="live-conversation-meta">
         <strong className={call.customer_id ? 'live-identifier' : undefined}>{call.customer_id || '고객 확인 전'}</strong><span className={`live-badge ${call.status}`}>{liveStatusLabels[call.status]}</span>
         <span>{call.status === 'live' ? '통화 진행 중' : call.status === 'ended' ? '통화 종료' : call.status === 'error' ? '통화 상태 확인 필요' : '통화 연결을 기다리고 있습니다.'}</span>

@@ -940,3 +940,33 @@ npm.cmd run dev
 - `npm.cmd run check`: **872/872 전체 테스트 통과**, frontend `tsc --noEmit`, backend `tsc -p tsconfig.server.json`, Vite production build 통과. 기존 SDK chunk500kB 경고는 남아 있습니다.
 - 변경: `server/text-risk.mjs`, `server/tests/text-risk.test.mjs`(12개 추가), `server/tests/audio-worklet-flow.test.mjs`(실제 ASR 통합1개 추가), `server/tests/final-release-integration.test.mjs`(생성 규칙 버전 기대값 갱신), `server/README.md`, `docs/FINAL_PRODUCTION_E2E_CHECKLIST.md`, `STATUS.md`.
 - `npm.cmd run preview:standalone` 재생성과 전체 inline JavaScript 문법 파싱이 통과했습니다. frontend source 변경이 없어 생성 HTML 내용은 기존과 같습니다. 독립 HTML 직접 실행과 v7 배포 후 실제 새 통화의60점/n8n/DB 저장은 이 기록 시점에는 미검증입니다.
+
+## 실시간 사전 브리핑 최종 보강·시연 회귀 — 2026-10-07
+
+### 기준과 변경 범위
+- origin/main `7da9d5b0dbf82c6bcabb385fb57ba2d7adacca1a`를 fetch·확인하고 별도 `fix/live-briefing-readiness` 브랜치를 생성했습니다. 기존 작업 폴더의 미커밋 STATUS·deliverables는 보존하고, 깨끗한 기존 worktree에서 작업했습니다.
+- 좌측 ‘이번 통화’, 우측 ‘통화 시작 전의 완료 상담 기준’·‘이전 완료 상담’·‘이전 상담 종료’와 이전 점수 설명만 최소 보완했습니다. 현재 결과와 과거 저장 기록은 합산하지 않습니다.
+- 공통 표시 함수에서 확인된 고정 테스트 목적/요약 2개만 정확 일치로 제외합니다. DB 원문은 변경하지 않고 DTO/화면에서 null 및 확인 가능한 요약 없음으로 표시합니다. 정상 요약의 ‘테스트’ 언급·인용·유사 문구는 유지합니다. 가짜 요약을 생성하지 않습니다.
+- 기존 상담 선택·지연 저장·실패·AbortController·통화 전환 격리 구현과 테스트를 재사용했습니다. Retell·Monitor·SSE·텍스트 위험 분석·RMS·점수·n8n·재고·기존 접근 제한은 변경하지 않았습니다.
+
+### 실행한 검증
+- 전체 **881/881 테스트 통과**(기존872개 + 회귀9개), 실패/skip0. frontend `tsc --noEmit`, backend `tsc -p tsconfig.server.json` 통과.
+- `npm.cmd run check`의 Vite 단계는 sandbox 상위 디렉터리 읽기 권한으로 중단됐습니다. 원인 확인 후 승인된 `npm.cmd run build`에서 프런트/백엔드 타입 검사와 Vite production build가 통과했습니다. 기존 Retell 청크500kB 경고만 남았습니다.
+- 격리 HTTP 통합 테스트: 현재 통화 욕설2·위해 위협1 → 최종60점, 현재 통화의 과거 브리핑20점 유지, 동일 고객 다음 통화에서 저장 완료된60점 조회, 이전 기록·DB fixture 불변. 실제 n8n POST나 DB 쓰기는 하지 않았습니다.
+- 지연 저장은 최근 완료 상담과 연결된 risk가 없으면 위험 없음으로 표시하고 더 오래된 상담 점수로 대체하지 않습니다. 이후 해당 risk60점 저장 fixture → 수동 재조회와 다음 통화 조회를 확인했습니다.
+- 신규/기존 테스트로 고정 문구 제외·정상 요약 보존·서버 응답 및 원본 fixture 불변·통화별 늦은 응답/조회 실패 격리를 확인했습니다.
+- Chrome: 격리 합성 DB provider/Backend/production dist에서 1920×1080, 1366×768, 390×844, 320×720 확인. 현재60점/이전20점 분리, 다음 통화 이전60점, 고정 문구 제외, 조회 오류·이력 없음·risk 저장 지연·정상 복구, 긴 요약 펼치기·Escape 닫기, 모달 가로 넘침 없음과 닫기 버튼 접근을 확인했습니다.
+- 홈/예약·상담/고객/상담지원/상품/스마트재고/마케팅/매장/고객전화 9개 route 기본 렌더링과 홈 로딩 완료를 확인했습니다. 홈 복귀 후 검증 탭의 브라우저 error 로그0건입니다. 이 검증은 실제 연동·각 업무 버튼의 전체 E2E 성공을 의미하지 않습니다.
+- `npm.cmd run preview:standalone`로 독립 HTML을 갱신하고 전체 inline JavaScript 문법 파싱을 통과했습니다. 직접 실행은 이번에 확인하지 않았습니다.
+- 합성 브라우저 fixture와 캡처는 Git 제외 `.cache/briefing-readiness/`에만 보관했고, 이번에 띄운 격리 서버·탭을 종료했습니다. 실제 사용자 저장 데이터와 기존 서버는 변경하지 않았습니다.
+
+### 변경 파일
+- `src/lib/briefingNarrative.js`, `server/live-briefing.mjs`, `src/services/liveBriefingApi.ts`.
+- `src/live/LiveCallBriefing.tsx`, `src/live/LiveConsultations.tsx`, `src/live/live-calls.css`.
+- `server/tests/live-briefing-http.test.mjs`, `tests/liveBriefing.test.ts`.
+- `docs/LIVE_CALL_BRIEFING.md`, `docs/BRIEFING_FILMING_READINESS.md`, `STATUS.md`, `00_KCM_미리보기.html`.
+
+### 촬영 준비와 남은 범위
+- `docs/BRIEFING_FILMING_READINESS.md`에 인사·동의 → 재고/방문 문의 → 위험 표시 → 종료/저장 → 재고 요청 → 다음 통화 브리핑 → 약정 안내 장면의 기대 결과와 실패 확인 위치를 정리했습니다.
+- 실제 재통화의 이전60점 조회, 정상 상담 요약 생성·저장, 실제 예약 생성, 자동 대여 요청 연결과 문자 발송은 외부 담당자/사람의 검증이 남아 있습니다. 기존 공개 예약 API 접근 제한을 풀거나 데이터를 만들어 촬영 결과를 꾸미지 않습니다.
+- 이번 작업에서 main 병합·Render 배포·실제 통화·환경변수 변경·n8n workflow 변경·Supabase Production 데이터 변경은 수행하지 않았습니다.
