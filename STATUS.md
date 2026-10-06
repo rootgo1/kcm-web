@@ -1,5 +1,22 @@
 # KCM 작업 상태 — v0.3 / 2026-10-06
 
+## 실제 데이터 연동 1차 / 2026-10-06
+
+- main/origin main `86508324e33a59e4a74e508bb354f9ef09c86a96`에서 `feature/real-data-integration-v1`을 생성했습니다. 기존 기본 작업 폴더의 사용자 STATUS 변경·deliverables를 보존하고 같은 저장소의 기존 worktree에서 작업했습니다. main·Render·실제 .env·비밀값·외부 데이터는 변경하지 않았습니다.
+- 사용자가 지정한 KT Project의 실제 public 테이블/컬럼을 Supabase 도구로 read-only 조회했습니다. store_005의 예약 48건/상담 205건/고객 201명/요약 165건/위험 241건을 확인했습니다. ai_transcription/ai_summary는 consultations 컬럼이며 별도 테이블이 아닙니다. 실제 상태 문자열과 예약→상담→고객 관계를 사용합니다.
+- 서버 SELECT 전용 provider, 저장 예약/고객/상담 이력/사전 브리핑 API를 추가했습니다. 매장 범위·연결 ID·날짜·상태·응답 구조를 검사하고 이름/연락처를 마스킹합니다. 개인정보 미동의의 자유서술/상세 이력을 제한하며 raw 전문을 반환하지 않습니다. 브리핑은 저장 요약·예약 요청·현재 상품/요금제·최근 이력을 조합하고 새로운 LLM 요약을 만들지 않습니다.
+- 홈/예약은 저장 예약과 브리핑을 우선 표시하고, 고객관리는 DB 이력을 실시간 서버 메모리 이력과 별도 표시합니다. 상품 4탭은 DB catalog를 우선 사용합니다. 실패/미설정/빈 자료를 구분하고 기존 mock은 명시적 참고 영역/버튼에서만 열립니다. 기존 참고 상담 시작·완료·수정과 상태 함수는 유지했습니다.
+- 체감가는 서버에서 DB 월정액−조건이 확인된 회선별 정액 결합 할인만 계산합니다. 할인 전 현재 요금제 차액·항목별 근거를 표시하며 단말 price는 일시 금액입니다. 할부·지원금·약정 비율·혜택 월환산·세금 기준은 확인 필요로 두고 임의 값이나 0원으로 보완하지 않습니다. 결합/단말 포함 총부담은 partial로 구분합니다.
+- 공개 사이트의 직원 인증 부재를 확인하여 새 개인자료 API와 고객 ID를 포함한 가격 계산을 공개 deployment에서 503 REAL_DATA_ACCESS_RESTRICTED로 차단했습니다. 로컬 개발, 상태 조회, 개인정보 없는 catalog/가격 계산, 기존 Retell/SSE/재고는 유지합니다. 직원 접근 제어와 읽기 권한/RLS 설정 전에는 공개 고객 조회를 배포할 수 없습니다.
+- `.env.example`에 빈 SUPABASE_URL/SUPABASE_READ_KEY만 추가했습니다. 실제 키 조회·요청/출력, 실제 .env 접근/변경, service_role 우회, RLS/GRANT/DB 명세·스키마 변경은 없습니다. 연결된 Supabase 도구 조회와 KCM 서버 REST 인증은 별개이며 실제 서버 DB REST E2E는 미검증입니다.
+- 최종 전체 테스트 **465/465 통과**, 실패·건너뜀 0(기존392+신규73). 프런트·백엔드 타입 검사 및 Vite production build 통과. 기존 SDK 청크 크기 경고 유지. 독립 HTML을 최신 src로 갱신했으며 직접 실행은 미검증입니다.
+- 실제 Chrome에서 합성 DB 응답만 사용하는 격리 서버로 home/appointments/customers/products × 1920×1080/1366×768/390×844/320×720을 확인했습니다. 바깥 가로 넘침 없음, 모바일 표 내부 스크롤만 허용. 로딩/오류/미설정/빈 결과·긴 마스킹 이름·5행 pagination/필터·미동의 제한·요약 누락·상품4탭/비교·가격52,000원 소계/단말 확인 필요를 검증했습니다. 기존 참고 예약 상담 완료/수정의 최초 완료 시각·이력도 보존됐습니다.
+- 검증 탭에 확장 메시지 채널 오류 문구3건이 보였고 구체 발신자는 미확정입니다. KCM 런타임 오류/빈 화면은 관찰하지 않았으며 관련 코드를 임의 수정하지 않았습니다. 실제 음성·Production n8n/DB 저장·Render 배포는 실행하지 않았습니다.
+- Git 대상152파일 비밀값 패턴 후보0/실제 .env 추적 후보0, 기존 보호 대상 기능 파일 diff0, git diff --check 통과를 확인했습니다. 원본 비밀값을 읽거나 출력하지 않았으며 Git 과거 전체 이력은 별도 검사 범위입니다.
+- 상세 출처표·schema·API·가격 공식·운영 blocker는 `docs/REAL_DATA_INTEGRATION_V1.md`를 참조하세요. 검증 fixture/캡처는 Git 제외 `.cache/real-data/`에만 있습니다. 이 브랜치만 commit/push합니다.
+
+변경 파일: `.env.example`, `server/app.mjs`, `server/index.mjs`, `server/real-data.mjs`, `server/effective-price.mjs`, 서버 테스트3개, `src/App.tsx`, `src/pages/SecondaryPages.tsx`, `src/pages/ProductsPage.tsx`, 새 컴포넌트3개·API 서비스2개, `src/styles.css`, 프런트 테스트2개/테스트 진입점, `vite.config.ts`, 위 문서, `STATUS.md`, `00_KCM_미리보기.html`.
+
 ## Production 비파괴 진단 + 고객 avatar 점 제거 / 2026-10-06
 
 - 최신 main/origin main `eef5648758d3358bb856bf11b43c7f714d3103da`를 확인했습니다. 기존 작업 폴더의 사용자 STATUS 변경·미추적 산출물을 보존하기 위해 동일 저장소의 별도 worktree `_worktrees/final-production-diagnostics`에서 `fix/final-production-diagnostics`를 생성했습니다. main·기존 브랜치·사용자 파일 초기화/이동은 없습니다.
