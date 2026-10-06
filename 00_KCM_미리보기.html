@@ -3187,7 +3187,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Modal = Modal;
 const react_1 = require("react");
 const Icon_1 = require("./Icon");
-function Modal({ title, onClose, children, wide = false, eyebrow = 'KCM' }) {
+function Modal({ title, onClose, children, wide = false, eyebrow = 'KCM', className = '' }) {
     const ref = (0, react_1.useRef)(null);
     (0, react_1.useEffect)(() => {
         const dialog = ref.current;
@@ -3198,7 +3198,7 @@ function Modal({ title, onClose, children, wide = false, eyebrow = 'KCM' }) {
         else
             document.getElementById('main-content')?.focus(); };
     }, []);
-    return __React.createElement("dialog", { ref: ref, className: `modal ${wide ? 'modal-wide' : ''}`, "aria-labelledby": "modal-title", onCancel: event => { event.preventDefault(); onClose(); }, onClick: event => { if (event.target === ref.current)
+    return __React.createElement("dialog", { ref: ref, className: `modal ${wide ? 'modal-wide' : ''} ${className}`, "aria-labelledby": "modal-title", onCancel: event => { event.preventDefault(); onClose(); }, onClick: event => { if (event.target === ref.current)
             onClose(); } },
         __React.createElement("div", { className: "modal-content" },
             __React.createElement("header", { className: "modal-header" },
@@ -5603,6 +5603,102 @@ function uiText(value) {
 }
 
 },
+"src/live/LiveCallBriefing":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.LiveCallBriefing = LiveCallBriefing;
+const react_1 = require("react");
+const liveBriefingApi_1 = require("../services/liveBriefingApi");
+const realDataApi_1 = require("../services/realDataApi");
+const stageLabels = { AI: 'AI 상담', PHONE: '전화 상담', VISIT: '방문 상담' };
+const countLabels = [
+    ['profanityCount', '욕설'], ['threatCount', '위협'], ['blameCount', '비난'],
+    ['sexualCount', '선정적 표현'], ['shoutingCount', '고성'],
+];
+/** Saved history only; this component never uses or recalculates the current call's risk. */
+function LiveCallBriefing({ callId, customerId }) {
+    const controller = (0, react_1.useRef)(null);
+    const [received, setReceived] = (0, react_1.useState)({ callId, customerId, status: customerId ? 'loading' : 'missing-customer' });
+    (0, react_1.useEffect)(() => {
+        const next = (0, liveBriefingApi_1.createLiveBriefingController)(setReceived);
+        controller.current = next;
+        next.select(callId, customerId);
+        return () => { next.dispose(); if (controller.current === next)
+            controller.current = null; };
+    }, [callId, customerId]);
+    // A newly selected identity must not paint the previous customer's response before its effect runs.
+    const state = received.callId === callId && received.customerId === customerId ? received
+        : { callId, customerId, status: customerId ? 'loading' : 'missing-customer' };
+    const data = state.status === 'ready' ? state.data : null;
+    const previous = data?.previousRisk;
+    const recent = data?.recentConsultation;
+    return __React.createElement("aside", { className: "live-briefing", "aria-label": "\uACE0\uAC1D \uC0AC\uC804 \uBE0C\uB9AC\uD551", "aria-busy": state.status === 'loading', tabIndex: 0 },
+        __React.createElement("div", { className: "live-briefing-heading" },
+            __React.createElement("div", null,
+                __React.createElement("h3", null, "\uACE0\uAC1D \uC0AC\uC804 \uBE0C\uB9AC\uD551"),
+                __React.createElement("p", null, "\uC774\uC804 \uC800\uC7A5 \uC0C1\uB2F4 \uAE30\uC900")),
+            __React.createElement("button", { className: "button button-secondary live-briefing-reload", disabled: !customerId || state.status === 'loading', onClick: () => controller.current?.reload() }, "\uB2E4\uC2DC \uC870\uD68C")),
+        state.status === 'missing-customer' && __React.createElement("p", { className: "live-briefing-state", role: "status" }, "\uACE0\uAC1D\uC774 \uD655\uC778\uB418\uC9C0 \uC54A\uC544 \uC0AC\uC804 \uBE0C\uB9AC\uD551\uC744 \uC870\uD68C\uD558\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4."),
+        state.status === 'loading' && __React.createElement("p", { className: "live-briefing-state", role: "status" }, "\uC0AC\uC804 \uBE0C\uB9AC\uD551\uC744 \uBD88\uB7EC\uC624\uB294 \uC911\uC785\uB2C8\uB2E4."),
+        state.status === 'error' && __React.createElement("div", { className: "live-briefing-state", role: "status" },
+            __React.createElement("strong", null, "\uC0AC\uC804 \uBE0C\uB9AC\uD551\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."),
+            __React.createElement("p", null, (0, liveBriefingApi_1.liveBriefingErrorMessage)(state.errorCode))),
+        data && __React.createElement(__React.Fragment, null,
+            __React.createElement("div", { className: "live-briefing-customer" },
+                __React.createElement("strong", null, data.customer.nameMasked),
+                __React.createElement("span", { className: "live-identifier" }, data.customer.id)),
+            !data.privacyConsent ? __React.createElement("p", { className: "live-briefing-state", role: "status" }, "\uACE0\uAC1D \uAC1C\uC778\uC815\uBCF4 \uB3D9\uC758 \uD655\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.") : __React.createElement(__React.Fragment, null,
+                __React.createElement("dl", { className: "live-briefing-products" },
+                    __React.createElement("div", null,
+                        __React.createElement("dt", null, "\uD604\uC7AC \uC0C1\uD488"),
+                        __React.createElement("dd", null, data.currentProduct ? __React.createElement(__React.Fragment, null,
+                            data.currentProduct.name,
+                            __React.createElement("small", null,
+                                data.currentProduct.storageGb,
+                                "GB \u00B7 ",
+                                data.currentProduct.color)) : '등록된 상품이 없습니다.')),
+                    __React.createElement("div", null,
+                        __React.createElement("dt", null, "\uD604\uC7AC \uC694\uAE08\uC81C"),
+                        __React.createElement("dd", null, data.currentPlan ? __React.createElement(__React.Fragment, null,
+                            data.currentPlan.name,
+                            __React.createElement("small", null,
+                                "\uC6D4 ",
+                                data.currentPlan.monthlyFee.toLocaleString('ko-KR'),
+                                "\uC6D0")) : '등록된 요금제가 없습니다.'))),
+                __React.createElement("section", { className: "live-briefing-section" },
+                    __React.createElement("h4", null, "\uCD5C\uADFC \uC644\uB8CC \uC0C1\uB2F4"),
+                    recent ? __React.createElement(__React.Fragment, null,
+                        __React.createElement("p", { className: "live-briefing-purpose" }, recent.purpose || '저장된 상담 목적이 없습니다.'),
+                        __React.createElement("p", { className: "live-briefing-date" },
+                            "\uC885\uB8CC ",
+                            __React.createElement("time", { dateTime: recent.endedAt }, (0, realDataApi_1.formatRealDataDate)(recent.endedAt))),
+                        recent.summary ? __React.createElement(__React.Fragment, null,
+                            __React.createElement("p", { className: "live-briefing-summary-preview" }, recent.summary),
+                            __React.createElement("details", { className: "live-briefing-summary" },
+                                __React.createElement("summary", null, "\uC804\uCCB4 \uC694\uC57D \uBCF4\uAE30"),
+                                __React.createElement("p", null, recent.summary)))
+                            : __React.createElement("p", { className: "live-briefing-note" }, "\uC800\uC7A5\uB41C \uC0C1\uB2F4 \uC694\uC57D\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.")) : __React.createElement("p", { className: "live-briefing-note" }, "\uC774\uC804 \uC800\uC7A5 \uC0C1\uB2F4 \uC774\uB825\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.")),
+                __React.createElement("section", { className: "live-briefing-section" },
+                    __React.createElement("h4", null, "\uC774\uC804 \uD1B5\uD654 \uC704\uD5D8\uB3C4"),
+                    previous ? __React.createElement(__React.Fragment, null,
+                        __React.createElement("p", { className: "live-briefing-risk" },
+                            __React.createElement("strong", null,
+                                previous.score,
+                                "\uC810 \u00B7 ",
+                                previous.level),
+                            __React.createElement("span", null,
+                                stageLabels[previous.stage],
+                                " \uAE30\uB85D")),
+                        __React.createElement("dl", { className: "live-briefing-counts" }, countLabels.map(([key, label]) => __React.createElement("div", { key: key },
+                            __React.createElement("dt", null, label),
+                            __React.createElement("dd", null, previous[key] === null ? '확인되지 않음' : previous[key] + '회'))))) : __React.createElement("p", { className: "live-briefing-note" }, "\uC774\uC804 \uC704\uD5D8 \uAE30\uB85D\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."),
+                    __React.createElement("p", { className: "live-briefing-note" }, "\uD604\uC7AC \uD1B5\uD654\uC758 \uC704\uD5D8 \uC2E0\uD638\uB294 \uB300\uD654 \uC601\uC5ED\uC5D0\uC11C \uD655\uC778\uD569\uB2C8\uB2E4.")),
+                __React.createElement("section", { className: "live-briefing-section" },
+                    __React.createElement("h4", null, "\uC751\uB300 \uC720\uC758\uC0AC\uD56D"),
+                    __React.createElement("ul", { className: "live-briefing-guidance" }, data.guidance.map((line, index) => __React.createElement("li", { key: index }, line)))))));
+}
+
+},
 "src/live/liveCalls":function(module,exports,require){const __React=require('react');
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -5750,6 +5846,7 @@ const Modal_1 = require("../components/Modal");
 const Icon_1 = require("../components/Icon");
 const liveCalls_1 = require("./liveCalls");
 const LiveRiskSignals_1 = require("./LiveRiskSignals");
+const LiveCallBriefing_1 = require("./LiveCallBriefing");
 const livePresentation_1 = require("./livePresentation");
 const liveNotices_1 = require("./liveNotices");
 const riskScoring_1 = require("../lib/riskScoring");
@@ -5770,53 +5867,56 @@ function LiveConversation({ call, connection, onClose }) {
         else
             setUnread(true);
     }, [call.messages]);
-    return __React.createElement(Modal_1.Modal, { title: "\uC2E4\uC2DC\uAC04 AI \uC0C1\uB2F4", eyebrow: "KCM \u00B7 \uD1B5\uD654 \uAE30\uB85D", onClose: onClose, wide: true },
+    return __React.createElement(Modal_1.Modal, { title: "\uC2E4\uC2DC\uAC04 AI \uC0C1\uB2F4", eyebrow: "KCM \u00B7 \uD1B5\uD654 \uAE30\uB85D", onClose: onClose, wide: true, className: "live-conversation-modal" },
         __React.createElement("div", { className: "live-conversation" },
-            __React.createElement("div", { className: "live-conversation-meta" },
-                __React.createElement("strong", { className: call.customer_id ? 'live-identifier' : undefined }, call.customer_id || '고객 확인 전'),
-                __React.createElement("span", { className: `live-badge ${call.status}` }, liveCalls_1.liveStatusLabels[call.status]),
-                __React.createElement("span", null, call.status === 'live' ? '통화 진행 중' : call.status === 'ended' ? '통화 종료' : call.status === 'error' ? '통화 상태 확인 필요' : '통화 연결을 기다리고 있습니다.')),
-            __React.createElement("p", { className: "live-small" },
-                "\uC2DC\uC791 ",
-                __React.createElement("time", { dateTime: call.started_at ?? undefined }, clock(call.started_at)),
-                call.ended_at && __React.createElement(__React.Fragment, null,
-                    " \u00B7 \uC885\uB8CC ",
-                    __React.createElement("time", { dateTime: call.ended_at }, clock(call.ended_at)))),
-            __React.createElement("details", { className: "live-call-id" },
-                __React.createElement("summary", null, "\uD1B5\uD654 \uC2DD\uBCC4 \uC815\uBCF4"),
-                __React.createElement("code", null,
-                    "\uD1B5\uD654: ",
-                    call.call_id),
-                __React.createElement("code", null,
-                    "\uC0C1\uB2F4: ",
-                    call.consultation_id || '확인 필요'),
-                __React.createElement("code", null,
-                    "\uACE0\uAC1D: ",
-                    call.customer_id || '미식별'),
-                __React.createElement("code", null,
-                    "\uB9E4\uC7A5: ",
-                    call.store_id || '미설정')),
-            connection === 'reconnecting' && __React.createElement("p", { className: "live-connection-note", role: "status" }, "\uC2E4\uC2DC\uAC04 \uC0C1\uB2F4 \uC5F0\uACB0\uC744 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4. \uB9C8\uC9C0\uB9C9 \uC218\uC2E0 \uB300\uD654\uB97C \uD45C\uC2DC\uD569\uB2C8\uB2E4."),
-            call.error && __React.createElement("p", { className: "live-connection-note", role: "status" }, (0, liveNotices_1.liveConnectionNotice)(call.error)),
-            __React.createElement(LiveRiskSignals_1.LiveRiskSignals, { call: call }),
-            __React.createElement("div", { className: "live-messages", ref: scrollRef, role: "region", "aria-label": "\uACE0\uAC1D\uACFC KCM AI \uB300\uD654", tabIndex: 0, onScroll: () => { const node = scrollRef.current; if (node) {
-                    following.current = (0, liveCalls_1.isNearConversationBottom)(node.scrollTop, node.clientHeight, node.scrollHeight);
-                    if (following.current)
-                        setUnread(false);
-                } } }, call.messages.length === 0 ? __React.createElement("p", { className: "live-empty" }, call.status === 'ended' ? '수신된 대화가 없습니다.' : '대화를 기다리고 있습니다.') : call.messages.map(message => __React.createElement("div", { className: `live-message ${message.role}`, key: message.turn_id, "data-turn-id": message.turn_id },
-                __React.createElement("div", { className: "live-speaker" },
-                    __React.createElement("strong", null, message.role === 'user' ? '고객' : 'KCM AI'),
-                    message.start_sec !== null && __React.createElement("span", null,
-                        Math.floor(message.start_sec / 60),
-                        ":",
-                        String(Math.floor(message.start_sec % 60)).padStart(2, '0'))),
-                __React.createElement("p", null, message.content),
-                message.role === 'user' && __React.createElement(LiveRiskSignals_1.LiveTurnBadges, { analysis: call.risk_analysis?.analysisByTurn[message.turn_id] })))),
-            unread && __React.createElement("button", { className: "button button-secondary live-new-message", onClick: () => { following.current = true; if (scrollRef.current)
-                    scrollRef.current.scrollTop = scrollRef.current.scrollHeight; setUnread(false); } }, "\uCD5C\uC2E0 \uB300\uD654 \uBCF4\uAE30"),
-            __React.createElement("details", { className: "live-call-id" },
-                __React.createElement("summary", null, "\uAE30\uB85D \uBCF4\uAD00 \uC548\uB0B4"),
-                __React.createElement("p", { className: "live-small" }, "\uD604\uC7AC \uC218\uC2E0\uD55C \uAE30\uB85D\uC744 \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uC11C\uBE44\uC2A4 \uC7AC\uC2DC\uC791 \uC804\uC758 \uC774\uB825\uC740 \uC774 \uD654\uBA74\uC5D0\uC11C \uC870\uD68C\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uC678\uBD80 \uC800\uC7A5 \uC5EC\uBD80\uB294 \uBCC4\uB3C4 \uD655\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.")),
+            __React.createElement("div", { className: "live-conversation-layout" },
+                __React.createElement("div", { className: "live-conversation-current" },
+                    __React.createElement("div", { className: "live-conversation-meta" },
+                        __React.createElement("strong", { className: call.customer_id ? 'live-identifier' : undefined }, call.customer_id || '고객 확인 전'),
+                        __React.createElement("span", { className: `live-badge ${call.status}` }, liveCalls_1.liveStatusLabels[call.status]),
+                        __React.createElement("span", null, call.status === 'live' ? '통화 진행 중' : call.status === 'ended' ? '통화 종료' : call.status === 'error' ? '통화 상태 확인 필요' : '통화 연결을 기다리고 있습니다.')),
+                    __React.createElement("p", { className: "live-small" },
+                        "\uC2DC\uC791 ",
+                        __React.createElement("time", { dateTime: call.started_at ?? undefined }, clock(call.started_at)),
+                        call.ended_at && __React.createElement(__React.Fragment, null,
+                            " \u00B7 \uC885\uB8CC ",
+                            __React.createElement("time", { dateTime: call.ended_at }, clock(call.ended_at)))),
+                    __React.createElement("details", { className: "live-call-id" },
+                        __React.createElement("summary", null, "\uD1B5\uD654 \uC2DD\uBCC4 \uC815\uBCF4"),
+                        __React.createElement("code", null,
+                            "\uD1B5\uD654: ",
+                            call.call_id),
+                        __React.createElement("code", null,
+                            "\uC0C1\uB2F4: ",
+                            call.consultation_id || '확인 필요'),
+                        __React.createElement("code", null,
+                            "\uACE0\uAC1D: ",
+                            call.customer_id || '미식별'),
+                        __React.createElement("code", null,
+                            "\uB9E4\uC7A5: ",
+                            call.store_id || '미설정')),
+                    connection === 'reconnecting' && __React.createElement("p", { className: "live-connection-note", role: "status" }, "\uC2E4\uC2DC\uAC04 \uC0C1\uB2F4 \uC5F0\uACB0\uC744 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4. \uB9C8\uC9C0\uB9C9 \uC218\uC2E0 \uB300\uD654\uB97C \uD45C\uC2DC\uD569\uB2C8\uB2E4."),
+                    call.error && __React.createElement("p", { className: "live-connection-note", role: "status" }, (0, liveNotices_1.liveConnectionNotice)(call.error)),
+                    __React.createElement(LiveRiskSignals_1.LiveRiskSignals, { call: call }),
+                    __React.createElement("div", { className: "live-messages", ref: scrollRef, role: "region", "aria-label": "\uACE0\uAC1D\uACFC KCM AI \uB300\uD654", tabIndex: 0, onScroll: () => { const node = scrollRef.current; if (node) {
+                            following.current = (0, liveCalls_1.isNearConversationBottom)(node.scrollTop, node.clientHeight, node.scrollHeight);
+                            if (following.current)
+                                setUnread(false);
+                        } } }, call.messages.length === 0 ? __React.createElement("p", { className: "live-empty" }, call.status === 'ended' ? '수신된 대화가 없습니다.' : '대화를 기다리고 있습니다.') : call.messages.map(message => __React.createElement("div", { className: `live-message ${message.role}`, key: message.turn_id, "data-turn-id": message.turn_id },
+                        __React.createElement("div", { className: "live-speaker" },
+                            __React.createElement("strong", null, message.role === 'user' ? '고객' : 'KCM AI'),
+                            message.start_sec !== null && __React.createElement("span", null,
+                                Math.floor(message.start_sec / 60),
+                                ":",
+                                String(Math.floor(message.start_sec % 60)).padStart(2, '0'))),
+                        __React.createElement("p", null, message.content),
+                        message.role === 'user' && __React.createElement(LiveRiskSignals_1.LiveTurnBadges, { analysis: call.risk_analysis?.analysisByTurn[message.turn_id] })))),
+                    unread && __React.createElement("button", { className: "button button-secondary live-new-message", onClick: () => { following.current = true; if (scrollRef.current)
+                            scrollRef.current.scrollTop = scrollRef.current.scrollHeight; setUnread(false); } }, "\uCD5C\uC2E0 \uB300\uD654 \uBCF4\uAE30"),
+                    __React.createElement("details", { className: "live-call-id" },
+                        __React.createElement("summary", null, "\uAE30\uB85D \uBCF4\uAD00 \uC548\uB0B4"),
+                        __React.createElement("p", { className: "live-small" }, "\uD604\uC7AC \uC218\uC2E0\uD55C \uAE30\uB85D\uC744 \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uC11C\uBE44\uC2A4 \uC7AC\uC2DC\uC791 \uC804\uC758 \uC774\uB825\uC740 \uC774 \uD654\uBA74\uC5D0\uC11C \uC870\uD68C\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uC678\uBD80 \uC800\uC7A5 \uC5EC\uBD80\uB294 \uBCC4\uB3C4 \uD655\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4."))),
+                __React.createElement(LiveCallBriefing_1.LiveCallBriefing, { callId: call.call_id, customerId: call.customer_id ?? null })),
             __React.createElement("div", { className: "modal-actions" },
                 __React.createElement("button", { className: "button button-secondary", onClick: onClose }, "\uC2E4\uC2DC\uAC04 \uC0C1\uB2F4 \uB2EB\uAE30"))));
 }
@@ -7445,6 +7545,213 @@ exports.inventoryApi = {
 };
 function post(body) {
     return { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+}
+
+},
+"src/services/liveBriefingApi":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.LiveBriefingApiError = void 0;
+exports.liveBriefingErrorCode = liveBriefingErrorCode;
+exports.liveBriefingErrorMessage = liveBriefingErrorMessage;
+exports.parseLiveBriefing = parseLiveBriefing;
+exports.fetchLiveBriefing = fetchLiveBriefing;
+exports.createLiveBriefingController = createLiveBriefingController;
+const realDataApi_js_1 = require("./realDataApi.js");
+const errorMessages = {
+    REAL_DATA_NOT_CONFIGURED: '저장 자료 조회가 아직 준비되지 않았습니다.',
+    REAL_DATA_CONFIG_INVALID: '저장 자료 조회 설정을 확인해 주세요.',
+    HOME_STORE_NOT_CONFIGURED: '현재 매장 범위를 확인할 수 없습니다.',
+    REAL_DATA_ACCESS_DENIED: '저장 자료 조회 권한을 확인해 주세요.',
+    REAL_DATA_ACCESS_RESTRICTED: '이 고객의 사전 브리핑은 현재 환경에서 조회할 수 없습니다.',
+    REAL_DATA_UNAVAILABLE: '잠시 후 다시 조회해 주세요.',
+    REAL_DATA_TIMEOUT: '자료 조회가 지연되고 있습니다. 잠시 후 다시 조회해 주세요.',
+    REAL_DATA_INVALID_RESPONSE: '조회한 자료를 확인할 수 없습니다.',
+    INVALID_CUSTOMER_ID: '조회할 고객 정보를 확인해 주세요.',
+    INVALID_LIVE_BRIEFING_CONTEXT: '현재 통화와 고객 정보를 확인할 수 없습니다.',
+    INVALID_CALL_ID: '조회할 통화 정보를 확인해 주세요.',
+    CALL_NOT_FOUND: '현재 통화 정보를 찾을 수 없습니다.',
+    STORE_NOT_ALLOWED: '현재 매장 범위에서 조회할 수 없는 통화입니다.',
+    CUSTOMER_NOT_FOUND: '해당 고객의 저장 자료를 찾을 수 없습니다.',
+    CUSTOMER_PRIVACY_RESTRICTED: '고객 개인정보 동의 확인이 필요합니다.',
+    NETWORK: '저장 자료 서비스에 연결하지 못했습니다. 다시 조회해 주세요.',
+    INVALID_RESPONSE: '조회한 자료를 확인할 수 없습니다.',
+    UNKNOWN_ERROR: '잠시 후 다시 조회해 주세요.',
+};
+function liveBriefingErrorCode(value) {
+    return typeof value === 'string' && Object.hasOwn(errorMessages, value) ? value : 'UNKNOWN_ERROR';
+}
+function liveBriefingErrorMessage(value) { return errorMessages[liveBriefingErrorCode(value)]; }
+class LiveBriefingApiError extends Error {
+    code;
+    constructor(code) {
+        const safeCode = liveBriefingErrorCode(code);
+        super(safeCode);
+        this.name = 'LiveBriefingApiError';
+        this.code = safeCode;
+    }
+}
+exports.LiveBriefingApiError = LiveBriefingApiError;
+const record = (value) => typeof value === 'object' && value !== null && !Array.isArray(value);
+const nonempty = (value) => typeof value === 'string' && value.trim().length > 0;
+const validId = (kind, value) => typeof value === 'string' && new RegExp(`^${kind}_[0-9]{3,}$`).test(value);
+const integer = (value) => typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+const narrative = (value) => value === null || nonempty(value);
+function invalid() { throw new LiveBriefingApiError('INVALID_RESPONSE'); }
+function product(value) {
+    if (value === null)
+        return null;
+    if (!record(value) || !validId('product', value.id) || !nonempty(value.name) || typeof value.maker !== 'string'
+        || typeof value.color !== 'string' || !integer(value.storageGb) || value.storageGb === 0)
+        return invalid();
+    return { id: value.id, name: value.name, maker: value.maker, storageGb: value.storageGb, color: value.color };
+}
+function plan(value) {
+    if (value === null)
+        return null;
+    if (!record(value) || !validId('own_plan', value.id) || !nonempty(value.name) || !integer(value.monthlyFee))
+        return invalid();
+    return { id: value.id, name: value.name, monthlyFee: value.monthlyFee };
+}
+function recent(value) {
+    if (value === null)
+        return null;
+    if (!record(value) || !validId('consultation', value.id) || !narrative(value.purpose) || !narrative(value.summary)
+        || !(0, realDataApi_js_1.validRealDataTimestamp)(value.endedAt))
+        return invalid();
+    return { id: value.id, purpose: value.purpose, summary: value.summary, endedAt: value.endedAt };
+}
+function risk(value) {
+    if (value === null)
+        return null;
+    if (!record(value) || !validId('risk', value.id) || !integer(value.score) || value.score > 99
+        || !['정상', '주의', '경계', '위험', '매우 위험'].includes(value.level)
+        || !['AI', 'PHONE', 'VISIT'].includes(value.stage) || !(0, realDataApi_js_1.validRealDataTimestamp)(value.createdAt))
+        return invalid();
+    const keys = ['profanityCount', 'threatCount', 'blameCount', 'sexualCount', 'shoutingCount'];
+    if (!keys.every(key => value[key] === null || integer(value[key])))
+        return invalid();
+    return { id: value.id, score: value.score, level: value.level, stage: value.stage,
+        createdAt: value.createdAt, profanityCount: value.profanityCount, threatCount: value.threatCount,
+        blameCount: value.blameCount, sexualCount: value.sexualCount, shoutingCount: value.shoutingCount };
+}
+/** Only the masked, read-only contract enters component state; extra identity/transcript fields are discarded. */
+function parseLiveBriefing(value) {
+    if (!record(value) || value.source !== 'supabase' || value.readOnly !== true || !record(value.customer)
+        || !validId('customer', value.customer.id) || !nonempty(value.customer.nameMasked) || typeof value.privacyConsent !== 'boolean'
+        || !Array.isArray(value.guidance) || !value.guidance.every(nonempty))
+        return invalid();
+    const currentProduct = product(value.currentProduct), currentPlan = plan(value.currentPlan);
+    const recentConsultation = recent(value.recentConsultation), previousRisk = risk(value.previousRisk);
+    if (previousRisk !== null && recentConsultation === null)
+        return invalid();
+    if (value.privacyConsent ? value.guidance.length < 2 || value.guidance.length > 4
+        : value.customer.nameMasked !== '비공개 고객' || currentProduct !== null || currentPlan !== null || recentConsultation !== null
+            || previousRisk !== null || value.guidance.length !== 1 || value.guidance[0] !== '고객 개인정보 동의 확인이 필요합니다.')
+        return invalid();
+    return { source: 'supabase', readOnly: true, customer: { id: value.customer.id, nameMasked: value.customer.nameMasked },
+        privacyConsent: value.privacyConsent, currentProduct, currentPlan, recentConsultation, previousRisk, guidance: [...value.guidance] };
+}
+/** Same-origin GET only. Timeout, cancellation and error bodies never expose upstream text. */
+async function fetchLiveBriefing(customerId, callId, signal, timeoutMs = 10_000) {
+    if (!validId('customer', customerId))
+        throw new LiveBriefingApiError('INVALID_CUSTOMER_ID');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(callId))
+        throw new LiveBriefingApiError('INVALID_CALL_ID');
+    const controller = new AbortController();
+    const cancel = () => controller.abort();
+    if (signal?.aborted)
+        cancel();
+    else
+        signal?.addEventListener('abort', cancel, { once: true });
+    let timedOut = false;
+    let timer;
+    const operation = (async () => {
+        try {
+            if (controller.signal.aborted)
+                throw new LiveBriefingApiError('NETWORK');
+            const query = new URLSearchParams({ call_id: callId });
+            const response = await fetch(`/api/live-briefing/${encodeURIComponent(customerId)}?${query}`, {
+                method: 'GET', signal: controller.signal, headers: { Accept: 'application/json' },
+            });
+            let body;
+            try {
+                body = await response.json();
+            }
+            catch {
+                throw new LiveBriefingApiError('INVALID_RESPONSE');
+            }
+            if (!response.ok)
+                throw new LiveBriefingApiError(record(body) ? body.errorCode : 'UNKNOWN_ERROR');
+            const result = parseLiveBriefing(body);
+            if (result.customer.id !== customerId)
+                return invalid();
+            return result;
+        }
+        catch (error) {
+            if (timedOut)
+                throw new LiveBriefingApiError('REAL_DATA_TIMEOUT');
+            if (error instanceof LiveBriefingApiError)
+                throw error;
+            throw new LiveBriefingApiError('NETWORK');
+        }
+    })();
+    const timeout = new Promise((_resolve, reject) => {
+        timer = setTimeout(() => { timedOut = true; controller.abort(); reject(new LiveBriefingApiError('REAL_DATA_TIMEOUT')); }, timeoutMs);
+    });
+    try {
+        return await Promise.race([operation, timeout]);
+    }
+    finally {
+        if (timer !== undefined)
+            clearTimeout(timer);
+        signal?.removeEventListener('abort', cancel);
+    }
+}
+/** Selection identity is independent of transcript snapshots. A generation also blocks loaders that ignore abort. */
+function createLiveBriefingController(onChange, load = fetchLiveBriefing) {
+    let selection = null;
+    let generation = 0;
+    let active = null;
+    let disposed = false;
+    function start(next) {
+        const version = ++generation;
+        active?.abort();
+        active = null;
+        selection = next;
+        if (!next.customerId) {
+            onChange({ ...next, status: 'missing-customer' });
+            return;
+        }
+        const customerId = next.customerId;
+        const controller = new AbortController();
+        active = controller;
+        onChange({ ...next, status: 'loading' });
+        // StrictMode's immediate mount cleanup cancels before a browser request starts.
+        void Promise.resolve().then(async () => {
+            if (disposed || generation !== version)
+                return;
+            try {
+                const data = await load(customerId, next.callId, controller.signal);
+                if (!disposed && generation === version)
+                    onChange({ ...next, status: 'ready', data });
+            }
+            catch (error) {
+                if (!disposed && generation === version)
+                    onChange({ ...next, status: 'error', errorCode: error instanceof LiveBriefingApiError ? error.code : 'UNKNOWN_ERROR' });
+            }
+        });
+    }
+    return {
+        select(callId, customerId) {
+            if (disposed || selection?.callId === callId && selection.customerId === customerId)
+                return;
+            start({ callId, customerId });
+        },
+        reload() { if (!disposed && selection?.customerId)
+            start(selection); },
+        dispose() { disposed = true; ++generation; active?.abort(); active = null; },
+    };
 }
 
 },

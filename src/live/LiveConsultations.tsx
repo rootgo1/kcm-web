@@ -4,6 +4,7 @@ import { Icon } from '../components/Icon';
 import { applyLiveEvent, isNearConversationBottom, liveStatusLabels, subscribeLiveCalls, type LiveConnection } from './liveCalls';
 import type { LiveCall } from './types';
 import { LiveRiskSignals, LiveTurnBadges } from './LiveRiskSignals';
+import { LiveCallBriefing } from './LiveCallBriefing';
 import { deliveryLabel, liveCustomerHistory } from './livePresentation';
 import { liveConnectionNotice } from './liveNotices';
 import { formatRiskScore } from '../lib/riskScoring';
@@ -23,8 +24,10 @@ function LiveConversation({ call, connection, onClose }: { call: LiveCall; conne
     if (following.current) region.scrollTop = region.scrollHeight;
     else setUnread(true);
   }, [call.messages]);
-  return <Modal title="실시간 AI 상담" eyebrow="KCM · 통화 기록" onClose={onClose} wide>
+  return <Modal title="실시간 AI 상담" eyebrow="KCM · 통화 기록" onClose={onClose} wide className="live-conversation-modal">
     <div className="live-conversation">
+      <div className="live-conversation-layout">
+      <div className="live-conversation-current">
       <div className="live-conversation-meta">
         <strong className={call.customer_id ? 'live-identifier' : undefined}>{call.customer_id || '고객 확인 전'}</strong><span className={`live-badge ${call.status}`}>{liveStatusLabels[call.status]}</span>
         <span>{call.status === 'live' ? '통화 진행 중' : call.status === 'ended' ? '통화 종료' : call.status === 'error' ? '통화 상태 확인 필요' : '통화 연결을 기다리고 있습니다.'}</span>
@@ -44,6 +47,9 @@ function LiveConversation({ call, connection, onClose }: { call: LiveCall; conne
       </div>
       {unread && <button className="button button-secondary live-new-message" onClick={() => { following.current = true; if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; setUnread(false); }}>최신 대화 보기</button>}
       <details className="live-call-id"><summary>기록 보관 안내</summary><p className="live-small">현재 수신한 기록을 표시합니다. 서비스 재시작 전의 이력은 이 화면에서 조회하지 않습니다. 외부 저장 여부는 별도 확인이 필요합니다.</p></details>
+      </div>
+      <LiveCallBriefing callId={call.call_id} customerId={call.customer_id ?? null}/>
+      </div>
       <div className="modal-actions"><button className="button button-secondary" onClick={onClose}>실시간 상담 닫기</button></div>
     </div>
   </Modal>;

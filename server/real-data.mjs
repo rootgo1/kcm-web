@@ -23,7 +23,7 @@ const columns = /** @type {Record<string, readonly string[]>} */ ({
   customers: ['id', 'name', 'phone', 'privacy_consent', 'product_id', 'plan_id'],
   consultations: ['id', 'customer_id', 'store_id', 'purpose', 'status', 'used_ai', 'call_id', 'ai_summary', 'used_phone', 'used_visit', 'started_at', 'ended_at'],
   employees: ['id', 'store_id', 'name', 'job_title', 'gender', 'day_off', 'next_leave', 'score'],
-  risks: ['id', 'consultation_id', 'customer_id', 'stage', 'risk_score', 'risk_level', 'created_at'],
+  risks: ['id', 'consultation_id', 'customer_id', 'stage', 'risk_score', 'risk_level', 'created_at', 'profanity_count', 'threat_violence_count', 'verbal_abuse_count', 'sexual_count', 'shouting_count'],
   stores: ['id', 'name', 'address', 'phone', 'open_time', 'close_time', 'closed_day', 'score'],
   products: ['id', 'name', 'maker', 'storage_gb', 'color', 'price'],
   own_plans: ['id', 'name', 'group_name', 'type', 'monthly_fee', 'data_unlimited', 'data_gb', 'after_speed_kbps', 'share_data_gb', 'voice_unlimited', 'voice_minutes', 'video_minutes', 'text_unlimited', 'text_count', 'membership_grade', 'smart_device_count', 'data_share_count', 'insurance_discount', 'choice_benefit', 'roaming'],
@@ -184,12 +184,17 @@ export function maskStoredPhone(/** @type {string} */ phone) {
 function narrative(/** @type {any} */ value, /** @type {Row} */ customer, maximum = 600) {
   if (value == null || typeof value === 'string' && !value.trim()) return null;
   if (typeof value !== 'string') throw new ReadFailure('REAL_DATA_INVALID_RESPONSE');
-  return value.split(customer.name).join(maskStoredName(customer.name))
-    .split(customer.phone).join(maskStoredPhone(customer.phone))
+  const maskedName = value.split(customer.name).join(maskStoredName(customer.name));
+  const maskedPhone = typeof customer.phone === 'string' && customer.phone.length > 0
+    ? maskedName.split(customer.phone).join(maskStoredPhone(customer.phone)) : maskedName;
+  return maskedPhone
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[이메일 비공개]')
     .replace(/(?:\+?82[-\s]?)?(?:0?1[016789]|0?[2-6][1-5]?)[-\s]?\d{3,4}[-\s]?\d{4}/g, '[연락처 비공개]')
     .slice(0, maximum);
 }
+
+// Share the existing bounded masking policy with the read-only live briefing module.
+export { narrative as projectStoredNarrative };
 
 class ReadFailure extends Error {
   constructor(/** @type {string} */ code) { super(code); this.code = code; }

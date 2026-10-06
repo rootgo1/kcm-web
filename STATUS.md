@@ -1,5 +1,17 @@
 # KCM 작업 상태 — v0.3 / 2026-10-06
 
+## 실시간 통화 사전 브리핑 / 2026-10-06
+
+- clean `integration/kcm-final-release` / `4d445ed59a42c674ec582213089be3e5320fc7bb`에서 `feature/live-call-briefing`을 생성했습니다. 기본 checkout의 사용자 STATUS 변경/deliverables는 보존했습니다. main/Render·실제 .env·외부 데이터는 변경하지 않습니다.
+- `GET /api/live-briefing/:customerId?call_id=:callId`를 기존 SELECT 전용 provider로 추가했습니다. 현재 메모리 통화의 고객/매장/시작 시각과 상담 ID를 서버에서 검증하고, 현재 ID/시작 이후 상담을 제외한 최근 완료 상담1건과 해당 최신 AI risk(없으면 최신 PHONE/VISIT)를 선택합니다. 과거 점수/횟수를 합산·재계산하지 않습니다. 연결 중에는 이미 기록된 updated_at을 보수적인 cutoff로 사용하고 시작 시각을 생성하지 않습니다.
+- 공개 환경은 서버 KCM_DEMO_CUSTOMER_ID와 정확히 일치하는 고객만 masked read-only 조회를 허용합니다. 다른 고객/설정 누락은 DB 조회 전에403 REAL_DATA_ACCESS_RESTRICTED입니다. 기존 일반 개인자료503/Host/Origin 보호는 유지합니다. 미동의면 상품/요금제/상담/위험 상세 조회를 중단하고 최소 안내만 반환합니다. 전화번호/생년월일/전문/키 SELECT 없이 기존 자유서술 마스킹을 재사용합니다.
+- 기존 LiveConversation에 좌62% 현재 신호·대화/우38% 사전 브리핑을 추가했습니다. 900px 이하 세로 배치, viewport 안 모달·내부 스크롤·긴 요약3줄/펼치기·고정 닫기를 적용합니다. 고객 미확인/로딩/미동의/상담·요약·risk 부재/오류를 구분합니다. 통화/고객 선택과 수동 조회만 요청하며 transcript 갱신은 조회 조건이 아닙니다. 취소/늦은 응답/StrictMode 중복 요청을 차단합니다.
+- 실제 Supabase 기존5테이블/컬럼/타입/nullable 조건을 read-only 재확인했습니다. customer_9999는 동의 true, 현재 상품/요금제 연결이 있으나 store_005의 종료 시각 있는 완료 상담은0건입니다. Render KCM_DEMO_CUSTOMER_ID도 customer_9999와 다르며 값을 변경하거나 다른 실제 ID/비밀값을 출력하지 않았습니다. 영상 전 실제 과거 완료 상담+ai_summary+risks와 시연 고객 설정 확인이 필요합니다.
+- 전체 테스트 **762/762**, 실패/skip0(기존683 + 서버 데이터33/HTTP16/프런트30 신규79). 기존 테스트 삭제/약화0. 욕설 최소20·위협40/60/80·최신 위험탐지/ASR·Agent 제외와 기존 Retell/Monitor/SSE/RMS/n8n/재고/체감가 회귀를 유지했습니다. 프런트/백엔드 타입 검사와 production build 성공, 기존 SDK 청크 경고만 유지합니다.
+- Chrome에서 격리 합성 데이터+production dist의 홈→실시간 상담 보기, **1920×1080/1366×768/390×844**를 확인했습니다. 대화·브리핑 스크롤/긴 요약/버튼 닫기·Escape/넘침 없음, 과거60점·위협2 유지/현재위협0→1 SSE 갱신, provider조회8→8 반복 조회 없음을 확인했습니다. 오류 시 transcript20개 유지/원문 비노출/미동의/고객 미확인/이력·요약 없음/수동 복구도 확인했고 검증 탭 console error/warn0입니다.
+- 독립 HTML을 최신 src로 갱신했습니다. 직접 실행과 실제 DB REST·Retell 음성·Production 이력 재통화는 미검증이며 합성 브라우저 검증과 구분합니다. 실제 DB/환경/외부 workflow 변경·실제 전화는 하지 않았습니다. 격리 서버/검증 탭/viewport 임시 설정을 정상 정리했습니다. Git 대상164파일 비밀값 패턴 후보0/실제.env 추적0, 보호 기능 파일 diff0, git diff --check 통과입니다. 캡처/fixture는 Git 제외 .cache/live-briefing에 보관하며 상세 선택/접근 정책·남은 조건은 docs/LIVE_CALL_BRIEFING.md에 기록했습니다. 이 feature 브랜치만 commit/push합니다.
+- 변경 파일: server/app.mjs, server/real-data.mjs, 새 server/live-briefing.mjs 및 서버 테스트2개, src/components/Modal.tsx, src/live/LiveConsultations.tsx/live-calls.css, 새 LiveCallBriefing.tsx/services/liveBriefingApi.ts/tests/liveBriefing.test.ts, tests/domain.test.ts, docs/LIVE_CALL_BRIEFING.md, STATUS.md, 00_KCM_미리보기.html.
+
 ## 최종 실제 데이터·위험탐지 통합 / 2026-10-06
 
 - 기준 main/origin main은 `86508324e33a59e4a74e508bb354f9ef09c86a96`입니다. 기본 작업 폴더의 사용자 `STATUS.md` 변경·미추적 `deliverables/`를 그대로 두고 깨끗한 기존 worktree에서 `integration/kcm-final-release`을 생성했습니다. main·기존 feature/fix/release 브랜치·Render·실제 .env·외부 데이터는 변경하지 않았습니다.

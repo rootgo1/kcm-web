@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Icon } from './Icon';
-export function Modal({ title, onClose, children, wide = false, eyebrow = 'KCM' }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean; eyebrow?: string }) {
+export function Modal({ title, onClose, children, wide = false, eyebrow = 'KCM', className = '' }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean; eyebrow?: string; className?: string }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = ref.current;
@@ -8,7 +8,7 @@ export function Modal({ title, onClose, children, wide = false, eyebrow = 'KCM' 
     dialog?.showModal();
     return () => { dialog?.close(); if (previous?.isConnected) previous.focus(); else document.getElementById('main-content')?.focus(); };
   }, []);
-  return <dialog ref={ref} className={`modal ${wide ? 'modal-wide' : ''}`} aria-labelledby="modal-title"
+  return <dialog ref={ref} className={`modal ${wide ? 'modal-wide' : ''} ${className}`} aria-labelledby="modal-title"
     onCancel={event => { event.preventDefault(); onClose(); }}
     onClick={event => { if (event.target === ref.current) onClose(); }}>
     <div className="modal-content">
