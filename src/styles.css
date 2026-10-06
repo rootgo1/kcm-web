@@ -1223,3 +1223,81 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
 @media (max-width: 530px) {
   .call-table .text-button, .support-call-table .text-button, .aftercare-table .text-button { min-height: 40px; }
 }
+
+/* Read-only stored records are visually separate from the existing in-memory workflows. */
+.reference-data-details { margin: 16px 0; padding: 12px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--white, #fff); }
+.reference-data-details > summary { cursor: pointer; font-size: 12px; font-weight: 650; }
+.reference-data-details > .panel-note { margin: 10px 0; }
+.real-data-section { margin-block: 16px; min-width: 0; }
+.real-data-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.real-data-grid > *, .real-data-detail, .real-data-list { min-width: 0; }
+.real-data-header { display: flex; flex-wrap: wrap; gap: 10px; padding: 14px 16px; align-items: center; }
+.real-data-header h2 { font-size: 15px; }
+.real-data-header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.real-data-notice { color: var(--muted, #777e8e); font-size: 11px; line-height: 1.6; margin: 6px 0; overflow-wrap: anywhere; }
+.real-data-list > .real-data-notice, .real-data-list > .real-data-error { padding: 10px 16px; }
+.real-data-tools { padding: 10px 16px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.real-data-tools > label { display: flex; gap: 8px; align-items: center; font-size: 11px; min-width: 0; }
+.real-data-tools .search-field { flex: 1; }
+.real-data-tools input { min-width: 0; width: 100%; }
+.real-data-tools select { border: 1px solid var(--border); border-radius: 6px; padding: 7px 8px; background: #fff; font: inherit; min-height: 32px; }
+.real-data-table { min-width: 430px; width: 100%; }
+.real-data-table th { font-size: 11px; }
+.real-data-table td { font-size: 12px; line-height: 1.5; padding: 12px; overflow-wrap: anywhere; }
+.real-data-table .customer-select strong { font-size: 13px; }
+.real-data-table .customer-select small { white-space: normal; font-size: 11px; }
+.real-data-table td > .status-pill { display: inline-flex; margin: 5px 0; }
+.real-data-table .employee-name { display: block; font-size: 12px; }
+.real-data-meta { display: block; font-size: 11px; color: var(--muted, #777e8e); line-height: 1.6; }
+.real-data-id { display: block; font-size: 10px; color: var(--muted, #777e8e); overflow-wrap: anywhere; margin: 6px 0; }
+.real-data-pagination { display: flex; gap: 10px; justify-content: flex-end; align-items: center; padding: 10px 16px; font-size: 11px; }
+.real-data-section .button { font-size: 11px; min-height: 32px; }
+.real-data-empty, .real-data-error { padding: 16px; font-size: 12px; line-height: 1.7; }
+.real-data-error { color: #9b2834; }
+.real-data-summary { font-size: 12px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.real-data-detail:not(.card) { padding: 0 16px 16px; }
+.real-data-briefing > .real-data-history-heading, .real-data-briefing > .real-data-meta, .real-data-briefing > .real-data-id,
+.real-data-briefing > .real-data-notice { margin-inline: 16px; }
+.real-data-facts { margin: 12px 16px; }
+.real-data-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+.real-data-request-note { padding: 0 16px 12px; }
+.real-data-request-note h3 { font-size: 13px; }
+.real-data-request-note p { font-size: 12px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.real-data-briefing .briefing-summary { margin: 12px 16px; }
+.real-data-briefing .briefing-checklist { padding: 12px 16px; }
+.real-data-briefing-history { padding: 0 16px 12px; }
+.real-data-history-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: center; margin: 10px 0; }
+.real-data-history-heading h3, .real-data-briefing-history h3 { font-size: 13px; }
+.real-data-history-heading > strong { font-size: 13px; overflow-wrap: anywhere; }
+.real-data-history-list { display: grid; gap: 10px; max-height: 520px; overflow-y: auto; }
+.real-data-history-item { padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
+.real-data-risk-list { display: grid; gap: 6px; }
+.real-data-risk { display: flex; flex-wrap: wrap; gap: 8px; font-size: 11px; align-items: center; }
+.product-source-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-block: 10px; }
+.product-source-bar > p { flex: 1; min-width: 180px; }
+.effective-price-disclosure { margin: 12px 0; }
+.effective-price-disclosure > summary { cursor: pointer; font-size: 12px; font-weight: 650; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; background: #fff; }
+.effective-price-panel { margin-top: 10px; }
+.effective-price-content { padding: 16px; }
+.effective-price-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.effective-price-form .consultation-field { min-width: 0; margin: 0; }
+.effective-price-form select, .effective-price-form input { width: 100%; min-width: 0; max-width: 100%; min-height: 36px; border: 1px solid var(--border); border-radius: 6px; padding: 8px; background: #fff; font: inherit; font-size: 12px; }
+.effective-price-conditions { margin: 14px 0; border: 0; padding: 0; min-inline-size: 0; }
+.effective-price-conditions legend { font-size: 12px; font-weight: 650; }
+.effective-price-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 14px 0; }
+.effective-price-actions .button { min-height: 36px; font-size: 12px; }
+.effective-price-result { border-top: 1px solid var(--border); padding-top: 12px; }
+.effective-price-result h3 { font-size: 14px; }
+.effective-price-current-plan, .effective-price-breakdown { grid-template-columns: repeat(2, minmax(0, 1fr)); font-size: 12px; gap: 12px; }
+.effective-price-breakdown small { display: block; font-size: 10px; font-weight: 400; }
+.effective-price-total { font-size: 15px; margin: 12px 0; }
+.effective-price-warnings { margin: 10px 0 0; padding-left: 18px; font-size: 11px; color: var(--muted, #777e8e); line-height: 1.7; }
+@media (max-width: 1100px) { .real-data-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) {
+  .real-data-tools .search-field { flex-basis: 100%; }
+  .real-data-section .button, .real-data-section select { min-height: 40px; }
+  .real-data-header { padding: 12px; }
+  .real-data-table-scroll { overflow-x: auto; }
+  .effective-price-form, .effective-price-current-plan, .effective-price-breakdown { grid-template-columns: minmax(0, 1fr); }
+  .effective-price-form select, .effective-price-form input, .effective-price-actions .button { min-height: 40px; }
+}

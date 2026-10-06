@@ -1,10 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Icon, type IconName } from '../components/Icon';
 import { Tabs } from '../components/Tabs';
 import { createProductCatalog, formatProductPrice, productReferenceNote, type CatalogItem, type ProductCarrier } from '../data/productCatalog';
 import { productTabs, type ProductTabId } from '../lib/navigation';
 import { filterProducts, maxComparedPlans, selectedProduct, toggleComparedPlan } from '../lib/productLookup';
 import type { DashboardData } from '../types';
+import { loadProductCatalog, toCatalogItems, type ProductCatalog } from '../services/effectivePriceApi';
+import { realDataApi, realDataErrorMessage, RealDataApiError, type StoredCustomer } from '../services/realDataApi';
+import { EffectivePricePanel } from '../components/EffectivePricePanel';
 
 const descriptions: Record<ProductTabId, string> = {
   plans: '이용 조건을 확인하고 최대 3개 요금제를 함께 비교하세요.',
@@ -56,7 +59,33 @@ export function ProductsPage({ data }: { data: Pick<DashboardData, 'inventory'> 
   const [queries, setQueries] = useState<Record<ProductTabId, string>>({ plans: '', bundles: '', benefits: '', devices: '' });
   const [selectedIds, setSelectedIds] = useState<Record<string, string>>({});
   const [comparedIds, setComparedIds] = useState<string[]>([]);
-  const catalog = useMemo(() => createProductCatalog(data.inventory), [data.inventory]);
+  const [catalogMode, setCatalogMode] = useState<'loading' | 'db' | 'error' | 'reference'>('loading');
+  const [storedCatalog, setStoredCatalog] = useState<ProductCatalog | null>(null);
+  const [catalogError, setCatalogError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
+  const [customers, setCustomers] = useState<StoredCustomer[]>([]);
+  const [customersError, setCustomersError] = useState('');
+  useEffect(() => {
+    let active = true; const controller = new AbortController();
+    setCatalogMode('loading'); setStoredCatalog(null); setCatalogError(''); setCustomers([]); setCustomersError('');
+    setSelectedIds({}); setComparedIds([]);
+    if (document.documentElement.dataset.kcmStandalone === 'true') {
+      setCatalogMode('error'); setCatalogError('저장 상품 조회는 서버 연결이 필요합니다. 참고 자료를 별도로 확인할 수 있습니다.');
+      return () => { active = false; controller.abort(); };
+    }
+    void loadProductCatalog(controller.signal).then(body => {
+      if (!active) return;
+      setStoredCatalog(body); setCatalogMode('db');
+    }).catch(() => { if (active) { setCatalogMode('error'); setCatalogError('저장 상품을 불러오지 못했습니다. 설정과 조회 권한을 확인한 뒤 다시 시도해 주세요.'); } });
+    void realDataApi.customers(controller.signal).then(body => {
+      if (active) setCustomers(body.items.filter(customer => customer.privacyConsent));
+    }).catch(error => {
+      if (active) setCustomersError(realDataErrorMessage(error instanceof RealDataApiError ? error.code : 'NETWORK'));
+    });
+    return () => { active = false; controller.abort(); };
+  }, [reloadKey]);
+  const catalog = useMemo(() => catalogMode === 'db' && storedCatalog ? toCatalogItems(storedCatalog)
+    : catalogMode === 'reference' ? createProductCatalog(data.inventory) : [], [catalogMode, storedCatalog, data.inventory]);
   const visibleItems = filterProducts(catalog, active, queries[active], carrier);
   const selectionKey = active === 'plans' ? `${active}-${carrier}` : active;
   const selected = selectedProduct(visibleItems, selectedIds[selectionKey]);
@@ -65,7 +94,13 @@ export function ProductsPage({ data }: { data: Pick<DashboardData, 'inventory'> 
   return <>
     <div className="page-heading"><div><span className="eyebrow">상담업무</span><h1>상품관리</h1><p>요금제부터 제품까지, 상담에 필요한 정보를 한곳에서 확인하세요.</p></div></div>
     <Tabs id="products" label="상품관리 탭" tabs={productTabs} active={active} onChange={setActive}/>
-    {productTabs.map(tab => <section key={tab.id} role="tabpanel" hidden={active !== tab.id} id={`products-panel-${tab.id}`} aria-labelledby={`products-tab-${tab.id}`} tabIndex={0}>
+    <div className="product-source-bar">
+      <p className="real-data-notice" role="status">{catalogMode === 'loading' ? '저장 상품을 불러오는 중입니다.' : catalogMode === 'db' ? '저장된 상품 자료 · 가입 조건과 현재 판매 가격은 별도 확인하세요.' : catalogMode === 'reference' ? '별도 참고 자료입니다. 운영 상품이나 DB 조회 결과가 아닙니다.' : catalogError}</p>
+      <div className="real-data-header-actions"><button className="button button-secondary" disabled={catalogMode === 'loading'} onClick={() => setReloadKey(key => key + 1)}>저장 자료 다시 조회</button>
+        {catalogMode !== 'reference' && catalogMode !== 'loading' && <button className="text-button" onClick={() => { setCatalogMode('reference'); setSelectedIds({}); setComparedIds([]); }}>참고 자료 보기</button>}</div>
+    </div>
+    {catalogMode === 'db' && storedCatalog && <details className="effective-price-disclosure"><summary>체감가 계산 · 요금과 할인 근거 확인</summary><EffectivePricePanel catalog={storedCatalog} customers={customers} customersError={customersError}/></details>}
+    {(catalogMode === 'db' || catalogMode === 'reference') && productTabs.map(tab => <section key={tab.id} role="tabpanel" hidden={active !== tab.id} id={`products-panel-${tab.id}`} aria-labelledby={`products-tab-${tab.id}`} tabIndex={0}>
       {active === tab.id && <>
         <div className="section-intro"><div><h2>{active === 'plans' ? `${carrier === 'own' ? '자사' : '타사'} 요금제` : tab.label}</h2><p>{descriptions[active]}</p></div>
           {active === 'plans' && <div className="carrier-toggle" role="group" aria-label="요금제 구분"><button type="button" aria-pressed={carrier === 'own'} onClick={() => setCarrier('own')}>자사</button><button type="button" aria-pressed={carrier === 'other'} onClick={() => setCarrier('other')}>타사</button></div>}
@@ -83,7 +118,7 @@ export function ProductsPage({ data }: { data: Pick<DashboardData, 'inventory'> 
           {selected ? <ProductDetail item={selected} compared={comparedIds.includes(selected.id)} full={compared.length >= maxComparedPlans} onCompare={onCompare}/> : <section className="card product-detail product-search-empty"><Icon name="search" size={24}/><h2>조회할 상품을 선택하세요.</h2><p>검색어를 지우면 상품 목록을 다시 확인할 수 있습니다.</p></section>}
         </div>
         {active === 'plans' && <PlanComparison items={compared} onRemove={onCompare} onClear={() => setComparedIds([])}/>}
-        <p className="product-reference-note">{productReferenceNote}</p>
+        <p className="product-reference-note">{catalogMode === 'reference' ? productReferenceNote : '저장된 조회 자료입니다. 가입·구매 전 적용 조건·세금·추가 비용을 확인하세요.'}</p>
       </>}
     </section>)}
   </>;

@@ -1,6 +1,6 @@
 import type { CustomerRisk, DemoCall } from '../types';
 import { analysisStatusLabels, callRisk, hasConfirmedThreat } from '../lib/callRisk';
-import { formatRiskScore, validCount } from '../lib/riskScoring';
+import { formatRiskScore, RISK_RULE, validCount } from '../lib/riskScoring';
 import { customerRiskHistory, latestCompletedCustomerCall, scorePendingReason } from '../lib/callWorkflow';
 
 export function CallRiskDetails({ call, customer, calls }: { call: DemoCall; customer?: CustomerRisk; calls: readonly DemoCall[] }) {
@@ -26,7 +26,7 @@ export function CallRiskDetails({ call, customer, calls }: { call: DemoCall; cus
       {counts.map(([label, count, score]) => <div key={label}><dt>{label}</dt><dd>{available && validCount(count) ? count + '회' : '— / 분석 확인 필요'}{final && ' · ' + score + '점'}</dd></div>)}
       {final && <>
         <div><dt>항목 점수 합계</dt><dd>{final.raw_score}점</dd></div>
-        <div><dt>위협 최소점수 보정</dt><dd>{final.threat_floor ? '최소 ' + final.threat_floor + '점 적용' : '없음'} · 보정 후 {final.adjusted_score}점</dd></div>
+        <div><dt>최소점수 보정</dt><dd>{final.signals.profanity_count >= 1 && final.rule_version === RISK_RULE.version && '욕설 최소 ' + RISK_RULE.profanityFloor + '점 · '}위협 {final.threat_floor ? '최소 ' + final.threat_floor + '점 적용' : '보정 없음'} · 보정 후 {final.adjusted_score}점</dd></div>
         <div><dt>이 통화 최종 위험도</dt><dd>{formatRiskScore(final.risk_score)}{final.adjusted_score > 99 && ' · 99점 상한 적용'}</dd></div>
         <div><dt>최초 확정 시각</dt><dd><time dateTime={final.appliedAt}>{new Date(final.appliedAt).toLocaleString('ko-KR')}</time> · {final.rule_version}</dd></div>
       </>}

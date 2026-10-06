@@ -5,6 +5,9 @@ import { serveBuild } from './deployment.mjs';
 import { createConsultationId } from './call-identity.mjs';
 import { createN8nDelivery } from './n8n-delivery.mjs';
 import { createDbInventoryApi, createInventoryDb, createInventoryNotifier, inventoryNotConfiguredApi } from './inventory.mjs';
+import { createRealDataApi, createSupabaseReadProvider, isStoredTimestamp } from './real-data.mjs';
+import { createEffectivePriceApi } from './effective-price.mjs';
+import { createLiveBriefingApi } from './live-briefing.mjs';
 
 const localOrigins = new Set(['http://127.0.0.1:5173', 'http://localhost:5173']);
 const api = 'https://api.retellai.com';
@@ -28,18 +31,29 @@ async function readBody(request) {
  * @param {{ key: string, agentId: string, monitors: Pick<ReturnType<import('./monitor.mjs').createMonitorRegistry>, 'start' | 'close' | 'release'>,
  * fetchImpl?: typeof fetch, log?: (line: string) => void, liveCalls?: ReturnType<typeof createLiveCallStore>,
  * deployment?: import('./deployment.mjs').Deployment | null, demoCustomerId?: string | null, demoStoreId?: string | null,
- * webhookUrl?: string, webhookFetchImpl?: typeof fetch, inventoryBaseUrl?: string }} options
+ * webhookUrl?: string, webhookFetchImpl?: typeof fetch, inventoryBaseUrl?: string,
+ * supabaseUrl?: string, supabaseKey?: string, realDataProvider?: ReturnType<typeof createSupabaseReadProvider> }} options
  */
 export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log = console.log, liveCalls = createLiveCallStore(), deployment = null,
-  demoCustomerId = null, demoStoreId = null, webhookUrl = '', webhookFetchImpl = fetch, inventoryBaseUrl = '' }) {
+  demoCustomerId = null, demoStoreId = null, webhookUrl = '', webhookFetchImpl = fetch, inventoryBaseUrl = '',
+  supabaseUrl = '', supabaseKey = '', realDataProvider }) {
   const allowedOrigins = deployment ? new Set([deployment.origin]) : localOrigins;
   const publicHost = deployment ? new URL(deployment.origin).host : null;
+  // Public deployments have no employee authentication. Keep the new stored-customer APIs
+  // unavailable there until staff access control exists; loopback development/QA stays usable.
+  // This depends on trusted deployment configuration, never request/proxy headers.
+  const storedCustomerAccessRestricted = Boolean(deployment
+    && !/^(?:localhost|127(?:\.\d{1,3}){3}|\[::1\])$/.test(new URL(deployment.origin).hostname));
   const liveEvents = createLiveEvents(liveCalls);
   const delivery = createN8nDelivery({ liveCalls, webhookUrl, fetchImpl: webhookFetchImpl, log });
   // Smart inventory goes through n8n (N8N_INVENTORY_BASE_URL); without it the routes answer 503.
   const inventoryDb = inventoryBaseUrl ? createInventoryDb({ baseUrl: inventoryBaseUrl, fetchImpl: webhookFetchImpl, log }) : null;
   const inventoryNotify = inventoryBaseUrl ? createInventoryNotifier({ baseUrl: inventoryBaseUrl, fetchImpl: webhookFetchImpl, log }) : null;
   const inventoryApi = inventoryDb ? createDbInventoryApi({ db: inventoryDb, homeStoreId: demoStoreId, log, notify: inventoryNotify }) : inventoryNotConfiguredApi;
+  const dataProvider = realDataProvider ?? createSupabaseReadProvider({ supabaseUrl, supabaseKey });
+  const realDataApi = createRealDataApi({ provider: dataProvider, homeStoreId: demoStoreId });
+  const effectivePriceApi = createEffectivePriceApi({ provider: dataProvider, homeStoreId: demoStoreId });
+  const liveBriefingApi = createLiveBriefingApi({ provider: dataProvider, homeStoreId: demoStoreId });
   // Ownership permits cancelling only calls created by this local server.
   // Expiring IDs carry no token; Monitor sessions have their own end/error cleanup.
   /** @type {Map<string, number>} */
@@ -96,6 +110,66 @@ export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log =
       return send(200, { agent_id: agentId, configured: Boolean(key && agentId) });
     }
     if (request.method === 'GET' && path === '/health') return send(200, { ok: true, configured: Boolean(key && agentId) });
+    if (path.startsWith('/api/live-briefing/')) {
+      const match = /^\/api\/live-briefing\/([^/]+)$/.exec(path);
+      if (!match) return send(404, { errorCode: 'NOT_FOUND' });
+      const customerId = match[1];
+      // The sole public exception is the server-configured demonstration customer.
+      // Existing customer/reservation/price guards remain unchanged below.
+      if (storedCustomerAccessRestricted && (!/^customer_[0-9]{3,}$/.test(demoCustomerId ?? '') || customerId !== demoCustomerId)) {
+        return send(403, { errorCode: 'REAL_DATA_ACCESS_RESTRICTED' });
+      }
+      if (request.method !== 'GET') return send(405, { errorCode: 'METHOD_NOT_ALLOWED' });
+      if (!/^customer_[0-9]{3,}$/.test(customerId)) return send(400, { errorCode: 'INVALID_CUSTOMER_ID' });
+      if (!/^store_[0-9]{3,}$/.test(demoStoreId ?? '')) return send(503, { errorCode: 'HOME_STORE_NOT_CONFIGURED' });
+      const query = new URLSearchParams((request.url ?? '').split('?')[1] ?? '');
+      if ([...query.keys()].some(name => name !== 'call_id') || query.getAll('call_id').length > 1) {
+        return send(400, { errorCode: 'INVALID_LIVE_BRIEFING_CONTEXT' });
+      }
+      const callId = query.get('call_id');
+      if (callId !== null && !validId.test(callId)) return send(400, { errorCode: 'INVALID_CALL_ID' });
+      const snapshot = liveCalls.snapshot();
+      const current = callId !== null ? snapshot.find(call => call.call_id === callId)
+        : snapshot.filter(call => call.customer_id === customerId && call.store_id === demoStoreId).at(-1);
+      if (callId !== null && !current) return send(404, { errorCode: 'CALL_NOT_FOUND' });
+      if (current) {
+        if (current.customer_id !== customerId || current.store_id !== demoStoreId) return send(403, { errorCode: 'STORE_NOT_ALLOWED' });
+        // Connecting calls have no started_at yet. Use their already-recorded server
+        // registration/update timestamp as a conservative cutoff; never invent now().
+        const cutoff = current.started_at ?? (current.status === 'connecting' ? current.updated_at : null);
+        if (typeof cutoff !== 'string' || !isStoredTimestamp(cutoff)) return send(400, { errorCode: 'INVALID_LIVE_BRIEFING_CONTEXT' });
+        const result = await liveBriefingApi.handle('GET', path, { currentCallId: current.call_id,
+          currentConsultationId: current.consultation_id, currentStartedAt: cutoff, customerId, storeId: demoStoreId ?? undefined });
+        return result ? send(result.status, result.body) : send(404, { errorCode: 'NOT_FOUND' });
+      }
+      const result = await liveBriefingApi.handle('GET', path);
+      return result ? send(result.status, result.body) : send(404, { errorCode: 'NOT_FOUND' });
+    }
+    if (path.startsWith('/api/data/') || path.startsWith('/api/briefings/')) {
+      if (storedCustomerAccessRestricted && path !== '/api/data/status') {
+        return send(503, { errorCode: 'REAL_DATA_ACCESS_RESTRICTED' });
+      }
+      const query = new URLSearchParams((request.url ?? '').split('?')[1] ?? '');
+      const result = await realDataApi.handle(request.method ?? '', path, query);
+      if (result) return send(result.status, result.body);
+      return error(404, 'NOT_FOUND');
+    }
+    if (path === '/api/products/catalog' || path === '/api/effective-price') {
+      let body = {};
+      if (request.method === 'POST') {
+        if (!origin) return error(403, 'ORIGIN_REQUIRED');
+        if (!request.headers['content-type']?.startsWith('application/json')) return error(415, 'JSON_REQUIRED');
+        try { body = await readBody(request); } catch { return error(400, 'INVALID_REQUEST_BODY'); }
+        if (storedCustomerAccessRestricted && path === '/api/effective-price'
+          && typeof body === 'object' && body !== null && Object.hasOwn(body, 'customer_id')) {
+          return send(503, { errorCode: 'REAL_DATA_ACCESS_RESTRICTED' });
+        }
+      }
+      const query = new URLSearchParams((request.url ?? '').split('?')[1] ?? '');
+      const result = await effectivePriceApi.handle(request.method ?? '', path, query, body);
+      if (result) return send(result.status, result.body);
+      return error(404, 'NOT_FOUND');
+    }
     if (path.startsWith('/api/inventory/')) {
       let body = {};
       if (request.method === 'POST') {
@@ -176,7 +250,7 @@ export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log =
       error(502, 'RETELL_CONNECTION_FAILED');
     }
   });
-  server.on('close', () => { delivery.close(); inventoryDb?.close(); inventoryNotify?.close(); liveEvents.close(); clearInterval(expiry); owned.clear(); monitors.close(); });
+  server.on('close', () => { dataProvider.close(); delivery.close(); inventoryDb?.close(); inventoryNotify?.close(); liveEvents.close(); clearInterval(expiry); owned.clear(); monitors.close(); });
   server.requestTimeout = 20_000;
   server.headersTimeout = 10_000;
   return server;

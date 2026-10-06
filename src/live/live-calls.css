@@ -62,3 +62,56 @@
 .live-row-time, .live-intake-row .live-row-delivery { font-size: 11px; color: #65707e; }
 .live-customer-group .live-intake-row > div { min-width: 0; overflow-wrap: anywhere; }
 .live-customer-group .live-intake-row > button { flex-shrink: 0; }
+
+/* Only the two-pane live dialog changes size; other employee dialogs retain their layout. */
+.modal.live-conversation-modal { width: min(1220px, calc(100vw - 48px)); max-width: calc(100vw - 48px); max-height: calc(100dvh - 44px); overflow: hidden; }
+.live-conversation-modal > .modal-content { height: min(900px, calc(100dvh - 46px)); max-height: calc(100dvh - 46px); display: flex; flex-direction: column; }
+.live-conversation-modal .modal-header { flex-shrink: 0; margin-bottom: 12px; }
+.live-conversation-modal .live-conversation { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.live-conversation-layout { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 16px; flex: 1; min-height: 0; }
+.live-conversation-current { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; padding-right: 3px; }
+.live-conversation-current > :not(.live-messages) { flex-shrink: 0; }
+.live-conversation-current > .live-messages { flex: 1 1 180px; max-height: none; min-height: 140px; }
+.live-conversation-modal .modal-actions { flex-shrink: 0; margin-top: 12px; }
+.live-briefing { min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: #fafbfc; font-size: 12px; line-height: 1.55; overflow-wrap: anywhere; }
+.live-briefing-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
+.live-briefing-heading h3 { font-size: 14px; margin: 0; }
+.live-briefing-heading p, .live-briefing-date, .live-briefing-note { font-size: 11px; color: #65707e; }
+.live-briefing-heading p { margin: 2px 0 0; }
+.live-briefing-reload { flex-shrink: 0; min-height: 34px; padding: 6px 9px; font-size: 11px; }
+.live-briefing-state { margin: 10px 0 0; padding: 10px; border-radius: 7px; background: #f0f2f5; color: #59616d; }
+.live-briefing-state p { margin: 5px 0 0; }
+.live-briefing-customer { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 9px; }
+.live-briefing-customer strong { font-size: 13px; }
+.live-briefing-products { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin: 8px 0 0; }
+.live-briefing-products dt { color: #65707e; font-size: 11px; }
+.live-briefing-products dd { margin: 2px 0 0; }
+.live-briefing-products small { display: block; font-size: 11px; color: #65707e; margin-top: 2px; }
+.live-briefing-section { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 9px; }
+.live-briefing-section h4 { margin: 0 0 4px; font-size: 12px; }
+.live-briefing-purpose, .live-briefing-summary-preview { white-space: pre-wrap; margin: 0; }
+.live-briefing-date, .live-briefing-note { margin: 4px 0 0; }
+.live-briefing-summary-preview { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; margin-top: 6px; }
+.live-briefing-summary { margin-top: 3px; font-size: 11px; color: #59616d; }
+.live-briefing-summary summary { cursor: pointer; padding-block: 3px; }
+.live-briefing-summary p { font-size: 12px; white-space: pre-wrap; margin: 6px 0 0; }
+.live-briefing-risk { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 9px; margin: 0; }
+.live-briefing-risk strong { font-size: 13px; }
+.live-briefing-risk span { color: #65707e; font-size: 11px; }
+.live-briefing-counts { display: flex; flex-wrap: wrap; gap: 3px 14px; margin: 6px 0 0; }
+.live-briefing-counts div { display: flex; gap: 5px; }
+.live-briefing-counts dt { color: #65707e; }
+.live-briefing-counts dd { margin: 0; font-weight: 600; }
+.live-briefing-guidance { padding-left: 17px; margin: 0; }
+.live-briefing-guidance li + li { margin-top: 3px; }
+@media (max-width: 900px) {
+  .modal.live-conversation-modal { width: calc(100vw - 28px); max-width: calc(100vw - 28px); max-height: calc(100dvh - 28px); }
+  .live-conversation-modal > .modal-content { height: auto; max-height: calc(100dvh - 30px); padding: 14px; }
+  .live-conversation-modal .modal-header { margin-bottom: 10px; padding-block: 5px 10px; }
+  .live-conversation-layout { display: flex; flex-direction: column; overflow: auto; gap: 12px; overscroll-behavior: contain; }
+  .live-conversation-current { flex-shrink: 0; overflow: visible; padding-right: 0; }
+  .live-conversation-current > .live-messages { flex: none; height: min(36dvh, 320px); min-height: 140px; }
+  .live-briefing { flex-shrink: 0; overflow: visible; scrollbar-gutter: auto; }
+  .live-briefing-reload, .live-conversation-modal .modal-actions .button { min-height: 38px; }
+  .live-briefing-summary summary { padding-block: 8px; }
+}

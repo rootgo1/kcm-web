@@ -1223,6 +1223,84 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
 @media (max-width: 530px) {
   .call-table .text-button, .support-call-table .text-button, .aftercare-table .text-button { min-height: 40px; }
 }
+
+/* Read-only stored records are visually separate from the existing in-memory workflows. */
+.reference-data-details { margin: 16px 0; padding: 12px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--white, #fff); }
+.reference-data-details > summary { cursor: pointer; font-size: 12px; font-weight: 650; }
+.reference-data-details > .panel-note { margin: 10px 0; }
+.real-data-section { margin-block: 16px; min-width: 0; }
+.real-data-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.real-data-grid > *, .real-data-detail, .real-data-list { min-width: 0; }
+.real-data-header { display: flex; flex-wrap: wrap; gap: 10px; padding: 14px 16px; align-items: center; }
+.real-data-header h2 { font-size: 15px; }
+.real-data-header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.real-data-notice { color: var(--muted, #777e8e); font-size: 11px; line-height: 1.6; margin: 6px 0; overflow-wrap: anywhere; }
+.real-data-list > .real-data-notice, .real-data-list > .real-data-error { padding: 10px 16px; }
+.real-data-tools { padding: 10px 16px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.real-data-tools > label { display: flex; gap: 8px; align-items: center; font-size: 11px; min-width: 0; }
+.real-data-tools .search-field { flex: 1; }
+.real-data-tools input { min-width: 0; width: 100%; }
+.real-data-tools select { border: 1px solid var(--border); border-radius: 6px; padding: 7px 8px; background: #fff; font: inherit; min-height: 32px; }
+.real-data-table { min-width: 430px; width: 100%; }
+.real-data-table th { font-size: 11px; }
+.real-data-table td { font-size: 12px; line-height: 1.5; padding: 12px; overflow-wrap: anywhere; }
+.real-data-table .customer-select strong { font-size: 13px; }
+.real-data-table .customer-select small { white-space: normal; font-size: 11px; }
+.real-data-table td > .status-pill { display: inline-flex; margin: 5px 0; }
+.real-data-table .employee-name { display: block; font-size: 12px; }
+.real-data-meta { display: block; font-size: 11px; color: var(--muted, #777e8e); line-height: 1.6; }
+.real-data-id { display: block; font-size: 10px; color: var(--muted, #777e8e); overflow-wrap: anywhere; margin: 6px 0; }
+.real-data-pagination { display: flex; gap: 10px; justify-content: flex-end; align-items: center; padding: 10px 16px; font-size: 11px; }
+.real-data-section .button { font-size: 11px; min-height: 32px; }
+.real-data-empty, .real-data-error { padding: 16px; font-size: 12px; line-height: 1.7; }
+.real-data-error { color: #9b2834; }
+.real-data-summary { font-size: 12px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.real-data-detail:not(.card) { padding: 0 16px 16px; }
+.real-data-briefing > .real-data-history-heading, .real-data-briefing > .real-data-meta, .real-data-briefing > .real-data-id,
+.real-data-briefing > .real-data-notice { margin-inline: 16px; }
+.real-data-facts { margin: 12px 16px; }
+.real-data-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+.real-data-request-note { padding: 0 16px 12px; }
+.real-data-request-note h3 { font-size: 13px; }
+.real-data-request-note p { font-size: 12px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.real-data-briefing .briefing-summary { margin: 12px 16px; }
+.real-data-briefing .briefing-checklist { padding: 12px 16px; }
+.real-data-briefing-history { padding: 0 16px 12px; }
+.real-data-history-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: center; margin: 10px 0; }
+.real-data-history-heading h3, .real-data-briefing-history h3 { font-size: 13px; }
+.real-data-history-heading > strong { font-size: 13px; overflow-wrap: anywhere; }
+.real-data-history-list { display: grid; gap: 10px; max-height: 520px; overflow-y: auto; }
+.real-data-history-item { padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
+.real-data-risk-list { display: grid; gap: 6px; }
+.real-data-risk { display: flex; flex-wrap: wrap; gap: 8px; font-size: 11px; align-items: center; }
+.product-source-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-block: 10px; }
+.product-source-bar > p { flex: 1; min-width: 180px; }
+.effective-price-disclosure { margin: 12px 0; }
+.effective-price-disclosure > summary { cursor: pointer; font-size: 12px; font-weight: 650; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; background: #fff; }
+.effective-price-panel { margin-top: 10px; }
+.effective-price-content { padding: 16px; }
+.effective-price-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.effective-price-form .consultation-field { min-width: 0; margin: 0; }
+.effective-price-form select, .effective-price-form input { width: 100%; min-width: 0; max-width: 100%; min-height: 36px; border: 1px solid var(--border); border-radius: 6px; padding: 8px; background: #fff; font: inherit; font-size: 12px; }
+.effective-price-conditions { margin: 14px 0; border: 0; padding: 0; min-inline-size: 0; }
+.effective-price-conditions legend { font-size: 12px; font-weight: 650; }
+.effective-price-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 14px 0; }
+.effective-price-actions .button { min-height: 36px; font-size: 12px; }
+.effective-price-result { border-top: 1px solid var(--border); padding-top: 12px; }
+.effective-price-result h3 { font-size: 14px; }
+.effective-price-current-plan, .effective-price-breakdown { grid-template-columns: repeat(2, minmax(0, 1fr)); font-size: 12px; gap: 12px; }
+.effective-price-breakdown small { display: block; font-size: 10px; font-weight: 400; }
+.effective-price-total { font-size: 15px; margin: 12px 0; }
+.effective-price-warnings { margin: 10px 0 0; padding-left: 18px; font-size: 11px; color: var(--muted, #777e8e); line-height: 1.7; }
+@media (max-width: 1100px) { .real-data-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) {
+  .real-data-tools .search-field { flex-basis: 100%; }
+  .real-data-section .button, .real-data-section select { min-height: 40px; }
+  .real-data-header { padding: 12px; }
+  .real-data-table-scroll { overflow-x: auto; }
+  .effective-price-form, .effective-price-current-plan, .effective-price-breakdown { grid-template-columns: minmax(0, 1fr); }
+  .effective-price-form select, .effective-price-form input, .effective-price-actions .button { min-height: 40px; }
+}
 </style></head><body><div id="root"></div><!-- Generated from src/. React/ReactDOM/Scheduler: Copyright Meta Platforms, Inc. and affiliates, MIT License. See THIRD_PARTY_NOTICES.txt. No font files are embedded. --><script>(function(){'use strict';
 const process={env:{NODE_ENV:'production'}};
 const modules={"react":function(module,exports,require){
@@ -1634,6 +1712,7 @@ const MarketingPage_1 = require("./pages/MarketingPage");
 const aftercare_1 = require("./lib/aftercare");
 const aftercareMockData_1 = require("./data/aftercareMockData");
 const uiText_1 = require("./lib/uiText");
+const RealAppointments_1 = require("./components/RealAppointments");
 function App() {
     const [page, setPage] = (0, react_1.useState)(() => (0, domain_1.parsePage)(window.location.hash));
     const [data, setData] = (0, react_1.useState)(null);
@@ -1786,7 +1865,8 @@ function App() {
                     __React.createElement("button", { className: "button button-primary", onClick: () => navigate('appointments') },
                         "\uC608\uC57D\u00B7\uC0C1\uB2F4 \uBCF4\uAE30",
                         __React.createElement(Icon_1.Icon, { name: "arrow", size: 16 })))),
-            __React.createElement("section", { className: "stats-grid", "aria-label": "\uD604\uC7AC \uD1B5\uD654 \uC8FC\uC694 \uD604\uD669" }, statItems.map(item => __React.createElement("div", { className: `stat-card ${item.tone === 'red' ? 'featured-stat' : ''}`, key: item.label },
+            __React.createElement("p", { className: "real-data-notice" }, "\uD654\uBA74 \uC0C1\uB2F4 \uD604\uD669\uC785\uB2C8\uB2E4. \uC2E4\uC81C \uC5F0\uACB0\uB41C \uD1B5\uD654\uB294 \uC2E4\uC2DC\uAC04 \uC0C1\uB2F4 \uC601\uC5ED\uC5D0\uC11C \uD655\uC778\uD558\uC138\uC694."),
+            __React.createElement("section", { className: "stats-grid", "aria-label": "\uD604\uC7AC \uD654\uBA74 \uD1B5\uD654 \uC8FC\uC694 \uD604\uD669" }, statItems.map(item => __React.createElement("div", { className: `stat-card ${item.tone === 'red' ? 'featured-stat' : ''}`, key: item.label },
                 __React.createElement("div", { className: "stat-top" },
                     __React.createElement("span", null, item.label),
                     __React.createElement("span", { className: `small-icon ${item.tone}` },
@@ -1797,22 +1877,26 @@ function App() {
                 __React.createElement("p", null, item.caption)))),
             __React.createElement(CallOverview_1.CallOverview, { key: loadKey, state: callState, onStart: onStartCall, onSupport: onSupport, onDraft: onCallDraft, onComplete: onCallComplete, onNext: id => setCallState(current => (0, callWorkflow_1.createNextDemoCall)(current, id)) }),
             __React.createElement(LiveConsultations_1.LiveConsultations, null),
-            __React.createElement("div", { className: "appointment-overview-heading" },
-                __React.createElement("h2", null, "\uC608\uC57D\u00B7\uC0C1\uB2F4 \uD604\uD669"),
-                metrics && __React.createElement("p", { "aria-label": "\uC608\uC57D \uC0C1\uB2F4 \uC9D1\uACC4" },
-                    "\uC804\uCCB4 ",
-                    metrics.reservations,
-                    "\uAC74 \u00B7 \uBC29\uBB38 \uC608\uC815 ",
-                    metrics.upcoming,
-                    " \u00B7 \uC0C1\uB2F4 \uC911 ",
-                    metrics.inProgress,
-                    " \u00B7 \uC644\uB8CC ",
-                    metrics.completed,
-                    " \u00B7 \uBE0C\uB9AC\uD551 \uBBF8\uD655\uC778 ",
-                    metrics.unreviewed)),
-            __React.createElement("div", { className: "dashboard-grid" },
-                table,
-                briefing),
+            __React.createElement(RealAppointments_1.RealAppointments, { compact: true, onAll: () => navigate('appointments') }),
+            __React.createElement("details", { className: "reference-data-details" },
+                __React.createElement("summary", null, "\uBCC4\uB3C4 \uCC38\uACE0 \uC790\uB8CC \u00B7 \uD654\uBA74 \uC0C1\uB2F4"),
+                __React.createElement("p", { className: "panel-note" }, "\uC544\uB798 \uC608\uC57D\uACFC \uC0C1\uB2F4 \uCC98\uB9AC\uB294 \uAE30\uC874 \uD654\uBA74 \uCC38\uACE0 \uC790\uB8CC\uC785\uB2C8\uB2E4. \uC800\uC7A5\uB41C DB \uC608\uC57D\uACFC \uBCC4\uAC1C\uC774\uBA70 DB\uC5D0 \uAE30\uB85D\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
+                __React.createElement("div", { className: "appointment-overview-heading" },
+                    __React.createElement("h2", null, "\uD654\uBA74 \uC608\uC57D\u00B7\uC0C1\uB2F4 \uD604\uD669"),
+                    metrics && __React.createElement("p", { "aria-label": "\uC608\uC57D \uC0C1\uB2F4 \uC9D1\uACC4" },
+                        "\uC804\uCCB4 ",
+                        metrics.reservations,
+                        "\uAC74 \u00B7 \uBC29\uBB38 \uC608\uC815 ",
+                        metrics.upcoming,
+                        " \u00B7 \uC0C1\uB2F4 \uC911 ",
+                        metrics.inProgress,
+                        " \u00B7 \uC644\uB8CC ",
+                        metrics.completed,
+                        " \u00B7 \uBE0C\uB9AC\uD551 \uBBF8\uD655\uC778 ",
+                        metrics.unreviewed)),
+                __React.createElement("div", { className: "dashboard-grid" },
+                    table,
+                    briefing)),
             __React.createElement("div", { className: "bottom-grid" },
                 __React.createElement(InventoryPanel_1.InventoryPanel, { data: data, onOpen: () => navigate('inventory') }),
                 __React.createElement("section", { className: "card activity-card" },
@@ -1837,9 +1921,13 @@ function App() {
                     __React.createElement("span", { className: "eyebrow" }, "\uACE0\uAC1D\uAD00\uB9AC"),
                     __React.createElement("h1", null, "\uC608\uC57D\u00B7\uC0C1\uB2F4\uAD00\uB9AC"),
                     __React.createElement("p", null, "\uACE0\uAC1D\uC744 \uC120\uD0DD\uD574 \uC0AC\uC804 \uC0C1\uB2F4 \uB0B4\uC6A9\uACFC \uBE0C\uB9AC\uD551\uC744 \uD655\uC778\uD558\uC138\uC694."))),
-            __React.createElement("div", { className: "dashboard-grid" },
-                table,
-                briefing)) : page === 'support' ? __React.createElement(SupportPage_1.SupportPage, { state: callState, onStart: onStartCall, onSupport: onSupport, onDraft: onCallDraft, onComplete: onCallComplete, onNext: id => setCallState(current => (0, callWorkflow_1.createNextDemoCall)(current, id)) }) : page === 'marketing' ? __React.createElement(MarketingPage_1.MarketingPage, { items: aftercareList, records: aftercare, store: data.store, onReview: onAftercareReview, onSend: onAftercareSend, onSupport: () => navigate('support') }) : __React.createElement(SecondaryPages_1.SecondaryPages, { key: page === 'stores' ? storeInfoVisit : page, page: page, data: data })),
+            __React.createElement(RealAppointments_1.RealAppointments, null),
+            __React.createElement("details", { className: "reference-data-details" },
+                __React.createElement("summary", null, "\uBCC4\uB3C4 \uCC38\uACE0 \uC790\uB8CC \u00B7 \uD654\uBA74 \uC0C1\uB2F4"),
+                __React.createElement("p", { className: "panel-note" }, "\uAE30\uC874 \uD654\uBA74 \uC0C1\uB2F4 \uD750\uB984\uC785\uB2C8\uB2E4. \uC800\uC7A5\uB41C \uC608\uC57D\uC744 \uBCC0\uACBD\uD558\uAC70\uB098 DB\uC5D0 \uC0C1\uB2F4 \uACB0\uACFC\uB97C \uAE30\uB85D\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
+                __React.createElement("div", { className: "dashboard-grid" },
+                    table,
+                    briefing))) : page === 'support' ? __React.createElement(SupportPage_1.SupportPage, { state: callState, onStart: onStartCall, onSupport: onSupport, onDraft: onCallDraft, onComplete: onCallComplete, onNext: id => setCallState(current => (0, callWorkflow_1.createNextDemoCall)(current, id)) }) : page === 'marketing' ? __React.createElement(MarketingPage_1.MarketingPage, { items: aftercareList, records: aftercare, store: data.store, onReview: onAftercareReview, onSend: onAftercareSend, onSupport: () => navigate('support') }) : __React.createElement(SecondaryPages_1.SecondaryPages, { key: page === 'stores' ? storeInfoVisit : page, page: page, data: data })),
         modal === 'help' && __React.createElement(Modal_1.Modal, { title: "KCM \uC774\uC6A9 \uC548\uB0B4", onClose: () => setModal(null) },
             __React.createElement("div", { className: "help-content" },
                 __React.createElement("p", { className: "modal-lead" },
@@ -1853,8 +1941,8 @@ function App() {
                 __React.createElement("p", null, "\uACE0\uAC1D\uC6A9 AI \uC0C1\uB2F4\uC740 \uC2E4\uC2DC\uAC04 \uC0C1\uB2F4 \uC601\uC5ED\uC5D0\uC11C \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uCD5C\uC885 \uACB0\uACFC \uC804\uC1A1\uC758 \uC218\uC2E0 \uC751\uB2F5\uC740 \uC678\uBD80 \uC800\uC7A5 \uC644\uB8CC\uC640 \uB2E4\uB985\uB2C8\uB2E4. \uC800\uC7A5\u00B7\uC694\uC57D \uACB0\uACFC\uB294 \uBCC4\uB3C4 \uD655\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4."),
                 __React.createElement("details", { className: "call-criteria" },
                     __React.createElement("summary", null, "\uC774\uC6A9 \uBC94\uC704 \uBC0F \uAE30\uB85D \uBCF4\uAD00"),
-                    __React.createElement("p", null, "\uD604\uC7AC \uC608\uC57D\u00B7\uC0C1\uD488\u00B7\uB9E4\uC7A5 \uC790\uB8CC\uB294 \uC6B4\uC601 \uC815\uBCF4\uC640 \uBCC4\uB3C4\uC778 \uCC38\uACE0 \uC790\uB8CC\uC785\uB2C8\uB2E4. \uD654\uBA74\uC5D0\uC11C \uCC98\uB9AC\uD558\uB294 \uAD00\uB9AC\uC790 \uC9C0\uC6D0\uACFC \uD6C4\uC18D \uC548\uB0B4\uB294 \uC678\uBD80 \uC54C\uB9BC\u00B7\uBB38\uC790\uB97C \uC804\uC1A1\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uC5C6\uC774 \uC774\uC6A9\uD558\uBA70, \uC608\uC57D \uB4F1\uB85D\u00B7\uBCC0\uACBD\uACFC \uC7AC\uACE0 \uB300\uC5EC\uB294 \uC81C\uACF5\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
-                    __React.createElement("p", null, "\uC608\uC57D\uACFC \uD654\uBA74 \uC0C1\uB2F4 \uAE30\uB85D\uC740 \uC0C8\uB85C\uACE0\uCE68\uD558\uBA74 \uCD08\uAE30\uD654\uB429\uB2C8\uB2E4. \uC2E4\uC2DC\uAC04 \uD1B5\uD654 \uAE30\uB85D\uC740 \uC11C\uBE44\uC2A4 \uC7AC\uC2DC\uC791 \uC804\uC758 \uC774\uB825\uC744 \uC870\uD68C\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uC678\uBD80 \uC800\uC7A5\uB41C \uC790\uB8CC\uB294 \uBCC4\uB3C4\uC785\uB2C8\uB2E4.")))),
+                    __React.createElement("p", null, "\uC800\uC7A5\uB41C \uC608\uC57D\u00B7\uACE0\uAC1D\u00B7\uC0C1\uB2F4 \uC774\uB825\uC740 \uD604\uC7AC \uB9E4\uC7A5 \uBC94\uC704\uC5D0\uC11C \uC870\uD68C\uD569\uB2C8\uB2E4. \uBCC4\uB3C4 \uCC38\uACE0 \uC790\uB8CC\uC640 \uD654\uBA74 \uC0C1\uB2F4 \uCC98\uB9AC\uB294 DB \uAE30\uB85D\uACFC \uAD6C\uBD84\uB429\uB2C8\uB2E4. \uD654\uBA74\uC5D0\uC11C \uCC98\uB9AC\uD558\uB294 \uAD00\uB9AC\uC790 \uC9C0\uC6D0\uACFC \uD6C4\uC18D \uC548\uB0B4\uB294 \uC678\uBD80 \uC54C\uB9BC\u00B7\uBB38\uC790\uB97C \uC804\uC1A1\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uC608\uC57D\uC740 \uC870\uD68C \uC804\uC6A9\uC774\uBA70 \uC2A4\uB9C8\uD2B8 \uC7AC\uACE0\uC758 \uC870\uD68C\u00B7\uB300\uC5EC \uC5C5\uBB34\uB294 \uBCC4\uB3C4 \uC5F0\uACB0 \uACBD\uB85C\uB97C \uC0AC\uC6A9\uD569\uB2C8\uB2E4."),
+                    __React.createElement("p", null, "\uAE30\uC874 \uCC38\uACE0 \uC608\uC57D\uACFC \uD654\uBA74 \uC0C1\uB2F4 \uAE30\uB85D\uC740 \uC0C8\uB85C\uACE0\uCE68\uD558\uBA74 \uCD08\uAE30\uD654\uB429\uB2C8\uB2E4. \uC800\uC7A5\uB41C DB \uC790\uB8CC\uB294 \uB2E4\uC2DC \uC870\uD68C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uC2E4\uC2DC\uAC04 \uC0C1\uB2F4\uC740 \uC11C\uBC84 \uBA54\uBAA8\uB9AC \uAE30\uB85D\uC774\uBA70, \uACE0\uAC1D\uAD00\uB9AC\uC758 \uC800\uC7A5 \uC0C1\uB2F4 \uC774\uB825\uACFC \uAD6C\uBD84\uB429\uB2C8\uB2E4.")))),
         modal === 'reset' && __React.createElement(Modal_1.Modal, { title: "\uD604\uC7AC \uD654\uBA74 \uAE30\uB85D\uC744 \uCD08\uAE30\uD654\uD560\uAE4C\uC694?", onClose: () => setModal(null) },
             __React.createElement("p", { className: "modal-lead" }, "\uD1B5\uD654 \uCD08\uC548\u00B7\uC0C1\uB2F4 \uACB0\uACFC\u00B7\uD1B5\uD654\uBCC4 \uC704\uD5D8 \uC774\uB825\u00B7\uC810\uC218 \uBC18\uC601 \uAE30\uB85D\u00B7\uC9C0\uC6D0 \uC774\uB825, \uC608\uC57D \uC0C1\uB2F4 \uC0C1\uD0DC\u00B7\uACB0\uACFC\u00B7\uC218\uC815 \uC774\uB825, \uBE0C\uB9AC\uD551 \uD655\uC778 \uC0C1\uD0DC\uC640 \uC608\uC57D \uAC80\uC0C9\u00B7\uD1B5\uD654 \uD544\uD130 \uC870\uAC74\uC774 \uCD08\uAE30 \uC0C1\uD0DC\uB85C \uB3CC\uC544\uAC11\uB2C8\uB2E4. \uC2E4\uC81C DB\uB098 \uB2E4\uB978 \uC11C\uBE44\uC2A4\uC5D0\uB294 \uC601\uD5A5\uC744 \uC8FC\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
             __React.createElement("div", { className: "modal-actions" },
@@ -2326,9 +2414,11 @@ function CallRiskDetails({ call, customer, calls }) {
                         final.raw_score,
                         "\uC810")),
                 __React.createElement("div", null,
-                    __React.createElement("dt", null, "\uC704\uD611 \uCD5C\uC18C\uC810\uC218 \uBCF4\uC815"),
+                    __React.createElement("dt", null, "\uCD5C\uC18C\uC810\uC218 \uBCF4\uC815"),
                     __React.createElement("dd", null,
-                        final.threat_floor ? '최소 ' + final.threat_floor + '점 적용' : '없음',
+                        final.signals.profanity_count >= 1 && final.rule_version === riskScoring_1.RISK_RULE.version && '욕설 최소 ' + riskScoring_1.RISK_RULE.profanityFloor + '점 · ',
+                        "\uC704\uD611 ",
+                        final.threat_floor ? '최소 ' + final.threat_floor + '점 적용' : '보정 없음',
                         " \u00B7 \uBCF4\uC815 \uD6C4 ",
                         final.adjusted_score,
                         "\uC810")),
@@ -2668,6 +2758,214 @@ function ConsultationPanel({ appointment, starting, onStart, onEdit }) {
 }
 
 },
+"src/components/EffectivePricePanel":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.EffectivePricePanel = EffectivePricePanel;
+const react_1 = require("react");
+const effectivePriceApi_1 = require("../services/effectivePriceApi");
+function amountLabel(row) {
+    if (row.amount !== null)
+        return (0, effectivePriceApi_1.formatEffectivePrice)(row.amount);
+    if (row.status === 'not_selected')
+        return '선택 안함';
+    if (row.status === 'not_applicable')
+        return '조건 미충족 · 미적용';
+    return '확인 필요';
+}
+const validLines = (value) => /^[1-9]\d*$/.test(value) && Number.isSafeInteger(Number(value));
+/** Server-read prices only; editing a selection invalidates any result from earlier choices. */
+function EffectivePricePanel({ catalog, customers, customersError, initialPlanId = '', initialProductId = '' }) {
+    const elementId = (0, react_1.useId)();
+    const [choices, setChoices] = (0, react_1.useState)(() => ({
+        planId: catalog.ownPlans.some(plan => plan.id === initialPlanId) ? initialPlanId : '',
+        productId: catalog.products.some(product => product.id === initialProductId) ? initialProductId : '',
+        bundleId: '', customerId: '', family: '', internet: '', mobileLines: '',
+    }));
+    const [result, setResult] = (0, react_1.useState)(null);
+    const [resultRevision, setResultRevision] = (0, react_1.useState)('');
+    const [error, setError] = (0, react_1.useState)('');
+    const [loading, setLoading] = (0, react_1.useState)(false);
+    const generation = (0, react_1.useRef)(0);
+    const activeRequest = (0, react_1.useRef)(null);
+    const catalogRevision = JSON.stringify(catalog);
+    const customerRevision = JSON.stringify(customers?.map(customer => ({ id: customer.id, privacyConsent: customer.privacyConsent, currentPlan: customer.currentPlan })) ?? []);
+    const dataRevision = `${catalogRevision}|${customerRevision}`;
+    const invalidate = () => {
+        generation.current += 1;
+        activeRequest.current?.abort();
+        activeRequest.current = null;
+        setResult(null);
+        setResultRevision('');
+        setError('');
+        setLoading(false);
+    };
+    (0, react_1.useEffect)(() => {
+        invalidate();
+        setChoices(previous => ({ ...previous,
+            planId: catalog.ownPlans.some(plan => plan.id === previous.planId) ? previous.planId : '',
+            productId: catalog.products.some(product => product.id === previous.productId) ? previous.productId : '',
+            bundleId: catalog.bundles.some(bundle => bundle.id === previous.bundleId) ? previous.bundleId : '',
+            customerId: customers?.some(customer => customer.id === previous.customerId && customer.privacyConsent) ? previous.customerId : '',
+        }));
+        return () => { generation.current += 1; activeRequest.current?.abort(); activeRequest.current = null; };
+    }, [catalogRevision, customerRevision]);
+    const change = (field, value) => {
+        invalidate();
+        setChoices(previous => ({ ...previous, [field]: value,
+            ...(field === 'bundleId' ? { family: '', internet: '', mobileLines: '' } : {}) }));
+    };
+    const selectedPlan = catalog.ownPlans.find(plan => plan.id === choices.planId);
+    const selectedCustomer = customers?.find(customer => customer.id === choices.customerId);
+    const calculate = async () => {
+        invalidate();
+        if (!selectedPlan) {
+            setError('계산할 자사 요금제를 선택해 주세요.');
+            return;
+        }
+        if (choices.customerId && (!selectedCustomer || !selectedCustomer.privacyConsent)) {
+            setError('현재 매장의 고객과 개인정보 동의를 다시 확인해 주세요.');
+            return;
+        }
+        if (choices.bundleId && choices.mobileLines !== '' && !validLines(choices.mobileLines)) {
+            setError('휴대전화 회선 수를 1 이상의 정수로 입력해 주세요.');
+            return;
+        }
+        const input = { plan_id: choices.planId,
+            ...(choices.productId ? { product_id: choices.productId } : {}), ...(choices.bundleId ? { bundle_id: choices.bundleId } : {}),
+            ...(choices.customerId ? { customer_id: choices.customerId } : {}), ...(choices.bundleId ? {
+                ...(choices.family === '' ? {} : { family: choices.family === 'yes' }),
+                ...(choices.internet === '' ? {} : { internet: choices.internet === 'yes' }),
+                ...(choices.mobileLines === '' ? {} : { mobile_lines: Number(choices.mobileLines) }),
+            } : {}) };
+        const token = generation.current;
+        const controller = new AbortController();
+        activeRequest.current = controller;
+        setLoading(true);
+        try {
+            const response = await (0, effectivePriceApi_1.calculateEffectivePrice)(input, controller.signal);
+            if (token === generation.current && !controller.signal.aborted) {
+                setResult(response);
+                setResultRevision(dataRevision);
+            }
+        }
+        catch (cause) {
+            if (token === generation.current && !controller.signal.aborted)
+                setError((0, effectivePriceApi_1.effectivePriceErrorMessage)(cause));
+        }
+        finally {
+            if (token === generation.current) {
+                setLoading(false);
+                activeRequest.current = null;
+            }
+        }
+    };
+    return __React.createElement("section", { className: "card effective-price-panel", "aria-labelledby": `${elementId}-title` },
+        __React.createElement("div", { className: "card-heading" },
+            __React.createElement("div", null,
+                __React.createElement("h2", { id: `${elementId}-title` }, "\uCCB4\uAC10\uAC00 \uD655\uC778"),
+                __React.createElement("p", { className: "real-data-notice" }, "\uB4F1\uB85D\uB41C \uC6D4\uC815\uC561\uACFC \uD655\uC778 \uAC00\uB2A5\uD55C \uC815\uC561 \uACB0\uD569 \uD560\uC778\uC73C\uB85C \uC6D4 \uD1B5\uC2E0\uC694\uAE08\uC744 \uACC4\uC0B0\uD569\uB2C8\uB2E4."))),
+        __React.createElement("div", { className: "effective-price-content" },
+            __React.createElement("div", { className: "effective-price-form" },
+                __React.createElement("div", { className: "consultation-field" },
+                    __React.createElement("label", { htmlFor: `${elementId}-customer` },
+                        "\uACE0\uAC1D ",
+                        __React.createElement("span", null, "\uC120\uD0DD")),
+                    __React.createElement("select", { id: `${elementId}-customer`, value: choices.customerId, onChange: event => change('customerId', event.target.value) },
+                        __React.createElement("option", { value: "" }, "\uACE0\uAC1D \uC815\uBCF4 \uC5C6\uC774 \uACC4\uC0B0"),
+                        customers?.filter(customer => customer.privacyConsent).map(customer => __React.createElement("option", { key: customer.id, value: customer.id },
+                            customer.nameMasked,
+                            " \u00B7 ",
+                            customer.phoneMasked))),
+                    __React.createElement("p", { className: "real-data-notice" }, "\uD604\uC7AC \uB9E4\uC7A5\uC758 \uCD5C\uADFC \uC0C1\uB2F4 \uACE0\uAC1D \uCD5C\uB300 20\uBA85 \uC911 \uB3D9\uC758\uAC00 \uD655\uC778\uB41C \uACE0\uAC1D\uC744 \uBE44\uAD50\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."),
+                    customersError && __React.createElement("p", { className: "real-data-notice", role: "status" },
+                        customersError,
+                        " \uACE0\uAC1D \uC815\uBCF4 \uC5C6\uC774 \uACC4\uC0B0\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."),
+                    choices.customerId && !selectedCustomer?.currentPlan && __React.createElement("p", { className: "real-data-notice" }, "\uD604\uC7AC \uC694\uAE08\uC81C \uAE30\uB85D\uC774 \uC5C6\uC73C\uBA74 \uC694\uAE08 \uCC28\uC774\uB294 \uD655\uC778 \uD544\uC694\uB85C \uD45C\uC2DC\uB429\uB2C8\uB2E4.")),
+                __React.createElement("div", { className: "consultation-field" },
+                    __React.createElement("label", { htmlFor: `${elementId}-plan` },
+                        "\uC120\uD0DD \uC694\uAE08\uC81C ",
+                        __React.createElement("span", null, "\uD544\uC218 \u00B7 \uC790\uC0AC \uC694\uAE08\uC81C")),
+                    __React.createElement("select", { id: `${elementId}-plan`, value: choices.planId, onChange: event => change('planId', event.target.value) },
+                        __React.createElement("option", { value: "" }, "\uC694\uAE08\uC81C\uB97C \uC120\uD0DD\uD574 \uC8FC\uC138\uC694"),
+                        catalog.ownPlans.map(plan => __React.createElement("option", { key: plan.id, value: plan.id },
+                            plan.name,
+                            " \u00B7 ",
+                            (0, effectivePriceApi_1.formatEffectivePrice)(plan.monthlyFee),
+                            " / \uC6D4")))),
+                __React.createElement("div", { className: "consultation-field" },
+                    __React.createElement("label", { htmlFor: `${elementId}-product` },
+                        "\uB2E8\uB9D0 ",
+                        __React.createElement("span", null, "\uC120\uD0DD")),
+                    __React.createElement("select", { id: `${elementId}-product`, value: choices.productId, onChange: event => change('productId', event.target.value) },
+                        __React.createElement("option", { value: "" }, "\uB2E8\uB9D0 \uC120\uD0DD \uC548\uD568"),
+                        catalog.products.map(product => __React.createElement("option", { key: product.id, value: product.id },
+                            product.name,
+                            " \u00B7 ",
+                            product.storageGb,
+                            "GB \u00B7 ",
+                            product.color)))),
+                __React.createElement("div", { className: "consultation-field" },
+                    __React.createElement("label", { htmlFor: `${elementId}-bundle` },
+                        "\uACB0\uD569 ",
+                        __React.createElement("span", null, "\uC120\uD0DD")),
+                    __React.createElement("select", { id: `${elementId}-bundle`, value: choices.bundleId, onChange: event => change('bundleId', event.target.value) },
+                        __React.createElement("option", { value: "" }, "\uACB0\uD569 \uC120\uD0DD \uC548\uD568"),
+                        catalog.bundles.map(bundle => __React.createElement("option", { key: bundle.id, value: bundle.id }, bundle.name))))),
+            choices.bundleId && __React.createElement("fieldset", { className: "effective-price-conditions" },
+                __React.createElement("legend", null, "\uACB0\uD569 \uC870\uAC74"),
+                __React.createElement("p", { className: "real-data-notice" }, "\uBAA8\uB974\uB294 \uC870\uAC74\uC740 \u2018\uD655\uC778 \uD544\uC694\u2019\uB85C \uB450\uC138\uC694. \uD655\uC778\uB418\uC9C0 \uC54A\uC740 \uD560\uC778\uC740 \uACC4\uC0B0\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
+                __React.createElement("div", { className: "effective-price-form" },
+                    __React.createElement("div", { className: "consultation-field" },
+                        __React.createElement("label", { htmlFor: `${elementId}-family` }, "\uAC00\uC871\uAD00\uACC4 \uC870\uAC74"),
+                        __React.createElement("select", { id: `${elementId}-family`, value: choices.family, onChange: event => change('family', event.target.value) },
+                            __React.createElement("option", { value: "" }, "\uD655\uC778 \uD544\uC694"),
+                            __React.createElement("option", { value: "yes" }, "\uCDA9\uC871"),
+                            __React.createElement("option", { value: "no" }, "\uBBF8\uCDA9\uC871"))),
+                    __React.createElement("div", { className: "consultation-field" },
+                        __React.createElement("label", { htmlFor: `${elementId}-internet` }, "\uC778\uD130\uB137 \uC774\uC6A9 \uC870\uAC74"),
+                        __React.createElement("select", { id: `${elementId}-internet`, value: choices.internet, onChange: event => change('internet', event.target.value) },
+                            __React.createElement("option", { value: "" }, "\uD655\uC778 \uD544\uC694"),
+                            __React.createElement("option", { value: "yes" }, "\uCDA9\uC871"),
+                            __React.createElement("option", { value: "no" }, "\uBBF8\uCDA9\uC871"))),
+                    __React.createElement("div", { className: "consultation-field" },
+                        __React.createElement("label", { htmlFor: `${elementId}-lines` },
+                            "\uD734\uB300\uC804\uD654 \uD68C\uC120 \uC218 ",
+                            __React.createElement("span", null, "\uD655\uC778\uB41C \uACBD\uC6B0 \uC785\uB825")),
+                        __React.createElement("input", { id: `${elementId}-lines`, type: "text", inputMode: "numeric", value: choices.mobileLines, onChange: event => change('mobileLines', event.target.value), placeholder: "\uD655\uC778 \uD544\uC694", "aria-invalid": choices.mobileLines !== '' && !validLines(choices.mobileLines) })))),
+            __React.createElement("div", { className: "effective-price-actions" },
+                __React.createElement("button", { className: "button button-primary", type: "button", disabled: loading || !selectedPlan, onClick: calculate }, loading ? '계산 중…' : '월 통신요금 계산'),
+                __React.createElement("p", { className: "real-data-notice" }, "\uAC00\uC785\u00B7\uACB0\uC81C\u00B7\uACE0\uAC1D \uAE30\uB85D \uBCC0\uACBD\uC740 \uC2E4\uD589\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.")),
+            error && __React.createElement("p", { className: "field-error", role: "alert" }, error),
+            loading && __React.createElement("p", { className: "real-data-notice", role: "status" }, "\uB4F1\uB85D\uB41C \uAC00\uACA9\uACFC \uC870\uAC74\uC744 \uD655\uC778\uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4."),
+            result && resultRevision === dataRevision && (!choices.customerId || selectedCustomer?.privacyConsent) && __React.createElement("div", { className: "effective-price-result", "aria-live": "polite" },
+                __React.createElement("h3", null, "\uACC4\uC0B0 \uACB0\uACFC"),
+                __React.createElement("p", { className: "real-data-notice" },
+                    result.plan.name,
+                    " \u00B7 ",
+                    result.bundleDiscount.message),
+                choices.customerId && __React.createElement("dl", { className: "product-detail-fields effective-price-current-plan" },
+                    __React.createElement("div", null,
+                        __React.createElement("dt", null, "\uD604\uC7AC \uC694\uAE08\uC81C"),
+                        __React.createElement("dd", null, result.currentPlan ? `${result.currentPlan.name} · ${(0, effectivePriceApi_1.formatEffectivePrice)(result.currentPlan.monthlyFee)} / 월` : '기록 확인 필요')),
+                    __React.createElement("div", null,
+                        __React.createElement("dt", null, "\uC6D4\uC815\uC561 \uCC28\uC774 \u00B7 \uD560\uC778 \uC804"),
+                        __React.createElement("dd", null, result.monthlyFeeDifference === null ? '확인 필요' : result.monthlyFeeDifference === 0 ? '0원 · 동일' : `${(0, effectivePriceApi_1.formatEffectivePrice)(Math.abs(result.monthlyFeeDifference))} ${result.monthlyFeeDifference < 0 ? '감소' : '증가'}`))),
+                __React.createElement("dl", { className: "product-detail-fields effective-price-breakdown" }, result.breakdown.map(row => __React.createElement("div", { key: row.key },
+                    __React.createElement("dt", null,
+                        row.label,
+                        row.period === 'once' && __React.createElement("small", null, " \u00B7 \uC77C\uC2DC \uAE08\uC561"),
+                        row.note && __React.createElement("small", null,
+                            " \u00B7 ",
+                            row.note)),
+                    __React.createElement("dd", { className: row.key === 'monthly_subtotal' ? 'product-monthly-price' : undefined }, amountLabel(row))))),
+                __React.createElement("p", { className: "effective-price-total" },
+                    __React.createElement("strong", null, result.finalMonthlyTotal === null ? '총 부담 확인 필요' : `계산 범위 내 월 통신요금 ${(0, effectivePriceApi_1.formatEffectivePrice)(result.finalMonthlyTotal)}`)),
+                __React.createElement("p", { className: "real-data-notice" }, result.quoteScope === 'communication_only' ? '단말·결합을 선택하지 않은 월정액 기준입니다. 약정 할인과 부가 비용을 제외한 범위입니다.' : '월 통신요금 소계와 단말 현금 가격을 구분해 표시합니다. 할부·혜택·추가 조건을 확인하기 전 최종 월 부담은 확정하지 않습니다.'),
+                __React.createElement("ul", { className: "effective-price-warnings" }, result.warnings.map(warning => __React.createElement("li", { key: warning }, warning))))));
+}
+
+},
 "src/components/Icon":function(module,exports,require){const __React=require('react');
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -2889,7 +3187,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Modal = Modal;
 const react_1 = require("react");
 const Icon_1 = require("./Icon");
-function Modal({ title, onClose, children, wide = false, eyebrow = 'KCM' }) {
+function Modal({ title, onClose, children, wide = false, eyebrow = 'KCM', className = '' }) {
     const ref = (0, react_1.useRef)(null);
     (0, react_1.useEffect)(() => {
         const dialog = ref.current;
@@ -2900,7 +3198,7 @@ function Modal({ title, onClose, children, wide = false, eyebrow = 'KCM' }) {
         else
             document.getElementById('main-content')?.focus(); };
     }, []);
-    return __React.createElement("dialog", { ref: ref, className: `modal ${wide ? 'modal-wide' : ''}`, "aria-labelledby": "modal-title", onCancel: event => { event.preventDefault(); onClose(); }, onClick: event => { if (event.target === ref.current)
+    return __React.createElement("dialog", { ref: ref, className: `modal ${wide ? 'modal-wide' : ''} ${className}`, "aria-labelledby": "modal-title", onCancel: event => { event.preventDefault(); onClose(); }, onClick: event => { if (event.target === ref.current)
             onClose(); } },
         __React.createElement("div", { className: "modal-content" },
             __React.createElement("header", { className: "modal-header" },
@@ -3013,6 +3311,405 @@ function ProfileMenu({ employee, store, open, onOpenChange }) {
             __React.createElement("p", { className: "muted-text" }, "\uC885\uB8CC\uD560 \uB85C\uADF8\uC778 \uC138\uC158\uC774 \uC5C6\uC2B5\uB2C8\uB2E4. \uC774\uC6A9\uC744 \uB9C8\uCE58\uB824\uBA74 \uBE0C\uB77C\uC6B0\uC800 \uD0ED\uC744 \uB2EB\uC544 \uC8FC\uC138\uC694."),
             __React.createElement("div", { className: "modal-actions" },
                 __React.createElement("button", { className: "button button-primary", onClick: () => setLogoutNotice(false) }, "\uD655\uC778"))));
+}
+
+},
+"src/components/RealAppointments":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RealBriefingPanel = RealBriefingPanel;
+exports.RealAppointments = RealAppointments;
+const react_1 = require("react");
+const realDataApi_js_1 = require("../services/realDataApi.js");
+const Icon_1 = require("./Icon");
+const StoredCustomers_1 = require("./StoredCustomers");
+const statuses = ['예약 확정', '방문 완료', '취소', '노쇼'];
+const codeOf = (error) => error instanceof realDataApi_js_1.RealDataApiError ? error.code : 'UNKNOWN_ERROR';
+function RealBriefingPanel({ appointment }) {
+    const [state, setState] = (0, react_1.useState)({ reservationId: '', status: 'loading' });
+    const [reloadKey, setReloadKey] = (0, react_1.useState)(0);
+    const reservationId = appointment?.id ?? '';
+    const customerId = appointment?.customerId ?? '';
+    const consultationId = appointment?.consultationId ?? '';
+    (0, react_1.useEffect)(() => {
+        let active = true;
+        const controller = new AbortController();
+        setState({ reservationId, status: 'loading' });
+        if (reservationId)
+            void realDataApi_js_1.realDataApi.briefing(reservationId, controller.signal).then(body => {
+                if (!active)
+                    return;
+                if (body.reservation.customerId !== customerId || body.reservation.consultationId !== consultationId)
+                    throw new realDataApi_js_1.RealDataApiError('INVALID_RESPONSE');
+                setState({ reservationId, status: 'ready', data: body });
+            }).catch(error => { if (active)
+                setState({ reservationId, status: 'error', code: codeOf(error) }); });
+        return () => { active = false; controller.abort(); };
+    }, [reservationId, customerId, consultationId, reloadKey]);
+    const data = state.reservationId === reservationId ? state.data : undefined;
+    return __React.createElement("section", { className: "card real-data-detail real-data-briefing", "aria-label": "\uC120\uD0DD\uD55C \uC608\uC57D\uC758 \uC800\uC7A5 \uC0AC\uC804 \uBE0C\uB9AC\uD551" },
+        __React.createElement("div", { className: "card-heading real-data-header" },
+            __React.createElement("div", null,
+                __React.createElement("h2", null, "\uC0AC\uC804 \uBE0C\uB9AC\uD551"),
+                __React.createElement("p", { className: "real-data-notice" }, "\uC800\uC7A5\uB41C AI \uC694\uC57D\uACFC \uC608\uC57D \uC815\uBCF4\uB97C \uD655\uC778\uD569\uB2C8\uB2E4.")),
+            appointment && __React.createElement("button", { className: "button button-secondary", onClick: () => setReloadKey(key => key + 1) }, "\uB2E4\uC2DC \uC870\uD68C")),
+        !appointment ? __React.createElement("p", { className: "real-data-empty" }, "\uC608\uC57D\uC744 \uC120\uD0DD\uD558\uBA74 \uC800\uC7A5\uB41C \uBE0C\uB9AC\uD551\uC744 \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") : __React.createElement(__React.Fragment, null,
+            __React.createElement("div", { className: "real-data-history-heading" },
+                __React.createElement("strong", null, appointment.customerNameMasked),
+                __React.createElement("span", { className: "status-pill" }, appointment.status)),
+            __React.createElement("p", { className: "real-data-meta" },
+                appointment.phoneMasked || '연락처 미확인',
+                " \u00B7 \uBC29\uBB38 ",
+                (0, realDataApi_js_1.formatRealDataDate)(appointment.visitAt)),
+            __React.createElement("p", { className: "real-data-id" }, appointment.id),
+            state.reservationId !== reservationId || state.status === 'loading' ? __React.createElement("p", { className: "real-data-empty", role: "status" }, "\uC800\uC7A5\uB41C \uBE0C\uB9AC\uD551\uC744 \uBD88\uB7EC\uC624\uB294 \uC911\uC785\uB2C8\uB2E4.")
+                : state.status === 'error' ? __React.createElement("div", { className: "real-data-error", role: "status" },
+                    __React.createElement("p", null, (0, realDataApi_js_1.realDataErrorMessage)(state.code)),
+                    __React.createElement("button", { className: "button button-secondary", onClick: () => setReloadKey(key => key + 1) }, "\uB2E4\uC2DC \uC2DC\uB3C4"))
+                    : data && __React.createElement(__React.Fragment, null,
+                        __React.createElement("div", { className: "briefing-facts real-data-facts" },
+                            __React.createElement("div", null,
+                                __React.createElement("span", null, "\uC0C1\uB2F4 \uBAA9\uC801"),
+                                __React.createElement("strong", null, data.reservation.purpose || '미기록')),
+                            __React.createElement("div", null,
+                                __React.createElement("span", null, "\uB2F4\uB2F9 \uC9C1\uC6D0"),
+                                __React.createElement("strong", null, data.reservation.employeeName || '미확인')),
+                            __React.createElement("div", null,
+                                __React.createElement("span", null, "\uC608\uC57D \uACBD\uB85C"),
+                                __React.createElement("strong", null, data.reservation.source === 'AI' ? 'AI 응대' : '전화'))),
+                        data.reservation.privacyConsent && __React.createElement(__React.Fragment, null,
+                            __React.createElement("div", { className: "briefing-facts real-data-facts" },
+                                __React.createElement("div", null,
+                                    __React.createElement("span", null, "\uD604\uC7AC \uC774\uC6A9 \uC0C1\uD488"),
+                                    __React.createElement("strong", null, data.currentProduct ? `${data.currentProduct.name} · ${data.currentProduct.storageGb}GB · ${data.currentProduct.color}` : '별도 기록 없음')),
+                                __React.createElement("div", null,
+                                    __React.createElement("span", null, "\uD604\uC7AC \uC774\uC6A9 \uC694\uAE08\uC81C"),
+                                    __React.createElement("strong", null, data.currentPlan ? `${data.currentPlan.name} · 월 ${data.currentPlan.monthlyFee.toLocaleString('ko-KR')}원` : '별도 기록 없음'))),
+                            __React.createElement("div", { className: "briefing-facts real-data-facts" },
+                                __React.createElement("div", null,
+                                    __React.createElement("span", null, "\uD76C\uB9DD \uC0C1\uD488"),
+                                    __React.createElement("strong", null, "\uBCC4\uB3C4 \uAE30\uB85D \uC5C6\uC74C")),
+                                __React.createElement("div", null,
+                                    __React.createElement("span", null, "\uD76C\uB9DD \uB2E8\uB9D0"),
+                                    __React.createElement("strong", null, "\uBCC4\uB3C4 \uAE30\uB85D \uC5C6\uC74C"))),
+                            __React.createElement("div", { className: "real-data-request-note" },
+                                __React.createElement("h3", null, "\uC800\uC7A5\uB41C \uC694\uCCAD\uC0AC\uD56D"),
+                                __React.createElement("p", { className: "real-data-summary" }, data.requestNote ?? '별도 기록 없음'))),
+                        __React.createElement("div", { className: "briefing-summary" },
+                            __React.createElement("span", { className: "eyebrow" },
+                                __React.createElement(Icon_1.Icon, { name: "file", size: 14 }),
+                                "\uC800\uC7A5\uB41C AI \uC694\uC57D"),
+                            __React.createElement("p", { className: "real-data-summary" }, data.summaryStatus === 'available' ? data.summary : data.summaryStatus === 'restricted' ? '개인정보 동의를 확인하기 전에는 저장된 요약과 상담 이력을 조회할 수 없습니다.' : '저장된 AI 요약이 없습니다. 예약 정보와 고객 요청을 직접 확인해 주세요.')),
+                        data.checklist.length > 0 && __React.createElement("div", { className: "briefing-checklist" },
+                            __React.createElement("h3", null, "\uC0C1\uB2F4 \uC804 \uD655\uC778 \uC0AC\uD56D"),
+                            data.checklist.map((item, index) => __React.createElement("div", { key: index },
+                                __React.createElement("span", { className: "check-circle" },
+                                    __React.createElement(Icon_1.Icon, { name: "check", size: 11 })),
+                                __React.createElement("span", null, item)))),
+                        data.summaryStatus !== 'restricted' && __React.createElement("div", { className: "real-data-briefing-history" },
+                            __React.createElement("h3", null, "\uAC19\uC740 \uACE0\uAC1D\uC758 \uCD5C\uADFC \uC800\uC7A5 \uC0C1\uB2F4"),
+                            __React.createElement(StoredCustomers_1.StoredConsultationList, { items: data.history })),
+                        __React.createElement("p", { className: "real-data-notice" }, "\uC870\uD68C \uC804\uC6A9\uC785\uB2C8\uB2E4. \uC694\uC57D \uC0DD\uC131\u00B7\uC608\uC57D \uBCC0\uACBD\u00B7\uC0C1\uB2F4 \uC800\uC7A5\uC740 \uC2E4\uD589\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."))));
+}
+function RealAppointments({ compact = false, onAvailability, onAll }) {
+    const [items, setItems] = (0, react_1.useState)([]);
+    const [availability, setAvailability] = (0, react_1.useState)('loading');
+    const [errorCode, setErrorCode] = (0, react_1.useState)('');
+    const [reloadKey, setReloadKey] = (0, react_1.useState)(0);
+    const [selectedId, setSelectedId] = (0, react_1.useState)('');
+    const [filter, setFilter] = (0, react_1.useState)('all');
+    const [query, setQuery] = (0, react_1.useState)('');
+    const [page, setPage] = (0, react_1.useState)(1);
+    const availabilityCallback = (0, react_1.useRef)(onAvailability);
+    availabilityCallback.current = onAvailability;
+    (0, react_1.useEffect)(() => {
+        let active = true;
+        const controller = new AbortController();
+        setItems([]);
+        setSelectedId('');
+        setErrorCode('');
+        setAvailability('loading');
+        availabilityCallback.current?.('loading');
+        if (document.documentElement.dataset.kcmStandalone === 'true') {
+            setAvailability('unconfigured');
+            setErrorCode('REAL_DATA_NOT_CONFIGURED');
+            availabilityCallback.current?.('unconfigured');
+            return () => { active = false; controller.abort(); };
+        }
+        void realDataApi_js_1.realDataApi.appointments(controller.signal).then(body => {
+            if (!active)
+                return;
+            setItems(body.items);
+            setSelectedId(body.items[0]?.id ?? '');
+            setPage(1);
+            setAvailability('configured');
+            availabilityCallback.current?.('configured');
+        }).catch(error => {
+            if (!active)
+                return;
+            const next = (0, realDataApi_js_1.realDataAvailability)(error);
+            setAvailability(next);
+            setErrorCode(codeOf(error));
+            availabilityCallback.current?.(next);
+        });
+        return () => { active = false; controller.abort(); };
+    }, [reloadKey]);
+    const filtered = (0, react_1.useMemo)(() => {
+        const search = query.trim().toLocaleLowerCase('ko-KR');
+        return items.filter(item => (filter === 'all' || item.status === filter)
+            && `${item.id} ${item.customerNameMasked} ${item.purpose} ${item.employeeName}`.toLocaleLowerCase('ko-KR').includes(search));
+    }, [items, filter, query]);
+    const pages = Math.max(1, Math.ceil(filtered.length / 5));
+    const currentPage = Math.min(page, pages);
+    const visible = filtered.slice((currentPage - 1) * 5, currentPage * 5);
+    const selected = items.find(item => item.id === selectedId);
+    return __React.createElement("section", { className: `real-data-section ${compact ? 'real-data-compact' : ''}`, "aria-label": "\uC800\uC7A5\uB41C \uC608\uC57D\uACFC \uC0AC\uC804 \uBE0C\uB9AC\uD551" },
+        __React.createElement("div", { className: "real-data-grid" },
+            __React.createElement("section", { className: "card real-data-list" },
+                __React.createElement("div", { className: "card-heading real-data-header" },
+                    __React.createElement("div", null,
+                        __React.createElement("h2", null, "\uC800\uC7A5\uB41C \uC608\uC57D"),
+                        __React.createElement("p", { className: "real-data-notice" }, "\uD604\uC7AC \uB9E4\uC7A5\uC758 \uC608\uC57D\uC744 \uC800\uC7A5 \uC0C1\uD0DC \uADF8\uB300\uB85C \uC870\uD68C\uD569\uB2C8\uB2E4.")),
+                    __React.createElement("div", { className: "real-data-header-actions" },
+                        compact && onAll && __React.createElement("button", { className: "text-button", onClick: onAll },
+                            "\uC804\uCCB4 \uBCF4\uAE30",
+                            __React.createElement(Icon_1.Icon, { name: "chevron", size: 14 })),
+                        __React.createElement("button", { className: "button button-secondary", disabled: availability === 'loading', onClick: () => setReloadKey(key => key + 1) },
+                            __React.createElement(Icon_1.Icon, { name: "refresh", size: 14 }),
+                            "\uC0C8\uB85C\uACE0\uCE68"))),
+                availability === 'loading' ? __React.createElement("p", { className: "real-data-empty", role: "status" }, "\uC800\uC7A5\uB41C \uC608\uC57D\uC744 \uBD88\uB7EC\uC624\uB294 \uC911\uC785\uB2C8\uB2E4.")
+                    : availability !== 'configured' ? __React.createElement("div", { className: `real-data-${availability === 'unconfigured' ? 'notice' : 'error'}`, role: "status" },
+                        __React.createElement("p", null, (0, realDataApi_js_1.realDataErrorMessage)(errorCode)),
+                        __React.createElement("button", { className: "button button-secondary", onClick: () => setReloadKey(key => key + 1) }, "\uB2E4\uC2DC \uC2DC\uB3C4"))
+                        : items.length === 0 ? __React.createElement("p", { className: "real-data-empty" }, "\uD604\uC7AC \uB9E4\uC7A5\uC5D0 \uC800\uC7A5\uB41C \uC608\uC57D\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.")
+                            : __React.createElement(__React.Fragment, null,
+                                __React.createElement("div", { className: "real-data-tools" },
+                                    __React.createElement("label", null,
+                                        "\uC608\uC57D \uC0C1\uD0DC",
+                                        __React.createElement("select", { value: filter, onChange: event => { setFilter(event.target.value); setPage(1); setSelectedId(''); }, "aria-label": "\uC800\uC7A5 \uC608\uC57D \uC0C1\uD0DC \uD544\uD130" },
+                                            __React.createElement("option", { value: "all" }, "\uC804\uCCB4"),
+                                            statuses.map(status => __React.createElement("option", { key: status, value: status }, status)))),
+                                    __React.createElement("label", { className: "search-field" },
+                                        __React.createElement(Icon_1.Icon, { name: "search", size: 15 }),
+                                        __React.createElement("input", { type: "search", value: query, placeholder: "\uACE0\uAC1D\u00B7\uBAA9\uC801\u00B7\uC9C1\uC6D0 \uAC80\uC0C9", "aria-label": "\uC800\uC7A5\uB41C \uC608\uC57D \uAC80\uC0C9", onChange: event => { setQuery(event.target.value); setPage(1); setSelectedId(''); } }))),
+                                __React.createElement("div", { className: "table-scroll real-data-table-scroll", role: "region", tabIndex: 0, "aria-label": "\uC800\uC7A5\uB41C \uC608\uC57D \uBAA9\uB85D" },
+                                    __React.createElement("table", { className: "appointment-table real-data-table" },
+                                        __React.createElement("thead", null,
+                                            __React.createElement("tr", null,
+                                                __React.createElement("th", { scope: "col" }, "\uBC29\uBB38 \uC608\uC815"),
+                                                __React.createElement("th", { scope: "col" }, "\uACE0\uAC1D / \uC0C1\uB2F4 \uBAA9\uC801"),
+                                                __React.createElement("th", { scope: "col" }, "\uB2F4\uB2F9 / \uC0C1\uD0DC"))),
+                                        __React.createElement("tbody", null, visible.map(item => __React.createElement("tr", { key: item.id, className: selectedId === item.id ? 'selected-row' : '' },
+                                            __React.createElement("td", { className: "real-data-meta" }, (0, realDataApi_js_1.formatRealDataDate)(item.visitAt)),
+                                            __React.createElement("td", null,
+                                                __React.createElement("button", { className: "customer-select", onClick: () => setSelectedId(item.id), "aria-pressed": selectedId === item.id, "aria-label": `${item.customerNameMasked} 예약 선택` },
+                                                    __React.createElement("span", null,
+                                                        __React.createElement("strong", null, item.customerNameMasked),
+                                                        __React.createElement("small", null, item.purpose || '상담 목적 미기록'))),
+                                                __React.createElement("span", { className: "real-data-id" }, item.id)),
+                                            __React.createElement("td", null,
+                                                __React.createElement("span", { className: "employee-name" }, item.employeeName || '담당 미확인'),
+                                                __React.createElement("span", { className: "status-pill" }, item.status),
+                                                __React.createElement("small", { className: "real-data-meta" }, item.summaryStatus === 'available' ? '저장 요약 있음' : item.summaryStatus === 'restricted' ? '개인정보 동의 확인 필요' : '저장 요약 없음')))))),
+                                    filtered.length === 0 && __React.createElement("p", { className: "real-data-empty" }, "\uAC80\uC0C9 \uC870\uAC74\uC5D0 \uB9DE\uB294 \uC608\uC57D\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.")),
+                                pages > 1 && __React.createElement("div", { className: "real-data-pagination", "aria-label": "\uC800\uC7A5\uB41C \uC608\uC57D \uBAA9\uB85D \uD398\uC774\uC9C0" },
+                                    __React.createElement("button", { className: "button button-secondary", disabled: currentPage === 1, onClick: () => setPage(currentPage - 1) }, "\uC774\uC804"),
+                                    __React.createElement("span", null,
+                                        currentPage,
+                                        " / ",
+                                        pages),
+                                    __React.createElement("button", { className: "button button-secondary", disabled: currentPage === pages, onClick: () => setPage(currentPage + 1) }, "\uB2E4\uC74C")),
+                                __React.createElement("p", { className: "real-data-notice" },
+                                    "\uC870\uD68C\uD55C ",
+                                    items.length,
+                                    "\uAC74 \uC911 ",
+                                    filtered.length,
+                                    "\uAC74 \u00B7 \uBC29\uBB38\uC77C\uACFC \uC800\uC7A5\uB41C \uC0C1\uD0DC\uB97C \uD655\uC778\uD574 \uC8FC\uC138\uC694."))),
+            availability === 'configured' && __React.createElement(RealBriefingPanel, { appointment: selected })));
+}
+
+},
+"src/components/StoredCustomers":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.StoredConsultationList = StoredConsultationList;
+exports.StoredCustomers = StoredCustomers;
+const react_1 = require("react");
+const realDataApi_js_1 = require("../services/realDataApi.js");
+const Icon_1 = require("./Icon");
+const stageLabels = { AI: 'AI 응대', PHONE: '전화', VISIT: '방문' };
+const codeOf = (error) => error instanceof realDataApi_js_1.RealDataApiError ? error.code : 'UNKNOWN_ERROR';
+/** Saved records only; each stage's score is displayed without recalculating or combining calls. */
+function StoredConsultationList({ items }) {
+    if (items.length === 0)
+        return __React.createElement("p", { className: "real-data-empty" }, "\uC774 \uACE0\uAC1D\uC758 \uC800\uC7A5\uB41C \uC0C1\uB2F4 \uC774\uB825\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.");
+    return __React.createElement("div", { className: "real-data-history-list" }, items.map(item => __React.createElement("article", { className: "real-data-history-item", key: item.id },
+        __React.createElement("div", { className: "real-data-history-heading" },
+            __React.createElement("strong", null, item.purpose || '상담 목적 미기록'),
+            __React.createElement("span", { className: "status-pill" }, item.status)),
+        __React.createElement("p", { className: "real-data-id" },
+            item.id,
+            item.callId ? ` · ${item.callId}` : ''),
+        __React.createElement("p", { className: "real-data-meta" },
+            "\uC2DC\uC791 ",
+            (0, realDataApi_js_1.formatRealDataDate)(item.startedAt),
+            item.endedAt ? ` · 종료 ${(0, realDataApi_js_1.formatRealDataDate)(item.endedAt)}` : ' · 종료 시각 미기록'),
+        __React.createElement("p", { className: "real-data-summary" }, item.summaryStatus === 'available' ? item.summaryPreview : '저장된 AI 요약이 없습니다.'),
+        __React.createElement("div", { className: "real-data-risk-list" }, item.risks.length > 0 ? item.risks.map(risk => __React.createElement("div", { className: "real-data-risk", key: risk.id },
+            __React.createElement("span", null,
+                stageLabels[risk.stage],
+                " \u00B7 ",
+                risk.level),
+            __React.createElement("strong", null,
+                risk.score,
+                "\uC810"),
+            __React.createElement("span", { className: "real-data-meta" }, (0, realDataApi_js_1.formatRealDataDate)(risk.createdAt)))) : __React.createElement("span", { className: "real-data-meta" }, "\uC800\uC7A5\uB41C \uC704\uD5D8 \uAE30\uB85D \uC5C6\uC74C")))));
+}
+function StoredCustomers({ onAvailability }) {
+    const [items, setItems] = (0, react_1.useState)([]);
+    const [availability, setAvailability] = (0, react_1.useState)('loading');
+    const [errorCode, setErrorCode] = (0, react_1.useState)('');
+    const [reloadKey, setReloadKey] = (0, react_1.useState)(0);
+    const [selectedId, setSelectedId] = (0, react_1.useState)('');
+    const [query, setQuery] = (0, react_1.useState)('');
+    const [page, setPage] = (0, react_1.useState)(1);
+    const [limit, setLimit] = (0, react_1.useState)(5);
+    const [historyKey, setHistoryKey] = (0, react_1.useState)(0);
+    const [history, setHistory] = (0, react_1.useState)({ customerId: '', limit: 5, status: 'loading', items: [] });
+    const availabilityCallback = (0, react_1.useRef)(onAvailability);
+    availabilityCallback.current = onAvailability;
+    const selected = items.find(item => item.id === selectedId);
+    (0, react_1.useEffect)(() => {
+        let active = true;
+        const controller = new AbortController();
+        setItems([]);
+        setSelectedId('');
+        setErrorCode('');
+        setAvailability('loading');
+        availabilityCallback.current?.('loading');
+        if (document.documentElement.dataset.kcmStandalone === 'true') {
+            setAvailability('unconfigured');
+            setErrorCode('REAL_DATA_NOT_CONFIGURED');
+            availabilityCallback.current?.('unconfigured');
+            return () => { active = false; controller.abort(); };
+        }
+        void realDataApi_js_1.realDataApi.customers(controller.signal).then(body => {
+            if (!active)
+                return;
+            setItems(body.items);
+            setSelectedId(body.items[0]?.id ?? '');
+            setLimit(5);
+            setPage(1);
+            setAvailability('configured');
+            availabilityCallback.current?.('configured');
+        }).catch(error => {
+            if (!active)
+                return;
+            const next = (0, realDataApi_js_1.realDataAvailability)(error);
+            setAvailability(next);
+            setErrorCode(codeOf(error));
+            availabilityCallback.current?.(next);
+        });
+        return () => { active = false; controller.abort(); };
+    }, [reloadKey]);
+    (0, react_1.useEffect)(() => {
+        let active = true;
+        const controller = new AbortController();
+        setHistory({ customerId: selectedId, limit, status: 'loading', items: [] });
+        if (selectedId && selected?.privacyConsent)
+            void realDataApi_js_1.realDataApi.customerConsultations(selectedId, limit, controller.signal).then(body => {
+                if (active)
+                    setHistory({ customerId: selectedId, limit, status: 'ready', items: body.items });
+            }).catch(error => {
+                if (active)
+                    setHistory({ customerId: selectedId, limit, status: 'error', items: [], code: codeOf(error) });
+            });
+        return () => { active = false; controller.abort(); };
+    }, [selectedId, selected?.privacyConsent, limit, historyKey]);
+    const filtered = (0, react_1.useMemo)(() => {
+        const search = query.trim().toLocaleLowerCase('ko-KR');
+        return items.filter(item => `${item.id} ${item.nameMasked} ${item.phoneMasked} ${item.latestPurpose}`.toLocaleLowerCase('ko-KR').includes(search));
+    }, [items, query]);
+    const pages = Math.max(1, Math.ceil(filtered.length / 5));
+    const currentPage = Math.min(page, pages);
+    const visible = filtered.slice((currentPage - 1) * 5, currentPage * 5);
+    const choose = (id) => { setSelectedId(id); setLimit(5); };
+    return __React.createElement("section", { className: "card real-data-section", "aria-label": "\uC800\uC7A5\uB41C \uACE0\uAC1D\uACFC \uC0C1\uB2F4 \uC774\uB825" },
+        __React.createElement("div", { className: "card-heading real-data-header" },
+            __React.createElement("div", null,
+                __React.createElement("h2", null, "\uC800\uC7A5\uB41C \uACE0\uAC1D"),
+                __React.createElement("p", { className: "real-data-notice" }, "\uD604\uC7AC \uB9E4\uC7A5\uC758 \uCD5C\uADFC \uC0C1\uB2F4 \uACE0\uAC1D \uCD5C\uB300 20\uBA85\uC744 \uC870\uD68C\uD569\uB2C8\uB2E4. \uACE0\uAC1D \uC815\uBCF4\uB294 \uB9C8\uC2A4\uD0B9\uD574 \uD45C\uC2DC\uD569\uB2C8\uB2E4.")),
+            __React.createElement("button", { className: "button button-secondary", disabled: availability === 'loading', onClick: () => setReloadKey(key => key + 1) },
+                __React.createElement(Icon_1.Icon, { name: "refresh", size: 14 }),
+                "\uC0C8\uB85C\uACE0\uCE68")),
+        availability === 'loading' ? __React.createElement("p", { className: "real-data-empty", role: "status" }, "\uC800\uC7A5\uB41C \uACE0\uAC1D\uC744 \uBD88\uB7EC\uC624\uB294 \uC911\uC785\uB2C8\uB2E4.")
+            : availability !== 'configured' ? __React.createElement("div", { className: `real-data-${availability === 'unconfigured' ? 'notice' : 'error'}`, role: "status" },
+                __React.createElement("p", null, (0, realDataApi_js_1.realDataErrorMessage)(errorCode)),
+                __React.createElement("button", { className: "button button-secondary", onClick: () => setReloadKey(key => key + 1) }, "\uB2E4\uC2DC \uC2DC\uB3C4"))
+                : items.length === 0 ? __React.createElement("p", { className: "real-data-empty" }, "\uD604\uC7AC \uB9E4\uC7A5\uC5D0 \uC800\uC7A5\uB41C \uC0C1\uB2F4 \uACE0\uAC1D\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.")
+                    : __React.createElement(__React.Fragment, null,
+                        __React.createElement("div", { className: "real-data-tools" },
+                            __React.createElement("label", { className: "search-field" },
+                                __React.createElement(Icon_1.Icon, { name: "search", size: 15 }),
+                                __React.createElement("input", { type: "search", value: query, placeholder: "\uACE0\uAC1D ID\u00B7\uB9C8\uC2A4\uD0B9 \uC774\uB984\u00B7\uC0C1\uB2F4 \uBAA9\uC801 \uAC80\uC0C9", "aria-label": "\uC800\uC7A5\uB41C \uACE0\uAC1D \uAC80\uC0C9", onChange: event => { setQuery(event.target.value); setPage(1); setSelectedId(''); } })),
+                            __React.createElement("span", { className: "count-label" },
+                                filtered.length,
+                                "\uBA85")),
+                        __React.createElement("div", { className: "real-data-grid" },
+                            __React.createElement("div", { className: "real-data-list" },
+                                __React.createElement("div", { className: "table-scroll real-data-table-scroll", role: "region", tabIndex: 0, "aria-label": "\uC800\uC7A5\uB41C \uACE0\uAC1D \uBAA9\uB85D" },
+                                    __React.createElement("table", { className: "appointment-table real-data-table" },
+                                        __React.createElement("thead", null,
+                                            __React.createElement("tr", null,
+                                                __React.createElement("th", { scope: "col" }, "\uACE0\uAC1D"),
+                                                __React.createElement("th", { scope: "col" }, "\uCD5C\uADFC \uC0C1\uB2F4"),
+                                                __React.createElement("th", { scope: "col" }, "\uC0C1\uD0DC"))),
+                                        __React.createElement("tbody", null, visible.map(item => __React.createElement("tr", { key: item.id, className: selectedId === item.id ? 'selected-row' : '' },
+                                            __React.createElement("td", null,
+                                                __React.createElement("button", { className: "customer-select", onClick: () => choose(item.id), "aria-pressed": selectedId === item.id },
+                                                    __React.createElement("span", null,
+                                                        __React.createElement("strong", null, item.nameMasked),
+                                                        __React.createElement("small", null, item.phoneMasked || '연락처 미확인'))),
+                                                __React.createElement("span", { className: "real-data-id" }, item.id)),
+                                            __React.createElement("td", null,
+                                                __React.createElement("strong", null, item.latestPurpose || '상담 목적 미기록'),
+                                                __React.createElement("small", { className: "real-data-meta" }, (0, realDataApi_js_1.formatRealDataDate)(item.latestConsultationAt))),
+                                            __React.createElement("td", null,
+                                                __React.createElement("span", { className: "status-pill" }, item.latestStatus)))))),
+                                    filtered.length === 0 && __React.createElement("p", { className: "real-data-empty" }, "\uAC80\uC0C9 \uC870\uAC74\uC5D0 \uB9DE\uB294 \uACE0\uAC1D\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.")),
+                                pages > 1 && __React.createElement("div", { className: "real-data-pagination", "aria-label": "\uC800\uC7A5\uB41C \uACE0\uAC1D \uBAA9\uB85D \uD398\uC774\uC9C0" },
+                                    __React.createElement("button", { className: "button button-secondary", disabled: currentPage === 1, onClick: () => setPage(currentPage - 1) }, "\uC774\uC804"),
+                                    __React.createElement("span", null,
+                                        currentPage,
+                                        " / ",
+                                        pages),
+                                    __React.createElement("button", { className: "button button-secondary", disabled: currentPage === pages, onClick: () => setPage(currentPage + 1) }, "\uB2E4\uC74C"))),
+                            __React.createElement("div", { className: "real-data-detail", "aria-label": "\uC120\uD0DD\uD55C \uACE0\uAC1D\uC758 \uC800\uC7A5 \uC0C1\uB2F4 \uC774\uB825" }, !selected ? __React.createElement("p", { className: "real-data-empty" }, "\uACE0\uAC1D\uC744 \uC120\uD0DD\uD558\uBA74 \uC800\uC7A5\uB41C \uC0C1\uB2F4 \uC774\uB825\uC744 \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") : __React.createElement(__React.Fragment, null,
+                                __React.createElement("div", { className: "real-data-history-heading" },
+                                    __React.createElement("h3", null,
+                                        selected.nameMasked,
+                                        " \u00B7 \uC800\uC7A5 \uC0C1\uB2F4 \uC774\uB825"),
+                                    selected.privacyConsent && __React.createElement("button", { className: "button button-secondary", onClick: () => setHistoryKey(key => key + 1) }, "\uB2E4\uC2DC \uC870\uD68C")),
+                                __React.createElement("p", { className: "real-data-id" }, selected.id),
+                                selected.privacyConsent && __React.createElement("div", { className: "briefing-facts real-data-facts", "aria-label": "\uD604\uC7AC \uC774\uC6A9 \uC0C1\uD488\uACFC \uC694\uAE08\uC81C" },
+                                    __React.createElement("div", null,
+                                        __React.createElement("span", null, "\uD604\uC7AC \uC774\uC6A9 \uC0C1\uD488"),
+                                        __React.createElement("strong", null, selected.currentProduct ? `${selected.currentProduct.name} · ${selected.currentProduct.storageGb}GB · ${selected.currentProduct.color}` : '미기록')),
+                                    __React.createElement("div", null,
+                                        __React.createElement("span", null, "\uD604\uC7AC \uC774\uC6A9 \uC694\uAE08\uC81C"),
+                                        __React.createElement("strong", null, selected.currentPlan ? `${selected.currentPlan.name} · 월 ${selected.currentPlan.monthlyFee.toLocaleString('ko-KR')}원` : '미기록'))),
+                                !selected.privacyConsent ? __React.createElement("p", { className: "real-data-notice" }, (0, realDataApi_js_1.realDataErrorMessage)('CUSTOMER_PRIVACY_RESTRICTED'))
+                                    : history.customerId !== selected.id || history.limit !== limit || history.status === 'loading' ? __React.createElement("p", { className: "real-data-empty", role: "status" }, "\uC0C1\uB2F4 \uC774\uB825\uC744 \uBD88\uB7EC\uC624\uB294 \uC911\uC785\uB2C8\uB2E4.")
+                                        : history.status === 'error' ? __React.createElement("div", { className: "real-data-error", role: "status" },
+                                            __React.createElement("p", null, (0, realDataApi_js_1.realDataErrorMessage)(history.code)),
+                                            __React.createElement("button", { className: "button button-secondary", onClick: () => setHistoryKey(key => key + 1) }, "\uB2E4\uC2DC \uC2DC\uB3C4"))
+                                            : __React.createElement(__React.Fragment, null,
+                                                __React.createElement(StoredConsultationList, { items: history.items }),
+                                                limit === 5 && history.items.length === 5 && __React.createElement("button", { className: "button button-secondary", onClick: () => setLimit(20) }, "\uCD5C\uADFC \uC774\uB825 \uCD5C\uB300 20\uAC74 \uBCF4\uAE30"),
+                                                __React.createElement("p", { className: "real-data-notice" },
+                                                    "\uCD5C\uADFC ",
+                                                    limit,
+                                                    "\uAC74 \uBC94\uC704\uC758 \uC800\uC7A5 \uAE30\uB85D\uC785\uB2C8\uB2E4. \uD1B5\uD654\uBCC4\u00B7\uB2E8\uACC4\uBCC4 \uC810\uC218\uB294 \uAC01\uAC01 \uD45C\uC2DC\uD569\uB2C8\uB2E4.")))))));
 }
 
 },
@@ -4798,7 +5495,14 @@ exports.riskBand = riskBand;
 exports.signalScore = signalScore;
 exports.calculateCallRisk = calculateCallRisk;
 /** Shared frontend/Node policy. Per-call results only; no previous customer score. */
-exports.RISK_RULE = Object.freeze({ version: 'call-risk-v2', min: 0, max: 99 });
+exports.RISK_RULE = Object.freeze({
+    version: 'call-risk-v4', min: 0, max: 99, profanityFloor: 20,
+    threatFloors: Object.freeze([
+        Object.freeze({ count: 1, score: 40 }),
+        Object.freeze({ count: 2, score: 60 }),
+        Object.freeze({ count: 3, score: 80 }),
+    ]),
+});
 exports.RISK_BANDS = ([
     { grade: 'normal', label: '정상', level: 1, min: 0 },
     { grade: 'caution', label: '주의', level: 2, min: 20 },
@@ -4839,8 +5543,10 @@ function calculateCallRisk(signals) {
         shouting_score: signalScore('shouting', signals.shouting_count),
     };
     const raw_score = Object.values(scores).reduce((sum, value) => sum + value, 0);
-    const threat_floor = signals.threat_count >= 3 ? 60 : signals.threat_count >= 2 ? 40 : 0;
-    const adjusted_score = Math.max(raw_score, threat_floor);
+    const threat_floor = [...exports.RISK_RULE.threatFloors].reverse().find(rule => signals.threat_count >= rule.count)?.score ?? 0;
+    // Preserve item scores and result fields; any profanity raises only the final minimum.
+    const profanity_floor = signals.profanity_count >= 1 ? exports.RISK_RULE.profanityFloor : 0;
+    const adjusted_score = Math.max(raw_score, threat_floor, profanity_floor);
     const risk_score = Math.min(adjusted_score, exports.RISK_RULE.max);
     const band = riskBand(risk_score);
     if (!band)
@@ -4894,6 +5600,102 @@ function uiText(value) {
         .replace(/데모 관리자/g, '지원 담당')
         .replace(/\s*데모점/g, '점')
         .trim();
+}
+
+},
+"src/live/LiveCallBriefing":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.LiveCallBriefing = LiveCallBriefing;
+const react_1 = require("react");
+const liveBriefingApi_1 = require("../services/liveBriefingApi");
+const realDataApi_1 = require("../services/realDataApi");
+const stageLabels = { AI: 'AI 상담', PHONE: '전화 상담', VISIT: '방문 상담' };
+const countLabels = [
+    ['profanityCount', '욕설'], ['threatCount', '위협'], ['blameCount', '비난'],
+    ['sexualCount', '선정적 표현'], ['shoutingCount', '고성'],
+];
+/** Saved history only; this component never uses or recalculates the current call's risk. */
+function LiveCallBriefing({ callId, customerId }) {
+    const controller = (0, react_1.useRef)(null);
+    const [received, setReceived] = (0, react_1.useState)({ callId, customerId, status: customerId ? 'loading' : 'missing-customer' });
+    (0, react_1.useEffect)(() => {
+        const next = (0, liveBriefingApi_1.createLiveBriefingController)(setReceived);
+        controller.current = next;
+        next.select(callId, customerId);
+        return () => { next.dispose(); if (controller.current === next)
+            controller.current = null; };
+    }, [callId, customerId]);
+    // A newly selected identity must not paint the previous customer's response before its effect runs.
+    const state = received.callId === callId && received.customerId === customerId ? received
+        : { callId, customerId, status: customerId ? 'loading' : 'missing-customer' };
+    const data = state.status === 'ready' ? state.data : null;
+    const previous = data?.previousRisk;
+    const recent = data?.recentConsultation;
+    return __React.createElement("aside", { className: "live-briefing", "aria-label": "\uACE0\uAC1D \uC0AC\uC804 \uBE0C\uB9AC\uD551", "aria-busy": state.status === 'loading', tabIndex: 0 },
+        __React.createElement("div", { className: "live-briefing-heading" },
+            __React.createElement("div", null,
+                __React.createElement("h3", null, "\uACE0\uAC1D \uC0AC\uC804 \uBE0C\uB9AC\uD551"),
+                __React.createElement("p", null, "\uC774\uC804 \uC800\uC7A5 \uC0C1\uB2F4 \uAE30\uC900")),
+            __React.createElement("button", { className: "button button-secondary live-briefing-reload", disabled: !customerId || state.status === 'loading', onClick: () => controller.current?.reload() }, "\uB2E4\uC2DC \uC870\uD68C")),
+        state.status === 'missing-customer' && __React.createElement("p", { className: "live-briefing-state", role: "status" }, "\uACE0\uAC1D\uC774 \uD655\uC778\uB418\uC9C0 \uC54A\uC544 \uC0AC\uC804 \uBE0C\uB9AC\uD551\uC744 \uC870\uD68C\uD558\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4."),
+        state.status === 'loading' && __React.createElement("p", { className: "live-briefing-state", role: "status" }, "\uC0AC\uC804 \uBE0C\uB9AC\uD551\uC744 \uBD88\uB7EC\uC624\uB294 \uC911\uC785\uB2C8\uB2E4."),
+        state.status === 'error' && __React.createElement("div", { className: "live-briefing-state", role: "status" },
+            __React.createElement("strong", null, "\uC0AC\uC804 \uBE0C\uB9AC\uD551\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."),
+            __React.createElement("p", null, (0, liveBriefingApi_1.liveBriefingErrorMessage)(state.errorCode))),
+        data && __React.createElement(__React.Fragment, null,
+            __React.createElement("div", { className: "live-briefing-customer" },
+                __React.createElement("strong", null, data.customer.nameMasked),
+                __React.createElement("span", { className: "live-identifier" }, data.customer.id)),
+            !data.privacyConsent ? __React.createElement("p", { className: "live-briefing-state", role: "status" }, "\uACE0\uAC1D \uAC1C\uC778\uC815\uBCF4 \uB3D9\uC758 \uD655\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.") : __React.createElement(__React.Fragment, null,
+                __React.createElement("dl", { className: "live-briefing-products" },
+                    __React.createElement("div", null,
+                        __React.createElement("dt", null, "\uD604\uC7AC \uC0C1\uD488"),
+                        __React.createElement("dd", null, data.currentProduct ? __React.createElement(__React.Fragment, null,
+                            data.currentProduct.name,
+                            __React.createElement("small", null,
+                                data.currentProduct.storageGb,
+                                "GB \u00B7 ",
+                                data.currentProduct.color)) : '등록된 상품이 없습니다.')),
+                    __React.createElement("div", null,
+                        __React.createElement("dt", null, "\uD604\uC7AC \uC694\uAE08\uC81C"),
+                        __React.createElement("dd", null, data.currentPlan ? __React.createElement(__React.Fragment, null,
+                            data.currentPlan.name,
+                            __React.createElement("small", null,
+                                "\uC6D4 ",
+                                data.currentPlan.monthlyFee.toLocaleString('ko-KR'),
+                                "\uC6D0")) : '등록된 요금제가 없습니다.'))),
+                __React.createElement("section", { className: "live-briefing-section" },
+                    __React.createElement("h4", null, "\uCD5C\uADFC \uC644\uB8CC \uC0C1\uB2F4"),
+                    recent ? __React.createElement(__React.Fragment, null,
+                        __React.createElement("p", { className: "live-briefing-purpose" }, recent.purpose || '저장된 상담 목적이 없습니다.'),
+                        __React.createElement("p", { className: "live-briefing-date" },
+                            "\uC885\uB8CC ",
+                            __React.createElement("time", { dateTime: recent.endedAt }, (0, realDataApi_1.formatRealDataDate)(recent.endedAt))),
+                        recent.summary ? __React.createElement(__React.Fragment, null,
+                            __React.createElement("p", { className: "live-briefing-summary-preview" }, recent.summary),
+                            __React.createElement("details", { className: "live-briefing-summary" },
+                                __React.createElement("summary", null, "\uC804\uCCB4 \uC694\uC57D \uBCF4\uAE30"),
+                                __React.createElement("p", null, recent.summary)))
+                            : __React.createElement("p", { className: "live-briefing-note" }, "\uC800\uC7A5\uB41C \uC0C1\uB2F4 \uC694\uC57D\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.")) : __React.createElement("p", { className: "live-briefing-note" }, "\uC774\uC804 \uC800\uC7A5 \uC0C1\uB2F4 \uC774\uB825\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.")),
+                __React.createElement("section", { className: "live-briefing-section" },
+                    __React.createElement("h4", null, "\uC774\uC804 \uD1B5\uD654 \uC704\uD5D8\uB3C4"),
+                    previous ? __React.createElement(__React.Fragment, null,
+                        __React.createElement("p", { className: "live-briefing-risk" },
+                            __React.createElement("strong", null,
+                                previous.score,
+                                "\uC810 \u00B7 ",
+                                previous.level),
+                            __React.createElement("span", null,
+                                stageLabels[previous.stage],
+                                " \uAE30\uB85D")),
+                        __React.createElement("dl", { className: "live-briefing-counts" }, countLabels.map(([key, label]) => __React.createElement("div", { key: key },
+                            __React.createElement("dt", null, label),
+                            __React.createElement("dd", null, previous[key] === null ? '확인되지 않음' : previous[key] + '회'))))) : __React.createElement("p", { className: "live-briefing-note" }, "\uC774\uC804 \uC704\uD5D8 \uAE30\uB85D\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."),
+                    __React.createElement("p", { className: "live-briefing-note" }, "\uD604\uC7AC \uD1B5\uD654\uC758 \uC704\uD5D8 \uC2E0\uD638\uB294 \uB300\uD654 \uC601\uC5ED\uC5D0\uC11C \uD655\uC778\uD569\uB2C8\uB2E4.")),
+                __React.createElement("section", { className: "live-briefing-section" },
+                    __React.createElement("h4", null, "\uC751\uB300 \uC720\uC758\uC0AC\uD56D"),
+                    __React.createElement("ul", { className: "live-briefing-guidance" }, data.guidance.map((line, index) => __React.createElement("li", { key: index }, line)))))));
 }
 
 },
@@ -5044,6 +5846,7 @@ const Modal_1 = require("../components/Modal");
 const Icon_1 = require("../components/Icon");
 const liveCalls_1 = require("./liveCalls");
 const LiveRiskSignals_1 = require("./LiveRiskSignals");
+const LiveCallBriefing_1 = require("./LiveCallBriefing");
 const livePresentation_1 = require("./livePresentation");
 const liveNotices_1 = require("./liveNotices");
 const riskScoring_1 = require("../lib/riskScoring");
@@ -5064,53 +5867,56 @@ function LiveConversation({ call, connection, onClose }) {
         else
             setUnread(true);
     }, [call.messages]);
-    return __React.createElement(Modal_1.Modal, { title: "\uC2E4\uC2DC\uAC04 AI \uC0C1\uB2F4", eyebrow: "KCM \u00B7 \uD1B5\uD654 \uAE30\uB85D", onClose: onClose, wide: true },
+    return __React.createElement(Modal_1.Modal, { title: "\uC2E4\uC2DC\uAC04 AI \uC0C1\uB2F4", eyebrow: "KCM \u00B7 \uD1B5\uD654 \uAE30\uB85D", onClose: onClose, wide: true, className: "live-conversation-modal" },
         __React.createElement("div", { className: "live-conversation" },
-            __React.createElement("div", { className: "live-conversation-meta" },
-                __React.createElement("strong", { className: call.customer_id ? 'live-identifier' : undefined }, call.customer_id || '고객 확인 전'),
-                __React.createElement("span", { className: `live-badge ${call.status}` }, liveCalls_1.liveStatusLabels[call.status]),
-                __React.createElement("span", null, call.status === 'live' ? '통화 진행 중' : call.status === 'ended' ? '통화 종료' : call.status === 'error' ? '통화 상태 확인 필요' : '통화 연결을 기다리고 있습니다.')),
-            __React.createElement("p", { className: "live-small" },
-                "\uC2DC\uC791 ",
-                __React.createElement("time", { dateTime: call.started_at ?? undefined }, clock(call.started_at)),
-                call.ended_at && __React.createElement(__React.Fragment, null,
-                    " \u00B7 \uC885\uB8CC ",
-                    __React.createElement("time", { dateTime: call.ended_at }, clock(call.ended_at)))),
-            __React.createElement("details", { className: "live-call-id" },
-                __React.createElement("summary", null, "\uD1B5\uD654 \uC2DD\uBCC4 \uC815\uBCF4"),
-                __React.createElement("code", null,
-                    "\uD1B5\uD654: ",
-                    call.call_id),
-                __React.createElement("code", null,
-                    "\uC0C1\uB2F4: ",
-                    call.consultation_id || '확인 필요'),
-                __React.createElement("code", null,
-                    "\uACE0\uAC1D: ",
-                    call.customer_id || '미식별'),
-                __React.createElement("code", null,
-                    "\uB9E4\uC7A5: ",
-                    call.store_id || '미설정')),
-            connection === 'reconnecting' && __React.createElement("p", { className: "live-connection-note", role: "status" }, "\uC2E4\uC2DC\uAC04 \uC0C1\uB2F4 \uC5F0\uACB0\uC744 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4. \uB9C8\uC9C0\uB9C9 \uC218\uC2E0 \uB300\uD654\uB97C \uD45C\uC2DC\uD569\uB2C8\uB2E4."),
-            call.error && __React.createElement("p", { className: "live-connection-note", role: "status" }, (0, liveNotices_1.liveConnectionNotice)(call.error)),
-            __React.createElement(LiveRiskSignals_1.LiveRiskSignals, { call: call }),
-            __React.createElement("div", { className: "live-messages", ref: scrollRef, role: "region", "aria-label": "\uACE0\uAC1D\uACFC KCM AI \uB300\uD654", tabIndex: 0, onScroll: () => { const node = scrollRef.current; if (node) {
-                    following.current = (0, liveCalls_1.isNearConversationBottom)(node.scrollTop, node.clientHeight, node.scrollHeight);
-                    if (following.current)
-                        setUnread(false);
-                } } }, call.messages.length === 0 ? __React.createElement("p", { className: "live-empty" }, call.status === 'ended' ? '수신된 대화가 없습니다.' : '대화를 기다리고 있습니다.') : call.messages.map(message => __React.createElement("div", { className: `live-message ${message.role}`, key: message.turn_id, "data-turn-id": message.turn_id },
-                __React.createElement("div", { className: "live-speaker" },
-                    __React.createElement("strong", null, message.role === 'user' ? '고객' : 'KCM AI'),
-                    message.start_sec !== null && __React.createElement("span", null,
-                        Math.floor(message.start_sec / 60),
-                        ":",
-                        String(Math.floor(message.start_sec % 60)).padStart(2, '0'))),
-                __React.createElement("p", null, message.content),
-                message.role === 'user' && __React.createElement(LiveRiskSignals_1.LiveTurnBadges, { analysis: call.risk_analysis?.analysisByTurn[message.turn_id] })))),
-            unread && __React.createElement("button", { className: "button button-secondary live-new-message", onClick: () => { following.current = true; if (scrollRef.current)
-                    scrollRef.current.scrollTop = scrollRef.current.scrollHeight; setUnread(false); } }, "\uCD5C\uC2E0 \uB300\uD654 \uBCF4\uAE30"),
-            __React.createElement("details", { className: "live-call-id" },
-                __React.createElement("summary", null, "\uAE30\uB85D \uBCF4\uAD00 \uC548\uB0B4"),
-                __React.createElement("p", { className: "live-small" }, "\uD604\uC7AC \uC218\uC2E0\uD55C \uAE30\uB85D\uC744 \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uC11C\uBE44\uC2A4 \uC7AC\uC2DC\uC791 \uC804\uC758 \uC774\uB825\uC740 \uC774 \uD654\uBA74\uC5D0\uC11C \uC870\uD68C\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uC678\uBD80 \uC800\uC7A5 \uC5EC\uBD80\uB294 \uBCC4\uB3C4 \uD655\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.")),
+            __React.createElement("div", { className: "live-conversation-layout" },
+                __React.createElement("div", { className: "live-conversation-current" },
+                    __React.createElement("div", { className: "live-conversation-meta" },
+                        __React.createElement("strong", { className: call.customer_id ? 'live-identifier' : undefined }, call.customer_id || '고객 확인 전'),
+                        __React.createElement("span", { className: `live-badge ${call.status}` }, liveCalls_1.liveStatusLabels[call.status]),
+                        __React.createElement("span", null, call.status === 'live' ? '통화 진행 중' : call.status === 'ended' ? '통화 종료' : call.status === 'error' ? '통화 상태 확인 필요' : '통화 연결을 기다리고 있습니다.')),
+                    __React.createElement("p", { className: "live-small" },
+                        "\uC2DC\uC791 ",
+                        __React.createElement("time", { dateTime: call.started_at ?? undefined }, clock(call.started_at)),
+                        call.ended_at && __React.createElement(__React.Fragment, null,
+                            " \u00B7 \uC885\uB8CC ",
+                            __React.createElement("time", { dateTime: call.ended_at }, clock(call.ended_at)))),
+                    __React.createElement("details", { className: "live-call-id" },
+                        __React.createElement("summary", null, "\uD1B5\uD654 \uC2DD\uBCC4 \uC815\uBCF4"),
+                        __React.createElement("code", null,
+                            "\uD1B5\uD654: ",
+                            call.call_id),
+                        __React.createElement("code", null,
+                            "\uC0C1\uB2F4: ",
+                            call.consultation_id || '확인 필요'),
+                        __React.createElement("code", null,
+                            "\uACE0\uAC1D: ",
+                            call.customer_id || '미식별'),
+                        __React.createElement("code", null,
+                            "\uB9E4\uC7A5: ",
+                            call.store_id || '미설정')),
+                    connection === 'reconnecting' && __React.createElement("p", { className: "live-connection-note", role: "status" }, "\uC2E4\uC2DC\uAC04 \uC0C1\uB2F4 \uC5F0\uACB0\uC744 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4. \uB9C8\uC9C0\uB9C9 \uC218\uC2E0 \uB300\uD654\uB97C \uD45C\uC2DC\uD569\uB2C8\uB2E4."),
+                    call.error && __React.createElement("p", { className: "live-connection-note", role: "status" }, (0, liveNotices_1.liveConnectionNotice)(call.error)),
+                    __React.createElement(LiveRiskSignals_1.LiveRiskSignals, { call: call }),
+                    __React.createElement("div", { className: "live-messages", ref: scrollRef, role: "region", "aria-label": "\uACE0\uAC1D\uACFC KCM AI \uB300\uD654", tabIndex: 0, onScroll: () => { const node = scrollRef.current; if (node) {
+                            following.current = (0, liveCalls_1.isNearConversationBottom)(node.scrollTop, node.clientHeight, node.scrollHeight);
+                            if (following.current)
+                                setUnread(false);
+                        } } }, call.messages.length === 0 ? __React.createElement("p", { className: "live-empty" }, call.status === 'ended' ? '수신된 대화가 없습니다.' : '대화를 기다리고 있습니다.') : call.messages.map(message => __React.createElement("div", { className: `live-message ${message.role}`, key: message.turn_id, "data-turn-id": message.turn_id },
+                        __React.createElement("div", { className: "live-speaker" },
+                            __React.createElement("strong", null, message.role === 'user' ? '고객' : 'KCM AI'),
+                            message.start_sec !== null && __React.createElement("span", null,
+                                Math.floor(message.start_sec / 60),
+                                ":",
+                                String(Math.floor(message.start_sec % 60)).padStart(2, '0'))),
+                        __React.createElement("p", null, message.content),
+                        message.role === 'user' && __React.createElement(LiveRiskSignals_1.LiveTurnBadges, { analysis: call.risk_analysis?.analysisByTurn[message.turn_id] })))),
+                    unread && __React.createElement("button", { className: "button button-secondary live-new-message", onClick: () => { following.current = true; if (scrollRef.current)
+                            scrollRef.current.scrollTop = scrollRef.current.scrollHeight; setUnread(false); } }, "\uCD5C\uC2E0 \uB300\uD654 \uBCF4\uAE30"),
+                    __React.createElement("details", { className: "live-call-id" },
+                        __React.createElement("summary", null, "\uAE30\uB85D \uBCF4\uAD00 \uC548\uB0B4"),
+                        __React.createElement("p", { className: "live-small" }, "\uD604\uC7AC \uC218\uC2E0\uD55C \uAE30\uB85D\uC744 \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uC11C\uBE44\uC2A4 \uC7AC\uC2DC\uC791 \uC804\uC758 \uC774\uB825\uC740 \uC774 \uD654\uBA74\uC5D0\uC11C \uC870\uD68C\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uC678\uBD80 \uC800\uC7A5 \uC5EC\uBD80\uB294 \uBCC4\uB3C4 \uD655\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4."))),
+                __React.createElement(LiveCallBriefing_1.LiveCallBriefing, { callId: call.call_id, customerId: call.customer_id ?? null })),
             __React.createElement("div", { className: "modal-actions" },
                 __React.createElement("button", { className: "button button-secondary", onClick: onClose }, "\uC2E4\uC2DC\uAC04 \uC0C1\uB2F4 \uB2EB\uAE30"))));
 }
@@ -5311,7 +6117,9 @@ function LiveRiskSignals({ call }) {
             __React.createElement("p", { className: "live-risk-note" },
                 "\uD56D\uBAA9 \uD569\uACC4 ",
                 final.raw_score,
-                "\uC810 \u00B7 \uC704\uD611 \uBCF4\uC815 ",
+                "\uC810",
+                final.signals.profanity_count >= 1 && final.rule_version === riskScoring_1.RISK_RULE.version && ' · 욕설 최소 ' + riskScoring_1.RISK_RULE.profanityFloor + '점 보정',
+                " \u00B7 \uC704\uD611 \uBCF4\uC815 ",
                 final.threat_floor ? '최소 ' + final.threat_floor + '점' : '없음',
                 final.adjusted_score > 99 && ' · 99점 상한 적용'),
             __React.createElement("dl", { className: "live-risk-counts" }, ['profanity', 'threat', 'blame', 'sexual', 'shouting'].map((key, index) => __React.createElement("div", { key: key },
@@ -5511,6 +6319,9 @@ const Tabs_1 = require("../components/Tabs");
 const productCatalog_1 = require("../data/productCatalog");
 const navigation_1 = require("../lib/navigation");
 const productLookup_1 = require("../lib/productLookup");
+const effectivePriceApi_1 = require("../services/effectivePriceApi");
+const realDataApi_1 = require("../services/realDataApi");
+const EffectivePricePanel_1 = require("../components/EffectivePricePanel");
 const descriptions = {
     plans: '이용 조건을 확인하고 최대 3개 요금제를 함께 비교하세요.',
     bundles: '회선 구성에 맞는 결합 조건과 확인사항을 살펴보세요.',
@@ -5577,7 +6388,47 @@ function ProductsPage({ data }) {
     const [queries, setQueries] = (0, react_1.useState)({ plans: '', bundles: '', benefits: '', devices: '' });
     const [selectedIds, setSelectedIds] = (0, react_1.useState)({});
     const [comparedIds, setComparedIds] = (0, react_1.useState)([]);
-    const catalog = (0, react_1.useMemo)(() => (0, productCatalog_1.createProductCatalog)(data.inventory), [data.inventory]);
+    const [catalogMode, setCatalogMode] = (0, react_1.useState)('loading');
+    const [storedCatalog, setStoredCatalog] = (0, react_1.useState)(null);
+    const [catalogError, setCatalogError] = (0, react_1.useState)('');
+    const [reloadKey, setReloadKey] = (0, react_1.useState)(0);
+    const [customers, setCustomers] = (0, react_1.useState)([]);
+    const [customersError, setCustomersError] = (0, react_1.useState)('');
+    (0, react_1.useEffect)(() => {
+        let active = true;
+        const controller = new AbortController();
+        setCatalogMode('loading');
+        setStoredCatalog(null);
+        setCatalogError('');
+        setCustomers([]);
+        setCustomersError('');
+        setSelectedIds({});
+        setComparedIds([]);
+        if (document.documentElement.dataset.kcmStandalone === 'true') {
+            setCatalogMode('error');
+            setCatalogError('저장 상품 조회는 서버 연결이 필요합니다. 참고 자료를 별도로 확인할 수 있습니다.');
+            return () => { active = false; controller.abort(); };
+        }
+        void (0, effectivePriceApi_1.loadProductCatalog)(controller.signal).then(body => {
+            if (!active)
+                return;
+            setStoredCatalog(body);
+            setCatalogMode('db');
+        }).catch(() => { if (active) {
+            setCatalogMode('error');
+            setCatalogError('저장 상품을 불러오지 못했습니다. 설정과 조회 권한을 확인한 뒤 다시 시도해 주세요.');
+        } });
+        void realDataApi_1.realDataApi.customers(controller.signal).then(body => {
+            if (active)
+                setCustomers(body.items.filter(customer => customer.privacyConsent));
+        }).catch(error => {
+            if (active)
+                setCustomersError((0, realDataApi_1.realDataErrorMessage)(error instanceof realDataApi_1.RealDataApiError ? error.code : 'NETWORK'));
+        });
+        return () => { active = false; controller.abort(); };
+    }, [reloadKey]);
+    const catalog = (0, react_1.useMemo)(() => catalogMode === 'db' && storedCatalog ? (0, effectivePriceApi_1.toCatalogItems)(storedCatalog)
+        : catalogMode === 'reference' ? (0, productCatalog_1.createProductCatalog)(data.inventory) : [], [catalogMode, storedCatalog, data.inventory]);
     const visibleItems = (0, productLookup_1.filterProducts)(catalog, active, queries[active], carrier);
     const selectionKey = active === 'plans' ? `${active}-${carrier}` : active;
     const selected = (0, productLookup_1.selectedProduct)(visibleItems, selectedIds[selectionKey]);
@@ -5590,7 +6441,15 @@ function ProductsPage({ data }) {
                 __React.createElement("h1", null, "\uC0C1\uD488\uAD00\uB9AC"),
                 __React.createElement("p", null, "\uC694\uAE08\uC81C\uBD80\uD130 \uC81C\uD488\uAE4C\uC9C0, \uC0C1\uB2F4\uC5D0 \uD544\uC694\uD55C \uC815\uBCF4\uB97C \uD55C\uACF3\uC5D0\uC11C \uD655\uC778\uD558\uC138\uC694."))),
         __React.createElement(Tabs_1.Tabs, { id: "products", label: "\uC0C1\uD488\uAD00\uB9AC \uD0ED", tabs: navigation_1.productTabs, active: active, onChange: setActive }),
-        navigation_1.productTabs.map(tab => __React.createElement("section", { key: tab.id, role: "tabpanel", hidden: active !== tab.id, id: `products-panel-${tab.id}`, "aria-labelledby": `products-tab-${tab.id}`, tabIndex: 0 }, active === tab.id && __React.createElement(__React.Fragment, null,
+        __React.createElement("div", { className: "product-source-bar" },
+            __React.createElement("p", { className: "real-data-notice", role: "status" }, catalogMode === 'loading' ? '저장 상품을 불러오는 중입니다.' : catalogMode === 'db' ? '저장된 상품 자료 · 가입 조건과 현재 판매 가격은 별도 확인하세요.' : catalogMode === 'reference' ? '별도 참고 자료입니다. 운영 상품이나 DB 조회 결과가 아닙니다.' : catalogError),
+            __React.createElement("div", { className: "real-data-header-actions" },
+                __React.createElement("button", { className: "button button-secondary", disabled: catalogMode === 'loading', onClick: () => setReloadKey(key => key + 1) }, "\uC800\uC7A5 \uC790\uB8CC \uB2E4\uC2DC \uC870\uD68C"),
+                catalogMode !== 'reference' && catalogMode !== 'loading' && __React.createElement("button", { className: "text-button", onClick: () => { setCatalogMode('reference'); setSelectedIds({}); setComparedIds([]); } }, "\uCC38\uACE0 \uC790\uB8CC \uBCF4\uAE30"))),
+        catalogMode === 'db' && storedCatalog && __React.createElement("details", { className: "effective-price-disclosure" },
+            __React.createElement("summary", null, "\uCCB4\uAC10\uAC00 \uACC4\uC0B0 \u00B7 \uC694\uAE08\uACFC \uD560\uC778 \uADFC\uAC70 \uD655\uC778"),
+            __React.createElement(EffectivePricePanel_1.EffectivePricePanel, { catalog: storedCatalog, customers: customers, customersError: customersError })),
+        (catalogMode === 'db' || catalogMode === 'reference') && navigation_1.productTabs.map(tab => __React.createElement("section", { key: tab.id, role: "tabpanel", hidden: active !== tab.id, id: `products-panel-${tab.id}`, "aria-labelledby": `products-tab-${tab.id}`, tabIndex: 0 }, active === tab.id && __React.createElement(__React.Fragment, null,
             __React.createElement("div", { className: "section-intro" },
                 __React.createElement("div", null,
                     __React.createElement("h2", null, active === 'plans' ? `${carrier === 'own' ? '자사' : '타사'} 요금제` : tab.label),
@@ -5631,7 +6490,7 @@ function ProductsPage({ data }) {
                     __React.createElement("h2", null, "\uC870\uD68C\uD560 \uC0C1\uD488\uC744 \uC120\uD0DD\uD558\uC138\uC694."),
                     __React.createElement("p", null, "\uAC80\uC0C9\uC5B4\uB97C \uC9C0\uC6B0\uBA74 \uC0C1\uD488 \uBAA9\uB85D\uC744 \uB2E4\uC2DC \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."))),
             active === 'plans' && __React.createElement(PlanComparison, { items: compared, onRemove: onCompare, onClear: () => setComparedIds([]) }),
-            __React.createElement("p", { className: "product-reference-note" }, productCatalog_1.productReferenceNote)))));
+            __React.createElement("p", { className: "product-reference-note" }, catalogMode === 'reference' ? productCatalog_1.productReferenceNote : '저장된 조회 자료입니다. 가입·구매 전 적용 조건·세금·추가 비용을 확인하세요.')))));
 }
 
 },
@@ -5645,6 +6504,7 @@ const SmartInventoryPage_1 = require("./SmartInventoryPage");
 const InventoryPanel_1 = require("../components/InventoryPanel");
 const LiveConsultations_1 = require("../live/LiveConsultations");
 const customerName_1 = require("../lib/customerName");
+const StoredCustomers_1 = require("../components/StoredCustomers");
 function SecondaryPages({ page, data }) {
     if (page === 'inventory')
         return __React.createElement(SmartInventoryPage_1.SmartInventoryPage, { fallback: __React.createElement(InventoryPanel_1.InventoryPanel, { data: data, expanded: true }) });
@@ -5661,24 +6521,27 @@ function SecondaryPages({ page, data }) {
                     __React.createElement("p", null, "\uACE0\uAC1D\uBCC4 \uD1B5\uD654 \uC774\uB825\uACFC \uBC29\uBB38 \uC608\uC57D \uC815\uBCF4\uB97C \uD655\uC778\uD558\uC138\uC694.")),
                 __React.createElement("span", { className: "small-badge" }, "\uC870\uD68C")),
             __React.createElement(LiveConsultations_1.LiveConsultations, { view: "history" }),
-            __React.createElement("section", { className: "card appointments-card", "aria-label": "\uBC29\uBB38 \uC608\uC57D \uACE0\uAC1D" },
-                __React.createElement("div", { className: "card-heading" },
-                    __React.createElement("h2", null, "\uBC29\uBB38 \uC608\uC57D \uACE0\uAC1D"),
-                    __React.createElement("span", { className: "small-badge" }, "\uC608\uC57D \uBAA9\uB85D")),
-                __React.createElement("div", { className: "table-scroll", role: "region", "aria-label": "\uBC29\uBB38 \uC608\uC57D \uACE0\uAC1D \uBAA9\uB85D", tabIndex: 0 },
-                    __React.createElement("table", { className: "appointment-table" },
-                        __React.createElement("thead", null,
-                            __React.createElement("tr", null,
-                                __React.createElement("th", null, "\uC608\uC57D ID"),
-                                __React.createElement("th", null, "\uACE0\uAC1D"),
-                                __React.createElement("th", null, "\uC0C1\uB2F4 \uBAA9\uC801"),
-                                __React.createElement("th", null, "\uC608\uC57D \uC2DC\uAC04"))),
-                        __React.createElement("tbody", null, data.appointments.map(item => __React.createElement("tr", { key: item.id },
-                            __React.createElement("td", null, item.id),
-                            __React.createElement("td", null, (0, customerName_1.maskCustomerName)(item.customerName)),
-                            __React.createElement("td", null, item.purpose),
-                            __React.createElement("td", null, item.time)))))),
-                __React.createElement("p", { className: "panel-note" }, "\uBC29\uBB38 \uC608\uC57D \uC815\uBCF4\uB294 \uC0C1\uB2F4 \uC900\uBE44\uC6A9 \uCC38\uACE0 \uC790\uB8CC\uC785\uB2C8\uB2E4.")));
+            __React.createElement(StoredCustomers_1.StoredCustomers, null),
+            __React.createElement("details", { className: "reference-data-details" },
+                __React.createElement("summary", null, "\uBCC4\uB3C4 \uCC38\uACE0 \uC790\uB8CC \u00B7 \uBC29\uBB38 \uC608\uC57D \uACE0\uAC1D"),
+                __React.createElement("section", { className: "card appointments-card", "aria-label": "\uBC29\uBB38 \uC608\uC57D \uACE0\uAC1D" },
+                    __React.createElement("div", { className: "card-heading" },
+                        __React.createElement("h2", null, "\uBC29\uBB38 \uC608\uC57D \uACE0\uAC1D"),
+                        __React.createElement("span", { className: "small-badge" }, "\uCC38\uACE0 \uC790\uB8CC")),
+                    __React.createElement("div", { className: "table-scroll", role: "region", "aria-label": "\uBC29\uBB38 \uC608\uC57D \uACE0\uAC1D \uBAA9\uB85D", tabIndex: 0 },
+                        __React.createElement("table", { className: "appointment-table" },
+                            __React.createElement("thead", null,
+                                __React.createElement("tr", null,
+                                    __React.createElement("th", null, "\uC608\uC57D ID"),
+                                    __React.createElement("th", null, "\uACE0\uAC1D"),
+                                    __React.createElement("th", null, "\uC0C1\uB2F4 \uBAA9\uC801"),
+                                    __React.createElement("th", null, "\uC608\uC57D \uC2DC\uAC04"))),
+                            __React.createElement("tbody", null, data.appointments.map(item => __React.createElement("tr", { key: item.id },
+                                __React.createElement("td", null, item.id),
+                                __React.createElement("td", null, (0, customerName_1.maskCustomerName)(item.customerName)),
+                                __React.createElement("td", null, item.purpose),
+                                __React.createElement("td", null, item.time)))))),
+                    __React.createElement("p", { className: "panel-note" }, "\uBC29\uBB38 \uC608\uC57D \uC815\uBCF4\uB294 \uC0C1\uB2F4 \uC900\uBE44\uC6A9 \uCC38\uACE0 \uC790\uB8CC\uC785\uB2C8\uB2E4."))));
     return null;
 }
 
@@ -6367,6 +7230,242 @@ exports.dashboardRepository = {
 };
 
 },
+"src/services/effectivePriceApi":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.formatEffectivePrice = exports.storedProductNote = exports.loadProductCatalog = exports.EffectivePriceApiError = void 0;
+exports.effectivePriceErrorMessage = effectivePriceErrorMessage;
+exports.parseProductCatalog = parseProductCatalog;
+exports.parseEffectivePrice = parseEffectivePrice;
+exports.calculateEffectivePrice = calculateEffectivePrice;
+exports.toCatalogItems = toCatalogItems;
+const errorMessages = {
+    NETWORK: '상품 정보를 조회하지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.',
+    INVALID_RESPONSE: '상품 조회 결과를 확인할 수 없습니다. 다시 조회해 주세요.',
+    INVALID_PRICE_REQUEST: '요금제와 계산 조건을 확인해 주세요.',
+    PLAN_NOT_FOUND: '선택한 요금제가 조회되지 않았습니다. 상품 목록을 다시 조회해 주세요.',
+    PRODUCT_NOT_FOUND: '선택한 단말이 조회되지 않았습니다. 상품 목록을 다시 조회해 주세요.',
+    BUNDLE_NOT_FOUND: '선택한 결합이 조회되지 않았습니다. 상품 목록을 다시 조회해 주세요.',
+    CUSTOMER_NOT_FOUND: '선택한 고객을 조회하지 못했습니다.',
+    STORE_NOT_ALLOWED: '현재 매장에서 조회할 수 없는 고객입니다.',
+    CUSTOMER_PRIVACY_RESTRICTED: '개인정보 동의를 확인하기 전에는 고객의 현재 요금제를 비교할 수 없습니다.',
+    HOME_STORE_NOT_CONFIGURED: '현재 매장 설정을 확인한 뒤 고객 요금제를 비교해 주세요.',
+    PRICE_DATA_INVALID: '등록된 가격 또는 조건을 확인할 수 없어 계산하지 않았습니다.',
+    REAL_DATA_NOT_CONFIGURED: '저장된 상품 조회가 아직 준비되지 않았습니다.',
+    REAL_DATA_CONFIG_INVALID: '저장된 상품 조회 설정을 확인해야 합니다.',
+    REAL_DATA_ACCESS_DENIED: '저장된 상품 조회 권한을 확인해야 합니다.',
+    REAL_DATA_ACCESS_RESTRICTED: '공개 환경의 직원 조회 접근 설정이 준비되지 않았습니다. 관리자에게 문의해 주세요.',
+    REAL_DATA_UNAVAILABLE: '저장된 상품을 조회하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+    REAL_DATA_TIMEOUT: '상품 조회 시간이 초과되었습니다. 다시 시도해 주세요.',
+    REAL_DATA_INVALID_RESPONSE: '저장된 상품 조회 결과를 확인할 수 없습니다.',
+    REAL_DATA_INVALID_QUERY: '상품 조회 조건을 확인해야 합니다.',
+};
+class EffectivePriceApiError extends Error {
+    code;
+    constructor(code) {
+        const safeCode = typeof code === 'string' && Object.hasOwn(errorMessages, code) ? code : 'REAL_DATA_UNAVAILABLE';
+        super(errorMessages[safeCode]);
+        this.name = 'EffectivePriceApiError';
+        this.code = safeCode;
+    }
+}
+exports.EffectivePriceApiError = EffectivePriceApiError;
+function effectivePriceErrorMessage(error) {
+    return error instanceof EffectivePriceApiError ? error.message : errorMessages.REAL_DATA_UNAVAILABLE;
+}
+const record = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+const text = (value) => typeof value === 'string';
+const nonempty = (value) => text(value) && value.trim().length > 0;
+const money = (value) => typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+const count = (value) => value === null || money(value);
+const nullableMoney = count;
+const ids = { product: /^product_\d{3,}$/, plan: /^own_plan_\d{3,}$/, competitor: /^competitor_plan_\d{3,}$/, bundle: /^bundle_\d{3,}$/, rule: /^bundle_rule_\d{3,}$/, benefit: /^benefit_\d{3,}$/, customer: /^customer_\d{3,}$/ };
+const id = (kind, value) => text(value) && ids[kind].test(value);
+function invalid() { throw new EffectivePriceApiError('INVALID_RESPONSE'); }
+function unique(value, parse) {
+    if (!Array.isArray(value) || value.length > 1000)
+        return invalid();
+    const rows = value.map(parse);
+    if (new Set(rows.map(row => row.id)).size !== rows.length)
+        return invalid();
+    return rows;
+}
+function product(value) {
+    if (!record(value) || !id('product', value.id) || !nonempty(value.name) || !nonempty(value.maker)
+        || !money(value.storageGb) || value.storageGb < 1 || !nonempty(value.color) || !money(value.price) || value.price < 1)
+        return invalid();
+    return { id: value.id, name: value.name, maker: value.maker, storageGb: value.storageGb, color: value.color, price: value.price };
+}
+function pricePlan(value) {
+    if (!record(value) || !id('plan', value.id) || !nonempty(value.name) || !money(value.monthlyFee))
+        return invalid();
+    return { id: value.id, name: value.name, monthlyFee: value.monthlyFee };
+}
+function plan(value, competitor = false) {
+    if (!record(value) || !id(competitor ? 'competitor' : 'plan', value.id) || !nonempty(value.name)
+        || !(competitor ? nonempty(value.company) : value.company === null) || !nonempty(value.groupName) || !nonempty(value.type) || !money(value.monthlyFee)
+        || typeof value.dataUnlimited !== 'boolean' || !(value.dataGb === null || typeof value.dataGb === 'number' && Number.isFinite(value.dataGb) && value.dataGb >= 0)
+        || !count(value.afterSpeedKbps) || typeof value.voiceUnlimited !== 'boolean' || !count(value.voiceMinutes)
+        || typeof value.textUnlimited !== 'boolean' || !count(value.textCount))
+        return invalid();
+    return { id: value.id, name: value.name, company: value.company, groupName: value.groupName, type: value.type,
+        monthlyFee: value.monthlyFee, dataUnlimited: value.dataUnlimited, dataGb: value.dataGb,
+        afterSpeedKbps: value.afterSpeedKbps, voiceUnlimited: value.voiceUnlimited, voiceMinutes: value.voiceMinutes,
+        textUnlimited: value.textUnlimited, textCount: value.textCount };
+}
+function bundle(value) {
+    if (!record(value) || !id('bundle', value.id) || !nonempty(value.name) || !nonempty(value.type) || !text(value.description)
+        || typeof value.familyRequired !== 'boolean' || typeof value.internetRequired !== 'boolean'
+        || !money(value.minMobileLines) || value.minMobileLines < 1 || !money(value.maxMobileLines) || value.maxMobileLines < value.minMobileLines
+        || !nonempty(value.discountMethod))
+        return invalid();
+    return { id: value.id, name: value.name, type: value.type, description: value.description, familyRequired: value.familyRequired,
+        internetRequired: value.internetRequired, minMobileLines: value.minMobileLines, maxMobileLines: value.maxMobileLines, discountMethod: value.discountMethod };
+}
+function benefit(value) {
+    if (!record(value) || !id('benefit', value.id) || !nonempty(value.name) || !nonempty(value.type) || !nonempty(value.grade) || !text(value.description))
+        return invalid();
+    return { id: value.id, name: value.name, type: value.type, grade: value.grade, description: value.description };
+}
+function parseProductCatalog(value) {
+    if (!record(value) || value.source !== 'supabase')
+        return invalid();
+    return { source: 'supabase', products: unique(value.products, product), ownPlans: unique(value.ownPlans, row => plan(row)),
+        competitorPlans: unique(value.competitorPlans, row => plan(row, true)), bundles: unique(value.bundles, bundle), benefits: unique(value.benefits, benefit) };
+}
+const rowKeys = ['plan_fee', 'bundle_discount', 'benefit_value', 'contract_discount', 'monthly_subtotal', 'device_cash', 'device_installment'];
+const rowStatuses = ['not_selected', 'not_applicable', 'needs_confirmation', 'applied', 'recorded', 'calculated'];
+const discountStatuses = ['not_selected', 'not_applicable', 'needs_confirmation', 'applied'];
+function parseEffectivePrice(value, expected) {
+    if (!record(value) || value.source !== 'supabase' || value.policyVersion !== 'db-fixed-mobile-v1')
+        return invalid();
+    const selectedPlan = pricePlan(value.plan);
+    const selectedProduct = value.product === null ? null : product(value.product);
+    const currentPlan = value.currentPlan === null ? null : pricePlan(value.currentPlan);
+    if (!(value.bundle === null || record(value.bundle) && id('bundle', value.bundle.id) && nonempty(value.bundle.name)))
+        return invalid();
+    const selectedBundle = value.bundle === null ? null : { id: value.bundle.id, name: value.bundle.name };
+    if (!record(value.bundleDiscount) || !discountStatuses.includes(value.bundleDiscount.status) || !nonempty(value.bundleDiscount.message)
+        || !nullableMoney(value.bundleDiscount.amount) || !(value.bundleDiscount.ruleId === null || id('rule', value.bundleDiscount.ruleId)))
+        return invalid();
+    const discount = { status: value.bundleDiscount.status, amount: value.bundleDiscount.amount,
+        ruleId: value.bundleDiscount.ruleId, message: value.bundleDiscount.message };
+    if (discount.status === 'applied' ? !selectedBundle || discount.amount === null || discount.amount > selectedPlan.monthlyFee || discount.ruleId === null
+        : discount.amount !== null || discount.ruleId !== null)
+        return invalid();
+    if ((selectedBundle === null) !== (discount.status === 'not_selected'))
+        return invalid();
+    if (!nullableMoney(value.monthlySubtotal) || (discount.status === 'needs_confirmation') !== (value.monthlySubtotal === null)
+        || value.monthlySubtotal !== null && value.monthlySubtotal > selectedPlan.monthlyFee
+        || !(value.monthlyFeeDifference === null || typeof value.monthlyFeeDifference === 'number' && Number.isSafeInteger(value.monthlyFeeDifference))
+        || (currentPlan === null) !== (value.monthlyFeeDifference === null) || value.productCashPrice !== (selectedProduct?.price ?? null)
+        || value.monthlyInstallment !== null || !['communication_only', 'partial'].includes(value.quoteScope)
+        || !nullableMoney(value.finalMonthlyTotal) || (value.quoteScope === 'communication_only'
+        ? selectedProduct !== null || selectedBundle !== null || value.finalMonthlyTotal !== value.monthlySubtotal
+        : value.finalMonthlyTotal !== null))
+        return invalid();
+    // Monetary calculation is owned by the server. The browser checks types and projects returned amounts.
+    const subtotal = value.monthlySubtotal;
+    const difference = value.monthlyFeeDifference;
+    if (expected && (selectedPlan.id !== expected.plan_id || (selectedProduct?.id ?? undefined) !== expected.product_id
+        || (selectedBundle?.id ?? undefined) !== expected.bundle_id || !expected.customer_id && currentPlan !== null
+        || expected.customer_id && currentPlan === null && value.quoteScope !== 'partial'))
+        return invalid();
+    if (!Array.isArray(value.breakdown) || value.breakdown.length !== rowKeys.length)
+        return invalid();
+    const rows = value.breakdown.map((row) => {
+        if (!record(row) || !rowKeys.includes(row.key) || !nonempty(row.label) || !nullableMoney(row.amount)
+            || !['monthly', 'once'].includes(row.period) || !rowStatuses.includes(row.status) || !(row.note === undefined || nonempty(row.note)))
+            return invalid();
+        return { key: row.key, label: row.label, amount: row.amount, period: row.period,
+            status: row.status, ...(row.note === undefined ? {} : { note: row.note }) };
+    });
+    if (new Set(rows.map(row => row.key)).size !== rowKeys.length)
+        return invalid();
+    const matches = (key, amount, status, period = 'monthly') => rows.some(row => row.key === key && row.amount === amount && row.status === status && row.period === period);
+    if (!matches('plan_fee', selectedPlan.monthlyFee, 'recorded') || !matches('bundle_discount', discount.amount, discount.status)
+        || !matches('benefit_value', null, 'needs_confirmation') || !matches('contract_discount', null, 'needs_confirmation')
+        || !matches('monthly_subtotal', subtotal, subtotal === null ? 'needs_confirmation' : 'calculated')
+        || !matches('device_cash', selectedProduct?.price ?? null, selectedProduct ? 'recorded' : 'not_selected', 'once')
+        || !matches('device_installment', null, selectedProduct ? 'needs_confirmation' : 'not_selected')
+        || !Array.isArray(value.warnings) || !value.warnings.every(nonempty))
+        return invalid();
+    return { source: 'supabase', policyVersion: 'db-fixed-mobile-v1', plan: selectedPlan, product: selectedProduct, bundle: selectedBundle,
+        currentPlan, monthlyFeeDifference: difference, bundleDiscount: discount, monthlySubtotal: subtotal, productCashPrice: selectedProduct?.price ?? null,
+        monthlyInstallment: null, finalMonthlyTotal: value.finalMonthlyTotal, quoteScope: value.quoteScope,
+        breakdown: rows, warnings: [...value.warnings] };
+}
+function validInput(value) {
+    return record(value) && Object.keys(value).every(key => ['plan_id', 'product_id', 'bundle_id', 'customer_id', 'family', 'internet', 'mobile_lines'].includes(key))
+        && id('plan', value.plan_id) && (value.product_id === undefined || id('product', value.product_id))
+        && (value.bundle_id === undefined || id('bundle', value.bundle_id)) && (value.customer_id === undefined || id('customer', value.customer_id))
+        && (value.family === undefined || typeof value.family === 'boolean') && (value.internet === undefined || typeof value.internet === 'boolean')
+        && (value.mobile_lines === undefined || money(value.mobile_lines) && value.mobile_lines >= 1);
+}
+async function request(path, parse, signal, input) {
+    let response;
+    try {
+        response = await fetch(path, { method: input ? 'POST' : 'GET', signal,
+            headers: input ? { Accept: 'application/json', 'Content-Type': 'application/json' } : { Accept: 'application/json' },
+            ...(input ? { body: JSON.stringify(input) } : {}) });
+    }
+    catch {
+        throw new EffectivePriceApiError('NETWORK');
+    }
+    let body;
+    try {
+        body = await response.json();
+    }
+    catch {
+        throw new EffectivePriceApiError(response.ok ? 'INVALID_RESPONSE' : 'REAL_DATA_UNAVAILABLE');
+    }
+    if (!response.ok)
+        throw new EffectivePriceApiError(record(body) ? body.errorCode : undefined);
+    return parse(body);
+}
+const loadProductCatalog = (signal) => request('/api/products/catalog', parseProductCatalog, signal);
+exports.loadProductCatalog = loadProductCatalog;
+function calculateEffectivePrice(input, signal) {
+    if (!validInput(input))
+        return Promise.reject(new EffectivePriceApiError('INVALID_PRICE_REQUEST'));
+    return request('/api/effective-price', value => parseEffectivePrice(value, input), signal, input);
+}
+exports.storedProductNote = '저장된 상품 정보입니다. 가입·구매 전 최신 요금·조건·사양을 별도로 확인하세요.';
+const formatEffectivePrice = (value) => `${value.toLocaleString('ko-KR')}원`;
+exports.formatEffectivePrice = formatEffectivePrice;
+const allowance = (unlimited, value, unit) => unlimited ? '무제한' : value === null ? '제공량 확인 필요' : `${value.toLocaleString('ko-KR')}${unit}`;
+/** Keeps the existing four tabs and comparison contract without adding reference prices. */
+function toCatalogItems(catalog) {
+    const plans = (rows, carrier) => rows.map(row => {
+        const terms = { carrier, monthlyFee: row.monthlyFee, data: allowance(row.dataUnlimited, row.dataGb, 'GB'),
+            voice: allowance(row.voiceUnlimited, row.voiceMinutes, '분'), messages: allowance(row.textUnlimited, row.textCount, '건'),
+            condition: '가입 자격 별도 확인', benefit: '혜택 상세·월환산 금액 확인 필요' };
+        return { id: row.id, tab: 'plans', name: row.name, tag: carrier === 'own' ? '자사' : row.company ?? '타사',
+            summary: `${row.groupName} · ${terms.data}`, plan: terms, sections: [
+                { title: '요금제 기본 정보', fields: [{ label: '월정액', value: (0, exports.formatEffectivePrice)(row.monthlyFee) }, { label: '상품 그룹', value: row.groupName }, { label: '상품 유형', value: row.type }] },
+                { title: '이용 조건', fields: [{ label: '데이터 제공량', value: terms.data }, { label: '음성', value: terms.voice }, { label: '문자', value: terms.messages },
+                        { label: '소진 후 속도', value: row.afterSpeedKbps === null ? '확인 필요' : `${row.afterSpeedKbps.toLocaleString('ko-KR')}kbps` }, { label: '가입 조건', value: terms.condition }] },
+                { title: '할인·혜택', fields: [{ label: '안내 기준', value: '약정·결합 할인 전 월정액' }, { label: '혜택 확인', value: terms.benefit }] },
+            ] };
+    });
+    return [...plans(catalog.ownPlans, 'own'), ...plans(catalog.competitorPlans, 'other'),
+        ...catalog.bundles.map((row) => ({ id: row.id, tab: 'bundles', name: row.name, summary: row.description, tag: '결합', sections: [
+                { title: '결합 조건', fields: [{ label: '등록 설명', value: row.description || '확인 필요' }, { label: '가족관계', value: row.familyRequired ? '필수' : '필수 조건 아님' },
+                        { label: '인터넷', value: row.internetRequired ? '필수' : '필수 조건 아님' }, { label: '휴대전화 회선', value: `${row.minMobileLines}~${row.maxMobileLines}회선` }] },
+                { title: '할인 확인', fields: [{ label: '계산 안내', value: '확인된 회선별 정액 구간만 계산하며, 나머지 조건은 별도 확인' }] },
+            ] })),
+        ...catalog.benefits.map((row) => ({ id: row.id, tab: 'benefits', name: row.name, summary: row.description, tag: '혜택', sections: [
+                { title: '혜택 정보', fields: [{ label: '혜택 내용', value: row.description || '확인 필요' }, { label: '대상 등급', value: row.grade },
+                        { label: '월환산 금액', value: '등록된 월환산 금액 없음' }, { label: '적용 조건', value: '사용 조건 및 제공 기간 별도 확인' }] },
+            ] })),
+        ...catalog.products.map((row) => ({ id: row.id, tab: 'devices', name: row.name, summary: `${row.storageGb}GB · ${row.color}`, tag: row.maker, sections: [
+                { title: '제품 정보', fields: [{ label: '제조사', value: row.maker }, { label: '용량·색상', value: `${row.storageGb}GB · ${row.color}` }] },
+                { title: '판매 정보', fields: [{ label: '등록 가격', value: (0, exports.formatEffectivePrice)(row.price) }, { label: '월할부', value: '할부 조건 확인 필요' },
+                        { label: '재고 확인', value: '스마트 재고에서 조회' }, { label: '가격 확인', value: '등록 가격의 적용 기준과 세금 포함 여부 별도 확인' }] },
+            ] }))];
+}
+
+},
 "src/services/inventoryApi":function(module,exports,require){const __React=require('react');
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -6446,6 +7545,452 @@ exports.inventoryApi = {
 };
 function post(body) {
     return { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+}
+
+},
+"src/services/liveBriefingApi":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.LiveBriefingApiError = void 0;
+exports.liveBriefingErrorCode = liveBriefingErrorCode;
+exports.liveBriefingErrorMessage = liveBriefingErrorMessage;
+exports.parseLiveBriefing = parseLiveBriefing;
+exports.fetchLiveBriefing = fetchLiveBriefing;
+exports.createLiveBriefingController = createLiveBriefingController;
+const realDataApi_js_1 = require("./realDataApi.js");
+const errorMessages = {
+    REAL_DATA_NOT_CONFIGURED: '저장 자료 조회가 아직 준비되지 않았습니다.',
+    REAL_DATA_CONFIG_INVALID: '저장 자료 조회 설정을 확인해 주세요.',
+    HOME_STORE_NOT_CONFIGURED: '현재 매장 범위를 확인할 수 없습니다.',
+    REAL_DATA_ACCESS_DENIED: '저장 자료 조회 권한을 확인해 주세요.',
+    REAL_DATA_ACCESS_RESTRICTED: '이 고객의 사전 브리핑은 현재 환경에서 조회할 수 없습니다.',
+    REAL_DATA_UNAVAILABLE: '잠시 후 다시 조회해 주세요.',
+    REAL_DATA_TIMEOUT: '자료 조회가 지연되고 있습니다. 잠시 후 다시 조회해 주세요.',
+    REAL_DATA_INVALID_RESPONSE: '조회한 자료를 확인할 수 없습니다.',
+    INVALID_CUSTOMER_ID: '조회할 고객 정보를 확인해 주세요.',
+    INVALID_LIVE_BRIEFING_CONTEXT: '현재 통화와 고객 정보를 확인할 수 없습니다.',
+    INVALID_CALL_ID: '조회할 통화 정보를 확인해 주세요.',
+    CALL_NOT_FOUND: '현재 통화 정보를 찾을 수 없습니다.',
+    STORE_NOT_ALLOWED: '현재 매장 범위에서 조회할 수 없는 통화입니다.',
+    CUSTOMER_NOT_FOUND: '해당 고객의 저장 자료를 찾을 수 없습니다.',
+    CUSTOMER_PRIVACY_RESTRICTED: '고객 개인정보 동의 확인이 필요합니다.',
+    NETWORK: '저장 자료 서비스에 연결하지 못했습니다. 다시 조회해 주세요.',
+    INVALID_RESPONSE: '조회한 자료를 확인할 수 없습니다.',
+    UNKNOWN_ERROR: '잠시 후 다시 조회해 주세요.',
+};
+function liveBriefingErrorCode(value) {
+    return typeof value === 'string' && Object.hasOwn(errorMessages, value) ? value : 'UNKNOWN_ERROR';
+}
+function liveBriefingErrorMessage(value) { return errorMessages[liveBriefingErrorCode(value)]; }
+class LiveBriefingApiError extends Error {
+    code;
+    constructor(code) {
+        const safeCode = liveBriefingErrorCode(code);
+        super(safeCode);
+        this.name = 'LiveBriefingApiError';
+        this.code = safeCode;
+    }
+}
+exports.LiveBriefingApiError = LiveBriefingApiError;
+const record = (value) => typeof value === 'object' && value !== null && !Array.isArray(value);
+const nonempty = (value) => typeof value === 'string' && value.trim().length > 0;
+const validId = (kind, value) => typeof value === 'string' && new RegExp(`^${kind}_[0-9]{3,}$`).test(value);
+const integer = (value) => typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+const narrative = (value) => value === null || nonempty(value);
+function invalid() { throw new LiveBriefingApiError('INVALID_RESPONSE'); }
+function product(value) {
+    if (value === null)
+        return null;
+    if (!record(value) || !validId('product', value.id) || !nonempty(value.name) || typeof value.maker !== 'string'
+        || typeof value.color !== 'string' || !integer(value.storageGb) || value.storageGb === 0)
+        return invalid();
+    return { id: value.id, name: value.name, maker: value.maker, storageGb: value.storageGb, color: value.color };
+}
+function plan(value) {
+    if (value === null)
+        return null;
+    if (!record(value) || !validId('own_plan', value.id) || !nonempty(value.name) || !integer(value.monthlyFee))
+        return invalid();
+    return { id: value.id, name: value.name, monthlyFee: value.monthlyFee };
+}
+function recent(value) {
+    if (value === null)
+        return null;
+    if (!record(value) || !validId('consultation', value.id) || !narrative(value.purpose) || !narrative(value.summary)
+        || !(0, realDataApi_js_1.validRealDataTimestamp)(value.endedAt))
+        return invalid();
+    return { id: value.id, purpose: value.purpose, summary: value.summary, endedAt: value.endedAt };
+}
+function risk(value) {
+    if (value === null)
+        return null;
+    if (!record(value) || !validId('risk', value.id) || !integer(value.score) || value.score > 99
+        || !['정상', '주의', '경계', '위험', '매우 위험'].includes(value.level)
+        || !['AI', 'PHONE', 'VISIT'].includes(value.stage) || !(0, realDataApi_js_1.validRealDataTimestamp)(value.createdAt))
+        return invalid();
+    const keys = ['profanityCount', 'threatCount', 'blameCount', 'sexualCount', 'shoutingCount'];
+    if (!keys.every(key => value[key] === null || integer(value[key])))
+        return invalid();
+    return { id: value.id, score: value.score, level: value.level, stage: value.stage,
+        createdAt: value.createdAt, profanityCount: value.profanityCount, threatCount: value.threatCount,
+        blameCount: value.blameCount, sexualCount: value.sexualCount, shoutingCount: value.shoutingCount };
+}
+/** Only the masked, read-only contract enters component state; extra identity/transcript fields are discarded. */
+function parseLiveBriefing(value) {
+    if (!record(value) || value.source !== 'supabase' || value.readOnly !== true || !record(value.customer)
+        || !validId('customer', value.customer.id) || !nonempty(value.customer.nameMasked) || typeof value.privacyConsent !== 'boolean'
+        || !Array.isArray(value.guidance) || !value.guidance.every(nonempty))
+        return invalid();
+    const currentProduct = product(value.currentProduct), currentPlan = plan(value.currentPlan);
+    const recentConsultation = recent(value.recentConsultation), previousRisk = risk(value.previousRisk);
+    if (previousRisk !== null && recentConsultation === null)
+        return invalid();
+    if (value.privacyConsent ? value.guidance.length < 2 || value.guidance.length > 4
+        : value.customer.nameMasked !== '비공개 고객' || currentProduct !== null || currentPlan !== null || recentConsultation !== null
+            || previousRisk !== null || value.guidance.length !== 1 || value.guidance[0] !== '고객 개인정보 동의 확인이 필요합니다.')
+        return invalid();
+    return { source: 'supabase', readOnly: true, customer: { id: value.customer.id, nameMasked: value.customer.nameMasked },
+        privacyConsent: value.privacyConsent, currentProduct, currentPlan, recentConsultation, previousRisk, guidance: [...value.guidance] };
+}
+/** Same-origin GET only. Timeout, cancellation and error bodies never expose upstream text. */
+async function fetchLiveBriefing(customerId, callId, signal, timeoutMs = 10_000) {
+    if (!validId('customer', customerId))
+        throw new LiveBriefingApiError('INVALID_CUSTOMER_ID');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(callId))
+        throw new LiveBriefingApiError('INVALID_CALL_ID');
+    const controller = new AbortController();
+    const cancel = () => controller.abort();
+    if (signal?.aborted)
+        cancel();
+    else
+        signal?.addEventListener('abort', cancel, { once: true });
+    let timedOut = false;
+    let timer;
+    const operation = (async () => {
+        try {
+            if (controller.signal.aborted)
+                throw new LiveBriefingApiError('NETWORK');
+            const query = new URLSearchParams({ call_id: callId });
+            const response = await fetch(`/api/live-briefing/${encodeURIComponent(customerId)}?${query}`, {
+                method: 'GET', signal: controller.signal, headers: { Accept: 'application/json' },
+            });
+            let body;
+            try {
+                body = await response.json();
+            }
+            catch {
+                throw new LiveBriefingApiError('INVALID_RESPONSE');
+            }
+            if (!response.ok)
+                throw new LiveBriefingApiError(record(body) ? body.errorCode : 'UNKNOWN_ERROR');
+            const result = parseLiveBriefing(body);
+            if (result.customer.id !== customerId)
+                return invalid();
+            return result;
+        }
+        catch (error) {
+            if (timedOut)
+                throw new LiveBriefingApiError('REAL_DATA_TIMEOUT');
+            if (error instanceof LiveBriefingApiError)
+                throw error;
+            throw new LiveBriefingApiError('NETWORK');
+        }
+    })();
+    const timeout = new Promise((_resolve, reject) => {
+        timer = setTimeout(() => { timedOut = true; controller.abort(); reject(new LiveBriefingApiError('REAL_DATA_TIMEOUT')); }, timeoutMs);
+    });
+    try {
+        return await Promise.race([operation, timeout]);
+    }
+    finally {
+        if (timer !== undefined)
+            clearTimeout(timer);
+        signal?.removeEventListener('abort', cancel);
+    }
+}
+/** Selection identity is independent of transcript snapshots. A generation also blocks loaders that ignore abort. */
+function createLiveBriefingController(onChange, load = fetchLiveBriefing) {
+    let selection = null;
+    let generation = 0;
+    let active = null;
+    let disposed = false;
+    function start(next) {
+        const version = ++generation;
+        active?.abort();
+        active = null;
+        selection = next;
+        if (!next.customerId) {
+            onChange({ ...next, status: 'missing-customer' });
+            return;
+        }
+        const customerId = next.customerId;
+        const controller = new AbortController();
+        active = controller;
+        onChange({ ...next, status: 'loading' });
+        // StrictMode's immediate mount cleanup cancels before a browser request starts.
+        void Promise.resolve().then(async () => {
+            if (disposed || generation !== version)
+                return;
+            try {
+                const data = await load(customerId, next.callId, controller.signal);
+                if (!disposed && generation === version)
+                    onChange({ ...next, status: 'ready', data });
+            }
+            catch (error) {
+                if (!disposed && generation === version)
+                    onChange({ ...next, status: 'error', errorCode: error instanceof LiveBriefingApiError ? error.code : 'UNKNOWN_ERROR' });
+            }
+        });
+    }
+    return {
+        select(callId, customerId) {
+            if (disposed || selection?.callId === callId && selection.customerId === customerId)
+                return;
+            start({ callId, customerId });
+        },
+        reload() { if (!disposed && selection?.customerId)
+            start(selection); },
+        dispose() { disposed = true; ++generation; active?.abort(); active = null; },
+    };
+}
+
+},
+"src/services/realDataApi":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.realDataApi = exports.RealDataApiError = void 0;
+exports.realDataErrorCode = realDataErrorCode;
+exports.realDataErrorMessage = realDataErrorMessage;
+exports.realDataAvailability = realDataAvailability;
+exports.validRealDataTimestamp = validRealDataTimestamp;
+exports.parseRealDataStatus = parseRealDataStatus;
+exports.parseRealAppointments = parseRealAppointments;
+exports.parseStoredCustomers = parseStoredCustomers;
+exports.parseStoredConsultations = parseStoredConsultations;
+exports.parseRealBriefing = parseRealBriefing;
+exports.formatRealDataDate = formatRealDataDate;
+const errorMessages = {
+    REAL_DATA_NOT_CONFIGURED: '저장 자료 조회가 아직 준비되지 않았습니다. 참고 자료는 운영 기록이 아닙니다.',
+    REAL_DATA_CONFIG_INVALID: '저장 자료 조회 설정을 확인할 수 없습니다. 관리자에게 문의해 주세요.',
+    HOME_STORE_NOT_CONFIGURED: '현재 매장 범위를 확인할 수 없습니다. 관리자에게 문의해 주세요.',
+    REAL_DATA_ACCESS_DENIED: '저장 자료를 조회할 수 있는 권한을 확인해 주세요.',
+    REAL_DATA_ACCESS_RESTRICTED: '공개 환경의 직원 조회 접근 설정이 준비되지 않았습니다. 관리자에게 문의해 주세요.',
+    REAL_DATA_UNAVAILABLE: '저장 자료를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
+    REAL_DATA_TIMEOUT: '자료 조회가 지연되고 있습니다. 잠시 후 다시 시도해 주세요.',
+    REAL_DATA_INVALID_RESPONSE: '조회한 자료를 확인할 수 없습니다. 다시 시도해 주세요.',
+    INVALID_CUSTOMER_ID: '조회할 고객 정보를 확인해 주세요.',
+    INVALID_RESERVATION_ID: '조회할 예약 정보를 확인해 주세요.',
+    INVALID_LIMIT: '조회 범위를 확인해 주세요.',
+    CUSTOMER_NOT_FOUND: '해당 고객의 저장 자료를 찾을 수 없습니다.',
+    RESERVATION_NOT_FOUND: '해당 예약의 저장 자료를 찾을 수 없습니다.',
+    CUSTOMER_PRIVACY_RESTRICTED: '개인정보 동의를 확인하기 전에는 고객 상담 이력을 조회할 수 없습니다.',
+    NETWORK: '저장 자료 서비스에 연결하지 못했습니다. 다시 시도해 주세요.',
+    INVALID_RESPONSE: '조회한 자료를 확인할 수 없습니다. 다시 시도해 주세요.',
+    UNKNOWN_ERROR: '자료 조회를 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+};
+function realDataErrorCode(value) {
+    return typeof value === 'string' && Object.hasOwn(errorMessages, value) ? value : 'UNKNOWN_ERROR';
+}
+function realDataErrorMessage(value) { return errorMessages[realDataErrorCode(value)]; }
+class RealDataApiError extends Error {
+    code;
+    constructor(code) {
+        const safeCode = realDataErrorCode(code);
+        super(safeCode);
+        this.name = 'RealDataApiError';
+        this.code = safeCode;
+    }
+}
+exports.RealDataApiError = RealDataApiError;
+function realDataAvailability(error) {
+    return error instanceof RealDataApiError && error.code === 'REAL_DATA_NOT_CONFIGURED' ? 'unconfigured' : 'error';
+}
+const record = (value) => typeof value === 'object' && value !== null && !Array.isArray(value);
+const text = (value) => typeof value === 'string';
+const nonempty = (value) => text(value) && value.trim().length > 0;
+const validId = (kind, value) => text(value) && new RegExp(`^${kind}_[0-9]{3,}$`).test(value);
+const member = (values, value) => text(value) && values.includes(value);
+const reservationStatuses = ['예약 확정', '방문 완료', '취소', '노쇼'];
+const consultationStatuses = ['진행 중', '방문 예정', '완료', '취소'];
+const summaryStatuses = ['available', 'missing'];
+/** Reject impossible calendar/time values rather than letting Date silently roll them forward. */
+function validRealDataTimestamp(value) {
+    if (!text(value))
+        return false;
+    const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,9})?(Z|[+-]\d{2}:\d{2})$/.exec(value);
+    if (!match)
+        return false;
+    const [, yearText, monthText, dayText, hourText, minuteText, secondText, zone] = match;
+    const [year, month, day, hour, minute, second] = [yearText, monthText, dayText, hourText, minuteText, secondText].map(Number);
+    const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+    const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    return year > 0 && month >= 1 && month <= 12 && day >= 1 && day <= days[month - 1]
+        && hour <= 23 && minute <= 59 && second <= 59
+        && (zone === 'Z' || Number(zone.slice(1, 3)) <= 23 && Number(zone.slice(4)) <= 59)
+        && Number.isFinite(Date.parse(value));
+}
+const summaryPair = (status, value) => member(summaryStatuses, status)
+    && (status === 'available' ? nonempty(value) : value === null);
+function invalid() { throw new RealDataApiError('INVALID_RESPONSE'); }
+function envelope(value) {
+    if (!record(value) || value.source !== 'supabase' || value.readOnly !== true)
+        return invalid();
+    return value;
+}
+function uniqueItems(value, parse) {
+    if (!Array.isArray(value))
+        return invalid();
+    const items = value.map(parse);
+    if (new Set(items.map(item => item.id)).size !== items.length)
+        return invalid();
+    return items;
+}
+function storedProduct(value) {
+    if (value === null)
+        return null;
+    if (!record(value) || !validId('product', value.id) || !text(value.name) || !text(value.maker) || !text(value.color)
+        || typeof value.storageGb !== 'number' || !Number.isSafeInteger(value.storageGb) || value.storageGb <= 0)
+        return invalid();
+    return { id: value.id, name: value.name, maker: value.maker, storageGb: value.storageGb, color: value.color };
+}
+function storedPlan(value) {
+    if (value === null)
+        return null;
+    if (!record(value) || !validId('own_plan', value.id) || !text(value.name)
+        || typeof value.monthlyFee !== 'number' || !Number.isSafeInteger(value.monthlyFee) || value.monthlyFee < 0)
+        return invalid();
+    return { id: value.id, name: value.name, monthlyFee: value.monthlyFee };
+}
+// Rebuild allowlisted DTOs: extra raw identity/transcript fields never enter component state.
+function appointment(value) {
+    if (!record(value) || !validId('reservation', value.id) || !validId('consultation', value.consultationId)
+        || !validId('store', value.storeId) || !validId('customer', value.customerId) || !validId('employee', value.employeeId)
+        || !nonempty(value.customerNameMasked) || !text(value.phoneMasked) || !text(value.employeeName)
+        || !member(['AI', 'PHONE'], value.source) || !validRealDataTimestamp(value.reservedAt) || !validRealDataTimestamp(value.visitAt)
+        || !text(value.purpose) || !member(reservationStatuses, value.status) || typeof value.privacyConsent !== 'boolean'
+        || !(value.privacyConsent ? summaryPair(value.summaryStatus, value.summaryPreview)
+            : value.summaryStatus === 'restricted' && value.summaryPreview === null && value.customerNameMasked === '비공개 고객'
+                && value.phoneMasked === '연락처 비공개' && value.purpose === '개인정보 동의 확인 필요'))
+        return invalid();
+    return { id: value.id, consultationId: value.consultationId, storeId: value.storeId, customerId: value.customerId,
+        customerNameMasked: value.customerNameMasked, phoneMasked: value.phoneMasked, employeeId: value.employeeId, employeeName: value.employeeName,
+        source: value.source, reservedAt: value.reservedAt, visitAt: value.visitAt, purpose: value.purpose, status: value.status,
+        privacyConsent: value.privacyConsent, summaryStatus: value.summaryStatus, summaryPreview: value.summaryPreview };
+}
+function customer(value) {
+    if (!record(value) || !validId('customer', value.id) || !nonempty(value.nameMasked) || !text(value.phoneMasked)
+        || !validId('consultation', value.latestConsultationId) || !validRealDataTimestamp(value.latestConsultationAt)
+        || !text(value.latestPurpose) || !member(consultationStatuses, value.latestStatus) || typeof value.privacyConsent !== 'boolean'
+        || !value.privacyConsent && (value.nameMasked !== '비공개 고객' || value.phoneMasked !== '연락처 비공개' || value.latestPurpose !== '개인정보 동의 확인 필요'))
+        return invalid();
+    const currentProduct = storedProduct(value.currentProduct);
+    const currentPlan = storedPlan(value.currentPlan);
+    if (!value.privacyConsent && (currentProduct !== null || currentPlan !== null))
+        return invalid();
+    return { id: value.id, nameMasked: value.nameMasked, phoneMasked: value.phoneMasked, latestConsultationId: value.latestConsultationId,
+        latestConsultationAt: value.latestConsultationAt, latestPurpose: value.latestPurpose, latestStatus: value.latestStatus, privacyConsent: value.privacyConsent,
+        currentProduct, currentPlan };
+}
+function risk(value) {
+    if (!record(value) || !validId('risk', value.id) || !member(['AI', 'PHONE', 'VISIT'], value.stage)
+        || typeof value.score !== 'number' || !Number.isSafeInteger(value.score) || value.score < 0 || value.score > 99
+        || !member(['정상', '주의', '경계', '위험', '매우 위험'], value.level) || !validRealDataTimestamp(value.createdAt))
+        return invalid();
+    return { id: value.id, stage: value.stage, score: value.score, level: value.level, createdAt: value.createdAt };
+}
+function consultation(value) {
+    if (!record(value) || !validId('consultation', value.id) || !validId('customer', value.customerId) || !validId('store', value.storeId)
+        || !(value.callId === null || nonempty(value.callId)) || !text(value.purpose) || !member(consultationStatuses, value.status)
+        || !validRealDataTimestamp(value.startedAt) || !(value.endedAt === null || validRealDataTimestamp(value.endedAt))
+        || !summaryPair(value.summaryStatus, value.summaryPreview) || typeof value.usedAi !== 'boolean'
+        || typeof value.usedPhone !== 'boolean' || typeof value.usedVisit !== 'boolean')
+        return invalid();
+    const risks = uniqueItems(value.risks, risk);
+    return { id: value.id, customerId: value.customerId, storeId: value.storeId, callId: value.callId, purpose: value.purpose,
+        status: value.status, startedAt: value.startedAt, endedAt: value.endedAt,
+        summaryStatus: value.summaryStatus, summaryPreview: value.summaryPreview,
+        usedAi: value.usedAi, usedPhone: value.usedPhone, usedVisit: value.usedVisit, risks };
+}
+function list(value, parse) {
+    const body = envelope(value);
+    return { source: 'supabase', readOnly: true, items: uniqueItems(body.items, parse) };
+}
+function parseRealDataStatus(value) {
+    const body = envelope(value);
+    if (typeof body.configured !== 'boolean' || typeof body.scopeConfigured !== 'boolean'
+        || !(body.errorCode === null || text(body.errorCode) && Object.hasOwn(errorMessages, body.errorCode)))
+        return invalid();
+    return { source: 'supabase', readOnly: true, configured: body.configured, scopeConfigured: body.scopeConfigured, errorCode: body.errorCode };
+}
+function parseRealAppointments(value) { return list(value, appointment); }
+function parseStoredCustomers(value) { return list(value, customer); }
+function parseStoredConsultations(value, customerId) {
+    const body = list(value, consultation);
+    if (customerId && body.items.some(item => item.customerId !== customerId))
+        return invalid();
+    return body;
+}
+function parseRealBriefing(value, reservationId) {
+    const body = envelope(value);
+    const reservation = appointment(body.reservation);
+    if (reservationId && reservation.id !== reservationId || !(reservation.privacyConsent ? summaryPair(body.summaryStatus, body.summary) : body.summaryStatus === 'restricted' && body.summary === null)
+        || !Array.isArray(body.checklist) || !body.checklist.every(nonempty))
+        return invalid();
+    const history = uniqueItems(body.history, consultation);
+    if (history.some(item => item.customerId !== reservation.customerId) || !reservation.privacyConsent && history.length > 0)
+        return invalid();
+    const currentProduct = storedProduct(body.currentProduct);
+    const currentPlan = storedPlan(body.currentPlan);
+    if (!(body.requestNote === null || nonempty(body.requestNote)) || body.desiredProduct !== null || body.desiredDevice !== null
+        || body.desiredProductStatus !== 'not_recorded' || body.desiredDeviceStatus !== 'not_recorded'
+        || !reservation.privacyConsent && (currentProduct !== null || currentPlan !== null || body.requestNote !== null))
+        return invalid();
+    return { source: 'supabase', readOnly: true, reservation, summaryStatus: body.summaryStatus,
+        summary: body.summary, checklist: [...body.checklist], history, currentProduct, currentPlan, requestNote: body.requestNote,
+        desiredProduct: null, desiredDevice: null, desiredProductStatus: 'not_recorded', desiredDeviceStatus: 'not_recorded' };
+}
+async function request(path, parse, signal) {
+    let response;
+    try {
+        response = await fetch(path, { method: 'GET', signal, headers: { Accept: 'application/json' } });
+    }
+    catch {
+        throw new RealDataApiError('NETWORK');
+    }
+    let body;
+    try {
+        body = await response.json();
+    }
+    catch {
+        throw new RealDataApiError(response.ok ? 'INVALID_RESPONSE' : 'REAL_DATA_UNAVAILABLE');
+    }
+    if (!response.ok) {
+        const code = record(body) ? body.errorCode ?? body.error : undefined;
+        throw new RealDataApiError(code ?? (response.status === 401 || response.status === 403 ? 'REAL_DATA_ACCESS_DENIED' : 'REAL_DATA_UNAVAILABLE'));
+    }
+    return parse(body);
+}
+exports.realDataApi = {
+    status: (signal) => request('/api/data/status', parseRealDataStatus, signal),
+    appointments: (signal) => request('/api/data/appointments', parseRealAppointments, signal),
+    customers: (signal) => request('/api/data/customers', parseStoredCustomers, signal),
+    customerConsultations: (customerId, limit = 5, signal) => {
+        if (!validId('customer', customerId))
+            return Promise.reject(new RealDataApiError('INVALID_CUSTOMER_ID'));
+        if (!Number.isSafeInteger(limit) || limit < 1 || limit > 20)
+            return Promise.reject(new RealDataApiError('INVALID_LIMIT'));
+        return request(`/api/data/customers/${encodeURIComponent(customerId)}/consultations?limit=${limit}`, value => parseStoredConsultations(value, customerId), signal);
+    },
+    briefing: (reservationId, signal) => {
+        if (!validId('reservation', reservationId))
+            return Promise.reject(new RealDataApiError('INVALID_RESERVATION_ID'));
+        return request(`/api/briefings/${encodeURIComponent(reservationId)}`, value => parseRealBriefing(value, reservationId), signal);
+    },
+};
+function formatRealDataDate(value) {
+    if (!validRealDataTimestamp(value))
+        return '미확인';
+    return new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(value));
 }
 
 },

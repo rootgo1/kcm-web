@@ -1,5 +1,72 @@
 # KCM 작업 상태 — v0.3 / 2026-10-06
 
+## 실시간 통화 사전 브리핑 / 2026-10-06
+
+- clean `integration/kcm-final-release` / `4d445ed59a42c674ec582213089be3e5320fc7bb`에서 `feature/live-call-briefing`을 생성했습니다. 기본 checkout의 사용자 STATUS 변경/deliverables는 보존했습니다. main/Render·실제 .env·외부 데이터는 변경하지 않습니다.
+- `GET /api/live-briefing/:customerId?call_id=:callId`를 기존 SELECT 전용 provider로 추가했습니다. 현재 메모리 통화의 고객/매장/시작 시각과 상담 ID를 서버에서 검증하고, 현재 ID/시작 이후 상담을 제외한 최근 완료 상담1건과 해당 최신 AI risk(없으면 최신 PHONE/VISIT)를 선택합니다. 과거 점수/횟수를 합산·재계산하지 않습니다. 연결 중에는 이미 기록된 updated_at을 보수적인 cutoff로 사용하고 시작 시각을 생성하지 않습니다.
+- 공개 환경은 서버 KCM_DEMO_CUSTOMER_ID와 정확히 일치하는 고객만 masked read-only 조회를 허용합니다. 다른 고객/설정 누락은 DB 조회 전에403 REAL_DATA_ACCESS_RESTRICTED입니다. 기존 일반 개인자료503/Host/Origin 보호는 유지합니다. 미동의면 상품/요금제/상담/위험 상세 조회를 중단하고 최소 안내만 반환합니다. 전화번호/생년월일/전문/키 SELECT 없이 기존 자유서술 마스킹을 재사용합니다.
+- 기존 LiveConversation에 좌62% 현재 신호·대화/우38% 사전 브리핑을 추가했습니다. 900px 이하 세로 배치, viewport 안 모달·내부 스크롤·긴 요약3줄/펼치기·고정 닫기를 적용합니다. 고객 미확인/로딩/미동의/상담·요약·risk 부재/오류를 구분합니다. 통화/고객 선택과 수동 조회만 요청하며 transcript 갱신은 조회 조건이 아닙니다. 취소/늦은 응답/StrictMode 중복 요청을 차단합니다.
+- 실제 Supabase 기존5테이블/컬럼/타입/nullable 조건을 read-only 재확인했습니다. customer_9999는 동의 true, 현재 상품/요금제 연결이 있으나 store_005의 종료 시각 있는 완료 상담은0건입니다. Render KCM_DEMO_CUSTOMER_ID도 customer_9999와 다르며 값을 변경하거나 다른 실제 ID/비밀값을 출력하지 않았습니다. 영상 전 실제 과거 완료 상담+ai_summary+risks와 시연 고객 설정 확인이 필요합니다.
+- 전체 테스트 **762/762**, 실패/skip0(기존683 + 서버 데이터33/HTTP16/프런트30 신규79). 기존 테스트 삭제/약화0. 욕설 최소20·위협40/60/80·최신 위험탐지/ASR·Agent 제외와 기존 Retell/Monitor/SSE/RMS/n8n/재고/체감가 회귀를 유지했습니다. 프런트/백엔드 타입 검사와 production build 성공, 기존 SDK 청크 경고만 유지합니다.
+- Chrome에서 격리 합성 데이터+production dist의 홈→실시간 상담 보기, **1920×1080/1366×768/390×844**를 확인했습니다. 대화·브리핑 스크롤/긴 요약/버튼 닫기·Escape/넘침 없음, 과거60점·위협2 유지/현재위협0→1 SSE 갱신, provider조회8→8 반복 조회 없음을 확인했습니다. 오류 시 transcript20개 유지/원문 비노출/미동의/고객 미확인/이력·요약 없음/수동 복구도 확인했고 검증 탭 console error/warn0입니다.
+- 독립 HTML을 최신 src로 갱신했습니다. 직접 실행과 실제 DB REST·Retell 음성·Production 이력 재통화는 미검증이며 합성 브라우저 검증과 구분합니다. 실제 DB/환경/외부 workflow 변경·실제 전화는 하지 않았습니다. 격리 서버/검증 탭/viewport 임시 설정을 정상 정리했습니다. Git 대상164파일 비밀값 패턴 후보0/실제.env 추적0, 보호 기능 파일 diff0, git diff --check 통과입니다. 캡처/fixture는 Git 제외 .cache/live-briefing에 보관하며 상세 선택/접근 정책·남은 조건은 docs/LIVE_CALL_BRIEFING.md에 기록했습니다. 이 feature 브랜치만 commit/push합니다.
+- 변경 파일: server/app.mjs, server/real-data.mjs, 새 server/live-briefing.mjs 및 서버 테스트2개, src/components/Modal.tsx, src/live/LiveConsultations.tsx/live-calls.css, 새 LiveCallBriefing.tsx/services/liveBriefingApi.ts/tests/liveBriefing.test.ts, tests/domain.test.ts, docs/LIVE_CALL_BRIEFING.md, STATUS.md, 00_KCM_미리보기.html.
+
+## 최종 실제 데이터·위험탐지 통합 / 2026-10-06
+
+- 기준 main/origin main은 `86508324e33a59e4a74e508bb354f9ef09c86a96`입니다. 기본 작업 폴더의 사용자 `STATUS.md` 변경·미추적 `deliverables/`를 그대로 두고 깨끗한 기존 worktree에서 `integration/kcm-final-release`을 생성했습니다. main·기존 feature/fix/release 브랜치·Render·실제 .env·외부 데이터는 변경하지 않았습니다.
+- `feature/real-data-integration-v1`의 `e557081695502f7f5d8ee1298091402513345f96`을 fast-forward한 다음 `fix/risk-detection-test-feedback`의 `64507d9aec39fdbfe0561dc9b7266f8a6130d9de`를 병합했습니다. 충돌은 `STATUS.md` 한 파일의 작업 기록뿐이었으며 양쪽 기록을 모두 보존했습니다. 기능 코드 충돌은 없었습니다.
+- 실제 데이터 기능은 원본 feature와 동일합니다. SELECT 전용 Supabase provider, 저장 예약·고객·상담 이력과 `GET /api/briefings/:reservationId`, DB 상품 catalog, `POST /api/effective-price` 서버 계산, 마스킹·동의·매장 범위·공개 사이트 접근 제한을 보존했습니다.
+- 위험탐지 기능은 원본 fix와 동일합니다. `local-text-rules-v4`/`call-risk-v4`, 개판 욕설·시설/대인 위협·USER 분절 문맥·Agent 제외·ASR 정정/스냅샷 중복 방지·욕설 최소20·위협1/2/3회 최소40/60/80을 보존했습니다. Retell/Monitor/SSE/고성 RMS/최종화/n8n 전송/스마트재고/고객 전화/배포 설정·의존성 보호 파일은 main 대비 변경 없음입니다.
+- 새 `server/tests/final-release-integration.test.mjs`에 통합 테스트11개를 추가했습니다. 같은 Backend에서 실제 읽기 provider의 주입된 REST GET→예약/고객/이력/브리핑, catalog/서버 체감가, 재고 read-only3action, 공식 Monitor 인터페이스를 사용하는 Fake WebSocket→store→HTTP SSE/최종 audio 수신을 함께 검증합니다. 동시 조회·SSE 재접속·ASR 정정·공급자 실패 격리·동의/매장 범위·입력/요청 보호도 검사합니다.
+- 최종 `npm.cmd test`: **683/683 통과**, 실패·건너뜀0(양쪽 기존672 + 신규 통합11). 기존 테스트 삭제/약화0. `npm.cmd run build`에서 프런트 `tsc --noEmit`·백엔드 `tsc -p tsconfig.server.json` 및 Vite production build 모두 통과했습니다. 기존 Retell SDK 596.72kB 청크 경고만 유지합니다.
+- 영상 기본 욕설2+위협1 → raw26/최종40·경계, 강한 욕설2+위협2 → raw36/최종60·위험, “너 찾아가서 팬다” → 위협1/최종40·경계, 정상 매장 방문 → 위협0/최종0·정상을 자동 테스트와 격리 브라우저 최종 기록에서 확인했습니다. 같은 합성 customer_9999의 네 통화를 각각 독립 기록으로 유지했습니다.
+- 로컬 격리 production dist+Backend로 `#/home`, `#/appointments`, `#/customers`, `#/support`, `#/products`, `#/inventory`, `#/marketing`, `#/stores`, `#/retell-test` 직접 진입·기본 표시·직원/고객 title를 확인했습니다. 저장 예약/사전 브리핑·마스킹 고객·현재 상품/최근 이력과 기존 SSE 기록이 함께 보입니다. 체감가55,000−3,000=52,000원 소계/미확인 총부담, 재고 매장/목록/보낸 요청 조회를 확인했습니다. 이번 검증 탭 console error/warn0, 기본 viewport 바깥 가로 넘침 없음, 고객 avatar점0입니다. 모든 업무 버튼·모든 viewport의 전수 재검증은 이번 범위에서 수행하지 않았습니다.
+- 브라우저/통합 테스트는 합성 데이터만 사용하며 실제 Retell·n8n·Supabase 요청과 DB 변경은 하지 않았습니다. 재고는 GET_STORES/GET_INVENTORY/GET_RENTALS만 모의 조회했습니다. 합성 통화의 n8n failed 표시는 실제 URL을 설정하지 않은 검증 환경의 예상 동작이며 실제 전송 장애 판단이 아닙니다. 임시 서버·브라우저 탭은 정상 정리했습니다.
+- `npm.cmd run preview:standalone`으로 독립 HTML을 재생성했습니다. 직접 실행은 미검증이며 위 production dist 브라우저 검증과 구분합니다. 캡처/fixture/검증 로그는 Git 제외 `.cache/`에만 있습니다. 상세 통합 범위와 남은 검증은 `docs/FINAL_RELEASE_INTEGRATION.md`에 기록했습니다.
+- 남은 blocker: 공개 배포의 직원 인증 부재로 개인자료 조회/고객 지정 체감가는 기존대로503 `REAL_DATA_ACCESS_RESTRICTED`입니다. 실제 서버 SUPABASE_URL/SUPABASE_READ_KEY 설정·읽기 권한/RLS·REST 조회 E2E, 실제 음성/STT·고성·n8n/Supabase 저장·Production 스마트재고 조회는 별도 확인이 필요합니다. 보호 조치를 해제하거나 키/환경값을 임의 입력하지 않았습니다. 이번 통합 브랜치만 commit/push하며 main 병합/Render 배포는 하지 않습니다.
+
+## 실제 데이터 연동 1차 / 2026-10-06
+
+- main/origin main `86508324e33a59e4a74e508bb354f9ef09c86a96`에서 `feature/real-data-integration-v1`을 생성했습니다. 기존 기본 작업 폴더의 사용자 STATUS 변경·deliverables를 보존하고 같은 저장소의 기존 worktree에서 작업했습니다. main·Render·실제 .env·비밀값·외부 데이터는 변경하지 않았습니다.
+- 사용자가 지정한 KT Project의 실제 public 테이블/컬럼을 Supabase 도구로 read-only 조회했습니다. store_005의 예약 48건/상담 205건/고객 201명/요약 165건/위험 241건을 확인했습니다. ai_transcription/ai_summary는 consultations 컬럼이며 별도 테이블이 아닙니다. 실제 상태 문자열과 예약→상담→고객 관계를 사용합니다.
+- 서버 SELECT 전용 provider, 저장 예약/고객/상담 이력/사전 브리핑 API를 추가했습니다. 매장 범위·연결 ID·날짜·상태·응답 구조를 검사하고 이름/연락처를 마스킹합니다. 개인정보 미동의의 자유서술/상세 이력을 제한하며 raw 전문을 반환하지 않습니다. 브리핑은 저장 요약·예약 요청·현재 상품/요금제·최근 이력을 조합하고 새로운 LLM 요약을 만들지 않습니다.
+- 홈/예약은 저장 예약과 브리핑을 우선 표시하고, 고객관리는 DB 이력을 실시간 서버 메모리 이력과 별도 표시합니다. 상품 4탭은 DB catalog를 우선 사용합니다. 실패/미설정/빈 자료를 구분하고 기존 mock은 명시적 참고 영역/버튼에서만 열립니다. 기존 참고 상담 시작·완료·수정과 상태 함수는 유지했습니다.
+- 체감가는 서버에서 DB 월정액−조건이 확인된 회선별 정액 결합 할인만 계산합니다. 할인 전 현재 요금제 차액·항목별 근거를 표시하며 단말 price는 일시 금액입니다. 할부·지원금·약정 비율·혜택 월환산·세금 기준은 확인 필요로 두고 임의 값이나 0원으로 보완하지 않습니다. 결합/단말 포함 총부담은 partial로 구분합니다.
+- 공개 사이트의 직원 인증 부재를 확인하여 새 개인자료 API와 고객 ID를 포함한 가격 계산을 공개 deployment에서 503 REAL_DATA_ACCESS_RESTRICTED로 차단했습니다. 로컬 개발, 상태 조회, 개인정보 없는 catalog/가격 계산, 기존 Retell/SSE/재고는 유지합니다. 직원 접근 제어와 읽기 권한/RLS 설정 전에는 공개 고객 조회를 배포할 수 없습니다.
+- `.env.example`에 빈 SUPABASE_URL/SUPABASE_READ_KEY만 추가했습니다. 실제 키 조회·요청/출력, 실제 .env 접근/변경, service_role 우회, RLS/GRANT/DB 명세·스키마 변경은 없습니다. 연결된 Supabase 도구 조회와 KCM 서버 REST 인증은 별개이며 실제 서버 DB REST E2E는 미검증입니다.
+- 최종 전체 테스트 **465/465 통과**, 실패·건너뜀 0(기존392+신규73). 프런트·백엔드 타입 검사 및 Vite production build 통과. 기존 SDK 청크 크기 경고 유지. 독립 HTML을 최신 src로 갱신했으며 직접 실행은 미검증입니다.
+- 실제 Chrome에서 합성 DB 응답만 사용하는 격리 서버로 home/appointments/customers/products × 1920×1080/1366×768/390×844/320×720을 확인했습니다. 바깥 가로 넘침 없음, 모바일 표 내부 스크롤만 허용. 로딩/오류/미설정/빈 결과·긴 마스킹 이름·5행 pagination/필터·미동의 제한·요약 누락·상품4탭/비교·가격52,000원 소계/단말 확인 필요를 검증했습니다. 기존 참고 예약 상담 완료/수정의 최초 완료 시각·이력도 보존됐습니다.
+- 검증 탭에 확장 메시지 채널 오류 문구3건이 보였고 구체 발신자는 미확정입니다. KCM 런타임 오류/빈 화면은 관찰하지 않았으며 관련 코드를 임의 수정하지 않았습니다. 실제 음성·Production n8n/DB 저장·Render 배포는 실행하지 않았습니다.
+- Git 대상152파일 비밀값 패턴 후보0/실제 .env 추적 후보0, 기존 보호 대상 기능 파일 diff0, git diff --check 통과를 확인했습니다. 원본 비밀값을 읽거나 출력하지 않았으며 Git 과거 전체 이력은 별도 검사 범위입니다.
+- 상세 출처표·schema·API·가격 공식·운영 blocker는 `docs/REAL_DATA_INTEGRATION_V1.md`를 참조하세요. 검증 fixture/캡처는 Git 제외 `.cache/real-data/`에만 있습니다. 이 브랜치만 commit/push합니다.
+
+변경 파일: `.env.example`, `server/app.mjs`, `server/index.mjs`, `server/real-data.mjs`, `server/effective-price.mjs`, 서버 테스트3개, `src/App.tsx`, `src/pages/SecondaryPages.tsx`, `src/pages/ProductsPage.tsx`, 새 컴포넌트3개·API 서비스2개, `src/styles.css`, 프런트 테스트2개/테스트 진입점, `vite.config.ts`, 위 문서, `STATUS.md`, `00_KCM_미리보기.html`.
+## 추가 팀 통화 피드백 · USER 분절/폭행 위협/40·60·80 하한 / 2026-10-06
+
+- 기존 `fix/risk-detection-test-feedback`의 1차 commit `e227a2c605be158cef25ca634b51873e1b451433`을 보존하고 같은 브랜치에서만 추가 보정합니다. 최신 main/origin main은 `86508324e33a59e4a74e508bb354f9ef09c86a96` 그대로입니다. 원본 checkout의 사용자 STATUS 변경/미추적 deliverables와 별도 실제 데이터 연동 브랜치를 보존하며 main·Render·환경변수·Production 데이터는 변경하지 않습니다.
+- `server/text-risk.mjs`: `local-text-rules-v4`. 기존 v3 욕설/시설 규칙에 놓을 거야·거예요·거니까/부숴버릴 거야·거니까/난리칠 거야와 사람·방문 문맥의 팬다·팰 거야·패버린다·때린다·패준다/직원도 가만 안 둘 거야를 보완했습니다. 명시 부정·전언 guard는 profanity/threat에만 최소 확장하고 비난·선정 규칙은 유지합니다.
+- 최근 USER 미완성 fragment 최대2개·각120자·알려진 start_sec 간격30초·현재 행동 앞160자만 연결합니다. Agent는 분석/대상 문맥에서 제외합니다. 독립 탐지와 연결 탐지 중복을 막고 근거는 현재 USER 행동 turn에 귀속합니다. 이전/current 제한 문맥 fingerprint로 부모 정정·삭제·role/time 변경에 따른 종속 결과를 재평가하며 외부 분석/SSE DTO는 유지합니다.
+- `src/lib/riskPolicy.js`: `call-risk-v4`. 욕설≥1 최소20점 유지, 위협≥1/≥2/≥3 최소40/60/80점으로 변경했습니다. raw 표·5등급·99 상한·통화별 독립0점·최종화/audio gate·n8n 필드는 유지합니다. 진행 중 대응 경고와 종료 후 종합 최종 점수는 기존처럼 구분합니다.
+- A~E는 욕설2/위협1/1/1/0, 반복 위협u1~u4는1→2→3→4, 영상 기본은 욕설2·위협1·최종40(raw26), 강한 버전은 욕설2·위협2·최종60(raw36), 추가 폭행 정확 원문은 위협1·최종40입니다. 정상 방문·반려견·시발점/시발역·판·명시 인용/신고/부정은 제외합니다.
+- 변경 파일: `server/text-risk.mjs`, `src/lib/riskPolicy.js`, `server/tests/text-risk.test.mjs`, `server/tests/call-risk.test.mjs`, `server/tests/risk-feedback-pipeline.test.mjs`, `server/tests/n8n-delivery.test.mjs`, `tests/riskPolicy.test.ts`, `tests/liveCalls.test.ts`, `tests/callWorkflow.test.ts`, `server/README.md`, `docs/FINAL_PRODUCTION_E2E_CHECKLIST.md`, `docs/RISK_DETECTION_SEQUENCE_FEEDBACK.md`, `00_KCM_미리보기.html`, `STATUS.md`입니다. UI 소스/스타일·Retell·Monitor·SSE·n8n 구현·IDs·재고·RMS·audio 최종화·package/env 파일은 변경하지 않았습니다.
+- 전체 `npm.cmd test` **599/599**, 실패/skip0. 직전507개+신규92개(텍스트72/정책3/서버점수2/프런트1/Monitor-SSE14), 기존 테스트 삭제/약화0. 첫 전체 실행에서 새 C-004 raw 기대값 오기40을 보존된 threat2 항목값30으로 수정하고 최종60을 검사했습니다. 텍스트221/221, 실제 SDK+FakeWS→Monitor→analyzer→SSE14/14, correction/삭제/10회반복/역할변경·최종 gate·n8n 계약을 확인했습니다.
+- `npm.cmd run build`: 프런트·백엔드 타입 검사와 production build 성공. 초기 샌드박스 Vite 상위 경로 접근 제한은 동일 명령 승인 실행으로 해결했습니다. 기존 Retell SDK 596.72kB 청크 경고 유지. `npm.cmd run preview:standalone` 갱신, 독립 HTML 직접 실행은 이번에 미검증입니다.
+- 격리된 production dist+기존 Backend/store/SSE 브라우저에서 욕설2, 위협1/2/3, 폭행1, 정상 방문0, USER 배지/Agent 배지0, 부모 정정 시UI0·복원/10반복1, 종료 후20/40/60/80/40/0을 확인했습니다. 1366×768·390×844 모달/근거/점수/닫기 및 바깥 overflow 없음,9경로 기본 표시 정상, console error/warn0. 외부 fetch를 차단하여 실제 통화/n8n/DB 호출이 없었고 fixture의 n8n failed는 URL 미설정 상태입니다. 임시 fixture는 정상 종료했습니다.
+- 상세 결과는 `docs/RISK_DETECTION_SEQUENCE_FEEDBACK.md`, 캡처/로그는 Git 제외 `.cache/risk-feedback-v4/`에 기록했습니다. 실제 음성/STT/Production 수신은 미검증이며 main/Render에는 적용하지 않습니다. 수정 브랜치 commit/push와 clean 상태를 확인하고 멈춥니다. 아래 v3 항목은 이전 보정 당시 기록입니다.
+
+## 실제 팀 통화 피드백 · 욕설/시설 위협 탐지 보정 / 2026-10-06
+
+- 최신 main/origin main `86508324e33a59e4a74e508bb354f9ef09c86a96` 확인 후 clean worktree에서 `fix/risk-detection-test-feedback`을 생성했습니다. 원본 작업 폴더의 사용자 STATUS 변경·미추적 산출물과 별도 실제 데이터 연동 브랜치는 보존합니다. main·기존 브랜치·환경변수·Render·Production 데이터는 변경하지 않습니다.
+- `server/text-risk.mjs`의 누락된 개판/개같/엿같/좆같 및 단순 ASR 띄어쓰기, 시설 파괴/뒤집기/난동 그룹을 추가했습니다. 정상 방문·시발점/시발역·강아지·인용/신고/부정은 제외합니다. USER만 분석, 같은 turn 정정 시 교체, snapshot 중복 및 중첩 규칙의 동일 발생 중복 방지, 기존 비난/선정 규칙은 보존합니다. 분석 버전은 `local-text-rules-v3`입니다.
+- `src/lib/riskPolicy.js`: 기존 항목표/raw_score/위협 하한/99점 상한/통화별 독립 계산을 유지하고 욕설1회 이상 최종 최소20점만 추가했습니다(`call-risk-v3`, `RISK_RULE.profanityFloor=20`). `adjusted_score`에 반영하며 최종 객체/SSE/n8n 필드 구조는 그대로입니다. 욕설1회는 항목3점·최종20점/주의입니다. 두 결과 UI의 기존 설명 줄에 욕설 보정 근거만 추가하여 레이아웃/CSS는 유지했습니다.
+- 변경: `server/text-risk.mjs`, `src/lib/riskPolicy.js`, `src/live/LiveRiskSignals.tsx`, `src/components/CallRiskDetails.tsx`, `server/tests/text-risk.test.mjs`, `server/tests/call-risk.test.mjs`, `tests/riskPolicy.test.ts`, `tests/liveCalls.test.ts`, `tests/callWorkflow.test.ts`, `server/README.md`, `docs/FINAL_PRODUCTION_E2E_CHECKLIST.md`, `docs/RISK_DETECTION_TEST_FEEDBACK.md`, `00_KCM_미리보기.html`, `STATUS.md`입니다. C-003의 항목 합계14점은 유지하고 새 하한에 해당하는 기존 최종 기대값8개만20점으로 갱신했습니다.
+- 최종 전체 `npm.cmd test`: **507/507**, 실패/건너뜀0. 기존392개 + 신규115개(텍스트108/정책4/서버2/프런트1). 텍스트149/149, 기존 테스트 삭제·skip·검증 축소0. `npm.cmd run build`의 프런트 `tsc --noEmit`·백엔드 `tsc -p tsconfig.server.json`·production build 통과. 기존 Retell SDK 청크596.72kB 경고만 유지합니다.
+- 실제 production dist와 기존 createBackend/liveCallStore/SSE를 사용하는 격리 브라우저에서4가지 USER 모의 발화 확인: 씨발→욕설1/20점·주의, 매장 뒤집어 놓는다→위협1, 매장 부숴버린다→위협1, 매장에 방문하겠습니다→위협0/0점. 근거 발화·배지, 진행 중 대응 경고와 종료 후 점수의 구분 정상. 같은u1 욕설/위협을 정상 문장으로 정정하면 횟수·배지·경고 제거, snapshot5회 반복에도 누적 없음, 종료 반복에도 최초 결과 유지입니다.
+- 1366×768·390×844에서 신호/근거/점수/닫기 표시와 바깥 overflow 없음, 콘솔 error/warn0. 기존9경로 기본 표시 정상이며 재고는 격리 서버의 환경 미설정503/참고 화면입니다. 실제 .env·Retell·n8n·DB 요청 없이 검증했습니다. fixture의 n8n failed는 URL 미설정의 의도된 상태로 실제 전송 실패와 구분합니다.
+- `npm.cmd run preview:standalone` 갱신 완료, 독립 HTML 직접 실행은 이번 작업에서 미검증입니다. 전체26개 팀 문장 결과표·오탐/정정/정책·검증 범위는 `docs/RISK_DETECTION_TEST_FEEDBACK.md`에 기록했습니다. 캡처/로그/모의 서버는 Git 제외 `.cache/risk-feedback/`에만 보관합니다.
+- 수정 브랜치에만 commit/push하며 main 병합/Render 배포/실제 음성은 미실행입니다. 검토 후 별도 배포 및 실제 STT/음성 재검증이 필요합니다. 이미 확정된 과거 통화는 재산정하지 않으며 서버 v3 적용 시 직원 화면 새로고침이 필요합니다.
+
 ## Production 비파괴 진단 + 고객 avatar 점 제거 / 2026-10-06
 
 - 최신 main/origin main `eef5648758d3358bb856bf11b43c7f714d3103da`를 확인했습니다. 기존 작업 폴더의 사용자 STATUS 변경·미추적 산출물을 보존하기 위해 동일 저장소의 별도 worktree `_worktrees/final-production-diagnostics`에서 `fix/final-production-diagnostics`를 생성했습니다. main·기존 브랜치·사용자 파일 초기화/이동은 없습니다.

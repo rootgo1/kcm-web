@@ -531,3 +531,6 @@ test('지원 기록은 기존 예약 완료·수정 이력과 독립적이다', 
   const reservations = finished(); const snapshot = structuredClone(reservations);
   supportedCalls(); assert.deepEqual(reservations, snapshot); assert.equal(getMetrics(reservations).completed, 2);
 });
+import './realData.test.js';
+import './effectivePrice.test.js';
+import './liveBriefing.test.js';
