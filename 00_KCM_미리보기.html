@@ -995,6 +995,49 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
 .review-score small { font-size: 10px; color: #6f7b8b; }
 .review-sample p { font-size: 12px; line-height: 1.75; color: #526174; margin-top: 7px; overflow-wrap: anywhere; }
 
+/* Store information keeps the selected profile visible; reviews open on demand. */
+.stores-page .page-heading { margin-bottom: 14px; }
+.stores-page .section-tabs { margin-bottom: 12px; }
+.stores-page .section-tab { padding-bottom: 10px; }
+.stores-page .directory-demo-note { margin-bottom: 12px; padding-block: 8px; }
+.stores-page .section-intro { margin-bottom: 12px; gap: 12px; }
+.stores-page .section-intro > div:first-child { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.stores-page .section-intro p { margin-top: 0; }
+.stores-page .directory-grid { gap: 16px; }
+.stores-page .directory-list > .card-heading { padding-block: 12px; }
+.stores-page .directory-options { padding: 4px 8px; }
+.stores-page .directory-option { padding: 10px 12px; margin-block: 1px; }
+.stores-page .directory-list-note { padding-block: 8px; }
+.stores-page .directory-detail-stack { gap: 12px; }
+.stores-page .directory-detail { padding: 18px 20px; }
+.stores-page .directory-detail-title { padding-bottom: 12px; }
+.stores-page .directory-facts { margin-top: 12px; gap: 10px; }
+.stores-page .staff-traits { margin-top: 12px; }
+.stores-page .directory-subnote { margin-top: 10px; }
+.stores-page .store-review-disclosure > summary { cursor: pointer; list-style: none; min-height: 48px; padding-block: 10px; border-bottom: 0; }
+.stores-page .store-review-disclosure > summary::-webkit-details-marker { display: none; }
+.stores-page .store-review-disclosure > summary:hover { background: #f9fafb; border-radius: var(--radius); }
+.stores-page .store-review-disclosure > summary:focus-visible { outline-offset: -4px; border-radius: var(--radius); }
+.stores-page .store-review-disclosure[open] > summary { border-bottom: 1px solid var(--line); border-radius: var(--radius) var(--radius) 0 0; }
+.stores-page .review-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; color: #6f7b8b; font-size: 11px; }
+.stores-page .review-close-label { display: none; }
+.stores-page .store-review-disclosure[open] .review-open-label { display: none; }
+.stores-page .store-review-disclosure[open] .review-close-label { display: inline; }
+.stores-page .store-review-disclosure[open] .review-chevron { transform: rotate(180deg); }
+.stores-page .reviews-body { padding-inline: 20px; }
+.stores-page .review-sample { padding-block: 12px; }
+.stores-page .review-empty { padding-block: 16px; font-size: 12px; color: var(--muted); }
+@media (max-width: 650px) {
+  .stores-page .section-intro { align-items: flex-start; flex-wrap: wrap; gap: 6px; }
+  .stores-page .directory-detail { padding: 16px; }
+  .stores-page .directory-detail-title { flex-wrap: wrap; gap: 10px; }
+  .stores-page .directory-detail-title > div { flex-basis: calc(100% - 60px); }
+  .stores-page .directory-rating { margin-left: auto; }
+  .stores-page .store-review-disclosure > summary { padding-inline: 16px; }
+  .stores-page .review-controls { gap: 6px; }
+  .stores-page .reviews-body { padding-inline: 16px; }
+}
+
 .product-catalog-list .directory-option { padding-block: 11px; }
 .product-search-row .search-field input { font-size: 12px; }
 .product-detail-heading { padding-bottom: 15px; }
@@ -7543,16 +7586,20 @@ const navigation_1 = require("../lib/navigation");
 const directoryMockData_1 = require("../data/directoryMockData");
 const uiText_1 = require("../lib/uiText");
 function ReviewSamples({ items, title }) {
-    return __React.createElement("section", { className: "card review-samples" },
-        __React.createElement("div", { className: "card-heading" },
+    return __React.createElement("details", { className: "card review-samples store-review-disclosure" },
+        __React.createElement("summary", { className: "card-heading" },
             __React.createElement("div", { className: "title-with-icon" },
                 __React.createElement(Icon_1.Icon, { name: "message", size: 18 }),
                 __React.createElement("h2", null, title)),
-            __React.createElement("span", { className: "small-badge" },
-                "\uB9AC\uBDF0 ",
-                items.length,
-                "\uAC74")),
-        __React.createElement("div", { className: "reviews-body" }, items.map(review => __React.createElement("article", { className: "review-sample", key: review.id },
+            __React.createElement("span", { className: "review-controls" },
+                __React.createElement("span", { className: "small-badge" },
+                    "\uB9AC\uBDF0 ",
+                    items.length,
+                    "\uAC74"),
+                __React.createElement("span", { className: "review-open-label" }, "\uB9AC\uBDF0 \uBCF4\uAE30"),
+                __React.createElement("span", { className: "review-close-label" }, "\uB9AC\uBDF0 \uC811\uAE30"),
+                __React.createElement(Icon_1.Icon, { name: "chevronDown", size: 16, className: "review-chevron" }))),
+        __React.createElement("div", { className: "reviews-body" }, items.length ? items.map(review => __React.createElement("article", { className: "review-sample", key: review.id },
             __React.createElement("div", null,
                 __React.createElement("strong", null, (0, uiText_1.uiText)(review.author)),
                 __React.createElement("span", { className: "review-score", "aria-label": `${review.score}점 / 5점` },
@@ -7561,7 +7608,7 @@ function ReviewSamples({ items, title }) {
                     review.score.toFixed(1),
                     " ",
                     __React.createElement("small", null, "/ 5"))),
-            __React.createElement("p", null, review.text)))));
+            __React.createElement("p", null, review.text))) : __React.createElement("p", { className: "review-empty" }, "\uB4F1\uB85D\uB41C \uB9AC\uBDF0\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.")));
 }
 function StoreManagementPage({ data }) {
     const [tab, setTab] = (0, react_1.useState)('store-info');
@@ -7572,7 +7619,7 @@ function StoreManagementPage({ data }) {
     const store = stores.find(item => item.id === storeId) ?? stores[0];
     const employees = directoryMockData_1.demoStaff.filter(employee => employee.storeId === home.id);
     const employee = employees.find(item => item.id === staffId) ?? employees[0];
-    return __React.createElement(__React.Fragment, null,
+    return __React.createElement("div", { className: "stores-page" },
         __React.createElement("div", { className: "page-heading" },
             __React.createElement("div", null,
                 __React.createElement("span", { className: "eyebrow" }, "\uB9E4\uC7A5\uAD00\uB9AC"),
@@ -7632,7 +7679,7 @@ function StoreManagementPage({ data }) {
                             __React.createElement("div", null,
                                 __React.createElement("dt", null, "\uB9E4\uC7A5 \uAD6C\uBD84"),
                                 __React.createElement("dd", null, store.isHome ? '우리 매장' : '다른 매장')))),
-                    __React.createElement(ReviewSamples, { items: store.reviews, title: "\uB9E4\uC7A5 \uB9AC\uBDF0" })))) : __React.createElement(__React.Fragment, null,
+                    __React.createElement(ReviewSamples, { key: `store:${store.id}`, items: store.reviews, title: "\uB9E4\uC7A5 \uB9AC\uBDF0" })))) : __React.createElement(__React.Fragment, null,
             __React.createElement("div", { className: "section-intro" },
                 __React.createElement("div", null,
                     __React.createElement("h2", null, "\uC9C1\uC6D0\uC815\uBCF4"),
@@ -7686,7 +7733,7 @@ function StoreManagementPage({ data }) {
                                 __React.createElement("dd", null, employee.introduction))),
                         __React.createElement("div", { className: "staff-traits" }, employee.traits.map(trait => __React.createElement("span", { key: trait }, trait))),
                         __React.createElement("p", { className: "directory-subnote" }, "\uC804\uBB38\uBD84\uC57C\uC640 \uC0C1\uB2F4 \uC131\uD5A5\uC744 \uD655\uC778\uD55C \uB4A4 \uC0C1\uB2F4\uC5D0 \uCC38\uACE0\uD558\uC138\uC694.")),
-                    __React.createElement(ReviewSamples, { items: employee.reviews, title: "\uC9C1\uC6D0 \uB9AC\uBDF0" }))))))));
+                    __React.createElement(ReviewSamples, { key: `staff:${employee.id}`, items: employee.reviews, title: "\uC9C1\uC6D0 \uB9AC\uBDF0" }))))))));
 }
 
 },

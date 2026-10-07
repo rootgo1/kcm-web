@@ -995,6 +995,49 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
 .review-score small { font-size: 10px; color: #6f7b8b; }
 .review-sample p { font-size: 12px; line-height: 1.75; color: #526174; margin-top: 7px; overflow-wrap: anywhere; }
 
+/* Store information keeps the selected profile visible; reviews open on demand. */
+.stores-page .page-heading { margin-bottom: 14px; }
+.stores-page .section-tabs { margin-bottom: 12px; }
+.stores-page .section-tab { padding-bottom: 10px; }
+.stores-page .directory-demo-note { margin-bottom: 12px; padding-block: 8px; }
+.stores-page .section-intro { margin-bottom: 12px; gap: 12px; }
+.stores-page .section-intro > div:first-child { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.stores-page .section-intro p { margin-top: 0; }
+.stores-page .directory-grid { gap: 16px; }
+.stores-page .directory-list > .card-heading { padding-block: 12px; }
+.stores-page .directory-options { padding: 4px 8px; }
+.stores-page .directory-option { padding: 10px 12px; margin-block: 1px; }
+.stores-page .directory-list-note { padding-block: 8px; }
+.stores-page .directory-detail-stack { gap: 12px; }
+.stores-page .directory-detail { padding: 18px 20px; }
+.stores-page .directory-detail-title { padding-bottom: 12px; }
+.stores-page .directory-facts { margin-top: 12px; gap: 10px; }
+.stores-page .staff-traits { margin-top: 12px; }
+.stores-page .directory-subnote { margin-top: 10px; }
+.stores-page .store-review-disclosure > summary { cursor: pointer; list-style: none; min-height: 48px; padding-block: 10px; border-bottom: 0; }
+.stores-page .store-review-disclosure > summary::-webkit-details-marker { display: none; }
+.stores-page .store-review-disclosure > summary:hover { background: #f9fafb; border-radius: var(--radius); }
+.stores-page .store-review-disclosure > summary:focus-visible { outline-offset: -4px; border-radius: var(--radius); }
+.stores-page .store-review-disclosure[open] > summary { border-bottom: 1px solid var(--line); border-radius: var(--radius) var(--radius) 0 0; }
+.stores-page .review-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; color: #6f7b8b; font-size: 11px; }
+.stores-page .review-close-label { display: none; }
+.stores-page .store-review-disclosure[open] .review-open-label { display: none; }
+.stores-page .store-review-disclosure[open] .review-close-label { display: inline; }
+.stores-page .store-review-disclosure[open] .review-chevron { transform: rotate(180deg); }
+.stores-page .reviews-body { padding-inline: 20px; }
+.stores-page .review-sample { padding-block: 12px; }
+.stores-page .review-empty { padding-block: 16px; font-size: 12px; color: var(--muted); }
+@media (max-width: 650px) {
+  .stores-page .section-intro { align-items: flex-start; flex-wrap: wrap; gap: 6px; }
+  .stores-page .directory-detail { padding: 16px; }
+  .stores-page .directory-detail-title { flex-wrap: wrap; gap: 10px; }
+  .stores-page .directory-detail-title > div { flex-basis: calc(100% - 60px); }
+  .stores-page .directory-rating { margin-left: auto; }
+  .stores-page .store-review-disclosure > summary { padding-inline: 16px; }
+  .stores-page .review-controls { gap: 6px; }
+  .stores-page .reviews-body { padding-inline: 16px; }
+}
+
 .product-catalog-list .directory-option { padding-block: 11px; }
 .product-search-row .search-field input { font-size: 12px; }
 .product-detail-heading { padding-bottom: 15px; }

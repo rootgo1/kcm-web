@@ -7,13 +7,16 @@ import { averageReviewScore, demoStaff, demoStores, type DemoReview } from '../d
 import { uiText } from '../lib/uiText';
 
 function ReviewSamples({ items, title }: { items: readonly DemoReview[]; title: string }) {
-  return <section className="card review-samples"><div className="card-heading">
+  return <details className="card review-samples store-review-disclosure"><summary className="card-heading">
     <div className="title-with-icon"><Icon name="message" size={18}/><h2>{title}</h2></div>
-    <span className="small-badge">리뷰 {items.length}건</span>
-  </div><div className="reviews-body">{items.map(review => <article className="review-sample" key={review.id}>
+    <span className="review-controls"><span className="small-badge">리뷰 {items.length}건</span>
+      <span className="review-open-label">리뷰 보기</span><span className="review-close-label">리뷰 접기</span>
+      <Icon name="chevronDown" size={16} className="review-chevron"/>
+    </span>
+  </summary><div className="reviews-body">{items.length ? items.map(review => <article className="review-sample" key={review.id}>
     <div><strong>{uiText(review.author)}</strong><span className="review-score" aria-label={`${review.score}점 / 5점`}><span aria-hidden="true">★</span> {review.score.toFixed(1)} <small>/ 5</small></span></div>
     <p>{review.text}</p>
-  </article>)}</div></section>;
+  </article>) : <p className="review-empty">등록된 리뷰가 없습니다.</p>}</div></details>;
 }
 
 export function StoreManagementPage({ data }: { data: DashboardData }) {
@@ -25,7 +28,7 @@ export function StoreManagementPage({ data }: { data: DashboardData }) {
   const store = stores.find(item => item.id === storeId) ?? stores[0];
   const employees = demoStaff.filter(employee => employee.storeId === home.id);
   const employee = employees.find(item => item.id === staffId) ?? employees[0];
-  return <>
+  return <div className="stores-page">
     <div className="page-heading"><div><span className="eyebrow">매장관리</span>
       <h1>매장관리</h1><p>매장과 직원의 기본 정보, 상담 성향과 리뷰를 확인하세요.</p>
     </div></div>
@@ -54,7 +57,7 @@ export function StoreManagementPage({ data }: { data: DashboardData }) {
               </div>
               <dl className="directory-facts"><div><dt>주소</dt><dd>{uiText(store.address)}</dd></div><div><dt>영업시간</dt><dd>{uiText(store.hours)}</dd></div><div><dt>매장 구분</dt><dd>{store.isHome ? '우리 매장' : '다른 매장'}</dd></div></dl>
             </section>
-            <ReviewSamples items={store.reviews} title="매장 리뷰"/>
+            <ReviewSamples key={`store:${store.id}`} items={store.reviews} title="매장 리뷰"/>
           </div>
         </div>
       </> : <>
@@ -79,10 +82,10 @@ export function StoreManagementPage({ data }: { data: DashboardData }) {
               <div className="staff-traits">{employee.traits.map(trait => <span key={trait}>{trait}</span>)}</div>
               <p className="directory-subnote">전문분야와 상담 성향을 확인한 뒤 상담에 참고하세요.</p>
             </section>
-            <ReviewSamples items={employee.reviews} title="직원 리뷰"/>
+            <ReviewSamples key={`staff:${employee.id}`} items={employee.reviews} title="직원 리뷰"/>
           </div>
         </div>
       </>)}
     </section>)}
-  </>;
+  </div>;
 }
