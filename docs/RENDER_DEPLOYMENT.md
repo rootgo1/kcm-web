@@ -25,7 +25,7 @@
 | SUPABASE_AUTH_PUBLISHABLE_KEY | 관리자 승인을 받은 같은 Supabase 프로젝트의 Auth 공개 키, 실제 값은 문서/Git에 기록하지 않음 |
 | STAFF_READ_ACCOUNTS_JSON | 관리자 승인을 받은 계정·매장 조회 매핑, 실제 계정 식별정보는 문서/Git에 기록하지 않음 |
 
-Webhook/고객/매장 변수는 `sync: false`이며 실제 값은 Git에 포함하지 않습니다. 기존 서비스에서는 **Environment**에서 직접 추가한 뒤 **Manual Deploy → Deploy latest commit**으로 main의 최신 코드를 적용합니다. 자동 배포 설정은 변경하지 않습니다. 전송 조건·계약·실패 처리·실제 검증 절차는 [n8n 전송 안내](N8N_DELIVERY.md)를 확인하세요.
+Webhook/고객/매장 변수는 `sync: false`이며 실제 값은 Git에 포함하지 않습니다. JWT 전환은 **Environment → Save only → 통화 없음 확인 → n8n JWT 발행 → 검증된 특정 커밋 배포** 순서입니다. 이번 검증된 실행 변경은 `f79cc3d`이며 이후 문서만 수정한 커밋은 같은 실행 코드를 사용합니다. `Deploy latest commit`은 main 병합 후 최신 SHA가 검증된 실행 코드와 일치할 때만 사용합니다. 자동 배포는 유지합니다. [전송 계약](N8N_DELIVERY.md), [인증 전환](N8N_WEBHOOK_AUTH.md)
 
 `PORT`와 `RENDER_EXTERNAL_URL`은 Render 자동 설정을 사용합니다. 별도 도메인을 사용하는 경우에만 `KCM_PUBLIC_ORIGIN`에 경로 없는 HTTPS 원본 주소를 설정합니다. 비밀 값·HTTPS 주소·빌드 화면이 누락되면 공개 서버를 실행하지 않습니다.
 
