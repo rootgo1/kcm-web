@@ -7,6 +7,7 @@ import './uiText.test.js';
 import './productLookup.test.js';
 import './liveNotices.test.js';
 import './inventory.test.js';
+import './storedCustomerPresentation.test.js';
 import assert from 'node:assert/strict';
 import { createMockData } from '../src/data/mockData.js';
 import { availableStock, filterAppointments, getMetrics, markReviewed, parsePage } from '../src/lib/domain.js';

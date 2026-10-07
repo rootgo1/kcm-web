@@ -116,3 +116,49 @@
   .live-briefing-reload, .live-conversation-modal .modal-actions .button { min-height: 38px; }
   .live-briefing-summary summary { padding-block: 8px; }
 }
+
+/* Customer history only: keep received calls compact without changing live dialogs. */
+.customer-call-history { min-width: 0; margin-bottom: 10px; padding-bottom: 8px; }
+.customer-call-history > .card-heading { margin-bottom: 0; padding-block: 8px; gap: 8px 14px; }
+.customer-history-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; min-width: 0; margin-left: auto; font-size: 12px; }
+.customer-history-filters label { display: flex; align-items: center; gap: 7px; min-width: 0; color: #59616d; }
+.customer-history-filters select { width: 175px; min-width: 0; max-width: 100%; height: 34px; border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; background: #fff; color: var(--ink); font: inherit; }
+.customer-history-filters label:nth-child(2) select { width: 156px; }
+.customer-history-filters select:focus-visible, .customer-history-scroll:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+.customer-history-count { margin-left: auto; color: #65707e; white-space: nowrap; font-size: 12px; }
+.customer-history-latest { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 12px; padding: 8px 10px; margin-bottom: 8px; border-radius: 6px; background: #f6f7f9; color: #59616d; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.customer-history-latest strong { color: #444d59; font-size: 13px; }
+.customer-history-scroll { position: relative; min-width: 0; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+.customer-history-table { width: 100%; min-width: 760px; table-layout: fixed; border-collapse: collapse; font-size: 12px; }
+.customer-history-table th { padding: 8px; border-block: 1px solid var(--line); background: #fafbfc; color: #65707e; text-align: left; font-size: 12px; font-weight: 600; }
+.customer-history-table td { height: 48px; padding: 5px 8px; border-bottom: 1px solid var(--line); color: #444d59; line-height: 1.45; vertical-align: middle; overflow-wrap: anywhere; }
+.customer-history-table th:nth-child(1) { width: 28%; }
+.customer-history-table th:nth-child(2) { width: 13%; }
+.customer-history-table th:nth-child(3) { width: 17%; }
+.customer-history-table th:nth-child(4) { width: 10%; }
+.customer-history-table th:nth-child(5) { width: 21%; }
+.customer-history-table th:nth-child(6) { width: 11%; }
+.customer-history-identifiers > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #65707e; font-size: 11px; }
+.customer-history-identifiers > span:first-child { font-size: 13px; font-weight: 600; color: #444d59; }
+.customer-history-score strong { font-size: 13px; font-weight: 600; }
+.customer-history-time time > span { display: block; font-variant-numeric: tabular-nums; }
+.customer-history-table .customer-history-delivery { color: #65707e; font-size: 11px; }
+.customer-history-detail { display: inline-flex; align-items: center; gap: 3px; min-height: 34px; white-space: nowrap; font-size: 12px; }
+.customer-history-empty { padding: 12px 0; }
+.customer-history-empty p { margin-top: 5px; }
+.customer-history-pagination { padding: 6px 0; border-top: 0; }
+.customer-history-pagination .customer-history-page-count { margin-right: auto; text-align: left; }
+.customer-history-pagination button { width: 34px; height: 34px; }
+.customer-history-scope { margin-block: 6px 0; }
+.customer-history-scope summary { padding-block: 3px; }
+@media (max-width: 800px) {
+  .customer-call-history { padding-inline: 12px; }
+  .customer-history-filters { gap: 8px; flex-basis: 100%; margin-left: 0; }
+  .customer-history-filters label { flex: 1 1 210px; justify-content: space-between; }
+  .customer-history-filters select { flex: 1; width: 0; max-width: 230px; height: 38px; }
+  .customer-history-filters label:nth-child(2) select { width: 0; }
+  .customer-history-count { flex-basis: 100%; margin-left: 0; }
+  .customer-history-detail, .customer-history-pagination button { min-height: 40px; }
+  .customer-history-pagination button { width: 40px; }
+  .customer-history-scope summary { padding-block: 7px; }
+}

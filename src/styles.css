@@ -1470,3 +1470,65 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
   .home-dashboard .live-intake > .live-intake-row:nth-of-type(n + 4) { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line); }
   .home-dashboard .live-intake > .live-call-id { grid-column: 1 / -1; margin: 0 16px; }
 }
+
+/* Customer management: separate received and stored records without stacking long lists. */
+.customers-page > .page-heading { margin-bottom: 8px; }
+.customers-page > .section-tabs { margin-bottom: 8px; }
+.customers-page > [role="tabpanel"][hidden] { display: none; }
+.customers-page > .reference-data-details { margin-block: 8px 0; padding-block: 6px; }
+.customers-page .stored-customers { margin-block: 0; }
+.customers-page .stored-customers .real-data-header { padding-block: 8px; margin-bottom: 0; justify-content: space-between; }
+.customers-page .stored-customers .real-data-tools { padding: 0; margin-left: auto; flex-wrap: nowrap; }
+.customers-page .stored-customers .real-data-tools .search-field { width: 250px; }
+.customers-page .stored-customers .real-data-grid { gap: 12px; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); }
+.customers-page .stored-customers .real-data-table { min-width: 390px; table-layout: fixed; }
+.customers-page .stored-customers .real-data-table th:first-child { width: 32%; }
+.customers-page .stored-customers .real-data-table th:last-child { width: 20%; }
+.customers-page .stored-customers .real-data-table td { padding: 4px 10px; height: 48px; }
+.customers-page .stored-customers .real-data-table td:nth-child(2) > strong { display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; font-size: 12px; }
+.customers-page .stored-customers .customer-select { min-height: 24px; }
+.customers-page .stored-customers .customer-select small { margin-top: 2px; }
+.customers-page .stored-customers .real-data-id { margin-block: 3px; }
+.customers-page .stored-customers .real-data-detail { padding-inline: 0 12px; padding-bottom: 8px; }
+.customers-page .stored-customers .real-data-history-heading { margin-block: 0 4px; }
+.stored-customer-product { margin-block: 4px; font-size: 11px; color: var(--muted); }
+.stored-customer-product summary { cursor: pointer; padding-block: 3px; }
+.customers-page .stored-customers .real-data-detail > .real-data-notice { margin-block: 2px; }
+.customers-page .stored-customers .real-data-facts { margin: 6px 0; padding: 8px 10px; gap: 10px; }
+.customers-page .stored-customers .real-data-facts strong { font-size: 12px; line-height: 1.5; }
+.stored-customer-latest { display: flex; flex-wrap: wrap; gap: 3px 10px; align-items: baseline; font-size: 11px; padding: 6px 8px; background: #f7f8fa; border-radius: 7px; margin-block: 6px; }
+.stored-customer-latest > span, .stored-customer-latest > small { color: var(--muted); font-size: 11px; }
+.stored-customer-latest strong { font-size: 12px; }
+.stored-customer-history-table { min-width: 420px; width: 100%; table-layout: fixed; }
+.stored-customer-history-table th { font-size: 11px; }
+.stored-customer-history-table th:first-child { width: 39%; }
+.stored-customer-history-table th:nth-child(2) { width: 16%; }
+.stored-customer-history-table th:nth-child(3) { width: 27%; }
+.stored-customer-history-table th:last-child { width: 18%; }
+.stored-customer-history-table th, .stored-customer-history-table td { padding-inline: 6px; }
+.stored-customer-history-table td { padding-block: 4px; height: 48px; font-size: 12px; line-height: 1.5; }
+.stored-customer-purpose { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.stored-customer-risk { display: block; font-size: 11px; overflow-wrap: anywhere; }
+.stored-customer-history-table .text-button { font-size: 11px; min-height: 32px; }
+.stored-customers .call-pagination { padding-block: 4px; }
+.stored-customers .call-pagination button { width: 32px; height: 32px; }
+.stored-history-more { margin-block: 2px; }
+.stored-customer-scope { font-size: 11px; color: var(--muted); margin: 0 16px; padding-block: 3px; border-top: 1px solid var(--line); }
+.stored-customer-scope summary { cursor: pointer; min-height: 22px; }
+.stored-customer-modal .real-data-history-list { max-height: none; overflow: visible; }
+.stored-customer-modal .real-data-history-item { padding: 12px; }
+@media (min-width: 1101px) {
+  .main-content:has(> .customers-page) { padding-block: 12px 6px; }
+  .main-content:has(> .customers-page) + .app-footer { padding-bottom: 0; }
+}
+@media (max-width: 1100px) {
+  .customers-page .stored-customers .real-data-grid { grid-template-columns: minmax(0, 1fr); }
+  .customers-page .stored-customers .real-data-detail { padding-inline: 12px; }
+}
+@media (max-width: 640px) {
+  .customers-page .stored-customers .real-data-tools { flex-basis: 100%; order: 1; }
+  .customers-page .stored-customers .customer-select { min-height: 40px; }
+  .customers-page .stored-customers .real-data-table td { padding-block: 8px; }
+  .stored-customer-history-table .text-button { min-height: 40px; }
+  .stored-customers .call-pagination button { width: 40px; height: 40px; }
+}

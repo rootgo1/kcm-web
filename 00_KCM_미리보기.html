@@ -1470,6 +1470,68 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
   .home-dashboard .live-intake > .live-intake-row:nth-of-type(n + 4) { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line); }
   .home-dashboard .live-intake > .live-call-id { grid-column: 1 / -1; margin: 0 16px; }
 }
+
+/* Customer management: separate received and stored records without stacking long lists. */
+.customers-page > .page-heading { margin-bottom: 8px; }
+.customers-page > .section-tabs { margin-bottom: 8px; }
+.customers-page > [role="tabpanel"][hidden] { display: none; }
+.customers-page > .reference-data-details { margin-block: 8px 0; padding-block: 6px; }
+.customers-page .stored-customers { margin-block: 0; }
+.customers-page .stored-customers .real-data-header { padding-block: 8px; margin-bottom: 0; justify-content: space-between; }
+.customers-page .stored-customers .real-data-tools { padding: 0; margin-left: auto; flex-wrap: nowrap; }
+.customers-page .stored-customers .real-data-tools .search-field { width: 250px; }
+.customers-page .stored-customers .real-data-grid { gap: 12px; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); }
+.customers-page .stored-customers .real-data-table { min-width: 390px; table-layout: fixed; }
+.customers-page .stored-customers .real-data-table th:first-child { width: 32%; }
+.customers-page .stored-customers .real-data-table th:last-child { width: 20%; }
+.customers-page .stored-customers .real-data-table td { padding: 4px 10px; height: 48px; }
+.customers-page .stored-customers .real-data-table td:nth-child(2) > strong { display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; font-size: 12px; }
+.customers-page .stored-customers .customer-select { min-height: 24px; }
+.customers-page .stored-customers .customer-select small { margin-top: 2px; }
+.customers-page .stored-customers .real-data-id { margin-block: 3px; }
+.customers-page .stored-customers .real-data-detail { padding-inline: 0 12px; padding-bottom: 8px; }
+.customers-page .stored-customers .real-data-history-heading { margin-block: 0 4px; }
+.stored-customer-product { margin-block: 4px; font-size: 11px; color: var(--muted); }
+.stored-customer-product summary { cursor: pointer; padding-block: 3px; }
+.customers-page .stored-customers .real-data-detail > .real-data-notice { margin-block: 2px; }
+.customers-page .stored-customers .real-data-facts { margin: 6px 0; padding: 8px 10px; gap: 10px; }
+.customers-page .stored-customers .real-data-facts strong { font-size: 12px; line-height: 1.5; }
+.stored-customer-latest { display: flex; flex-wrap: wrap; gap: 3px 10px; align-items: baseline; font-size: 11px; padding: 6px 8px; background: #f7f8fa; border-radius: 7px; margin-block: 6px; }
+.stored-customer-latest > span, .stored-customer-latest > small { color: var(--muted); font-size: 11px; }
+.stored-customer-latest strong { font-size: 12px; }
+.stored-customer-history-table { min-width: 420px; width: 100%; table-layout: fixed; }
+.stored-customer-history-table th { font-size: 11px; }
+.stored-customer-history-table th:first-child { width: 39%; }
+.stored-customer-history-table th:nth-child(2) { width: 16%; }
+.stored-customer-history-table th:nth-child(3) { width: 27%; }
+.stored-customer-history-table th:last-child { width: 18%; }
+.stored-customer-history-table th, .stored-customer-history-table td { padding-inline: 6px; }
+.stored-customer-history-table td { padding-block: 4px; height: 48px; font-size: 12px; line-height: 1.5; }
+.stored-customer-purpose { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.stored-customer-risk { display: block; font-size: 11px; overflow-wrap: anywhere; }
+.stored-customer-history-table .text-button { font-size: 11px; min-height: 32px; }
+.stored-customers .call-pagination { padding-block: 4px; }
+.stored-customers .call-pagination button { width: 32px; height: 32px; }
+.stored-history-more { margin-block: 2px; }
+.stored-customer-scope { font-size: 11px; color: var(--muted); margin: 0 16px; padding-block: 3px; border-top: 1px solid var(--line); }
+.stored-customer-scope summary { cursor: pointer; min-height: 22px; }
+.stored-customer-modal .real-data-history-list { max-height: none; overflow: visible; }
+.stored-customer-modal .real-data-history-item { padding: 12px; }
+@media (min-width: 1101px) {
+  .main-content:has(> .customers-page) { padding-block: 12px 6px; }
+  .main-content:has(> .customers-page) + .app-footer { padding-bottom: 0; }
+}
+@media (max-width: 1100px) {
+  .customers-page .stored-customers .real-data-grid { grid-template-columns: minmax(0, 1fr); }
+  .customers-page .stored-customers .real-data-detail { padding-inline: 12px; }
+}
+@media (max-width: 640px) {
+  .customers-page .stored-customers .real-data-tools { flex-basis: 100%; order: 1; }
+  .customers-page .stored-customers .customer-select { min-height: 40px; }
+  .customers-page .stored-customers .real-data-table td { padding-block: 8px; }
+  .stored-customer-history-table .text-button { min-height: 40px; }
+  .stored-customers .call-pagination button { width: 40px; height: 40px; }
+}
 </style></head><body><div id="root"></div><!-- Generated from src/. React/ReactDOM/Scheduler: Copyright Meta Platforms, Inc. and affiliates, MIT License. See THIRD_PARTY_NOTICES.txt. No font files are embedded. --><script>(function(){'use strict';
 const process={env:{NODE_ENV:'production'}};
 const modules={"react":function(module,exports,require){
@@ -3665,6 +3727,9 @@ exports.StoredCustomers = StoredCustomers;
 const react_1 = require("react");
 const realDataApi_js_1 = require("../services/realDataApi.js");
 const Icon_1 = require("./Icon");
+const Modal_1 = require("./Modal");
+const callPagination_1 = require("../lib/callPagination");
+const storedCustomerPresentation_1 = require("../lib/storedCustomerPresentation");
 const stageLabels = { AI: 'AI 응대', PHONE: '전화', VISIT: '방문' };
 const codeOf = (error) => error instanceof realDataApi_js_1.RealDataApiError ? error.code : 'UNKNOWN_ERROR';
 /** Saved records only; each stage's score is displayed without recalculating or combining calls. */
@@ -3692,6 +3757,72 @@ function StoredConsultationList({ items }) {
                 risk.score,
                 "\uC810"),
             __React.createElement("span", { className: "real-data-meta" }, (0, realDataApi_js_1.formatRealDataDate)(risk.createdAt)))) : __React.createElement("span", { className: "real-data-meta" }, "\uC800\uC7A5\uB41C \uC704\uD5D8 \uAE30\uB85D \uC5C6\uC74C")))));
+}
+/** Compact list for customer management; reservation briefings keep their existing list. */
+function StoredCustomerHistory({ items, customerId }) {
+    const [page, setPage] = (0, react_1.useState)(1);
+    const [selectedId, setSelectedId] = (0, react_1.useState)(null);
+    const pagination = (0, callPagination_1.paginateCalls)(items, page);
+    const selected = items.find(item => item.id === selectedId);
+    const latest = (0, storedCustomerPresentation_1.latestCompletedStoredConsultation)(items, customerId);
+    (0, react_1.useEffect)(() => { setPage(pagination.page); }, [pagination.page]);
+    if (items.length === 0)
+        return __React.createElement("p", { className: "real-data-empty" }, "\uC774 \uACE0\uAC1D\uC758 \uC800\uC7A5\uB41C \uC0C1\uB2F4 \uC774\uB825\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.");
+    return __React.createElement(__React.Fragment, null,
+        __React.createElement("div", { className: "stored-customer-latest" },
+            __React.createElement("span", null, "\uC870\uD68C \uC774\uB825 \uC911 \uCD5C\uADFC \uC644\uB8CC \uC704\uD5D8\uB3C4"),
+            !latest ? __React.createElement("strong", null, "\uC870\uD68C \uBC94\uC704 \uB0B4 \uC644\uB8CC \uC0C1\uB2F4 \uC5C6\uC74C") : latest.risks.length === 0 ? __React.createElement("strong", null, "\uC800\uC7A5\uB41C \uC704\uD5D8 \uAE30\uB85D \uC5C6\uC74C")
+                : latest.risks.map(risk => __React.createElement("strong", { key: risk.id },
+                    stageLabels[risk.stage],
+                    " \u00B7 ",
+                    risk.score,
+                    "\uC810 / ",
+                    risk.level)),
+            latest && __React.createElement("small", null, (0, realDataApi_js_1.formatRealDataDate)(latest.endedAt ?? latest.startedAt))),
+        __React.createElement("div", { className: "table-scroll", role: "region", "aria-label": "\uC120\uD0DD \uACE0\uAC1D\uC758 \uC800\uC7A5 \uC0C1\uB2F4 \uBAA9\uB85D \u00B7 \uC881\uC740 \uD654\uBA74\uC5D0\uC11C \uC88C\uC6B0 \uC2A4\uD06C\uB864", tabIndex: 0 },
+            __React.createElement("table", { className: "appointment-table stored-customer-history-table" },
+                __React.createElement("caption", { className: "sr-only" }, "\uC800\uC7A5\uB41C \uD1B5\uD654\uBCC4 \uC0C1\uB2F4\uACFC \uC704\uD5D8\uB3C4"),
+                __React.createElement("thead", null,
+                    __React.createElement("tr", null,
+                        __React.createElement("th", { scope: "col" }, "\uC0C1\uB2F4 \uC815\uBCF4"),
+                        __React.createElement("th", { scope: "col" }, "\uC0C1\uD0DC"),
+                        __React.createElement("th", { scope: "col" }, "\uC704\uD5D8\uB3C4"),
+                        __React.createElement("th", { scope: "col" }, "\uC0C1\uC138"))),
+                __React.createElement("tbody", null, pagination.items.map(item => __React.createElement("tr", { key: item.id },
+                    __React.createElement("td", null,
+                        __React.createElement("strong", { className: "stored-customer-purpose", title: item.purpose || '상담 목적 미기록' }, item.purpose || '상담 목적 미기록'),
+                        __React.createElement("time", { className: "real-data-meta", dateTime: item.endedAt ?? item.startedAt }, (0, realDataApi_js_1.formatRealDataDate)(item.endedAt ?? item.startedAt))),
+                    __React.createElement("td", null,
+                        __React.createElement("span", { className: "status-pill" }, item.status)),
+                    __React.createElement("td", null, item.risks.length === 0 ? __React.createElement("span", { className: "real-data-meta" }, "\uAE30\uB85D \uC5C6\uC74C") : item.risks.map(risk => __React.createElement("span", { className: "stored-customer-risk", key: risk.id },
+                        stageLabels[risk.stage],
+                        " \u00B7 ",
+                        risk.score,
+                        "\uC810 / ",
+                        risk.level))),
+                    __React.createElement("td", null,
+                        __React.createElement("button", { type: "button", className: "text-button", "aria-label": `${item.id} 저장 상담 상세 보기`, onClick: () => setSelectedId(item.id) },
+                            "\uC0C1\uC138 \uBCF4\uAE30",
+                            __React.createElement(Icon_1.Icon, { name: "chevron", size: 13 })))))))),
+        pagination.totalPages > 1 && __React.createElement("nav", { className: "call-pagination", "aria-label": "\uC800\uC7A5 \uC0C1\uB2F4 \uC774\uB825 \uD398\uC774\uC9C0" },
+            __React.createElement("button", { type: "button", "aria-label": "\uC774\uC804 \uC800\uC7A5 \uC0C1\uB2F4 \uD398\uC774\uC9C0", disabled: pagination.page === 1, onClick: () => setPage(pagination.page - 1) },
+                __React.createElement(Icon_1.Icon, { name: "chevron", className: "previous-chevron", size: 16 })),
+            __React.createElement("span", { role: "status", "aria-live": "polite" },
+                pagination.page,
+                " / ",
+                pagination.totalPages),
+            __React.createElement("button", { type: "button", "aria-label": "\uB2E4\uC74C \uC800\uC7A5 \uC0C1\uB2F4 \uD398\uC774\uC9C0", disabled: pagination.page === pagination.totalPages, onClick: () => setPage(pagination.page + 1) },
+                __React.createElement(Icon_1.Icon, { name: "chevron", size: 16 }))),
+        selected && __React.createElement(Modal_1.Modal, { title: "\uC800\uC7A5 \uC0C1\uB2F4 \uAE30\uB85D", eyebrow: "KCM \u00B7 \uACE0\uAC1D \uC774\uB825", className: "stored-customer-modal", onClose: () => setSelectedId(null) },
+            __React.createElement("p", { className: "real-data-id" },
+                "\uACE0\uAC1D ",
+                customerId,
+                " \u00B7 \uB9E4\uC7A5 ",
+                selected.storeId),
+            __React.createElement(StoredConsultationList, { items: [selected] }),
+            __React.createElement("p", { className: "real-data-notice" }, "DB\uC5D0 \uC800\uC7A5\uB41C \uC0C1\uB2F4\u00B7\uB2E8\uACC4\uBCC4 \uC704\uD5D8 \uAE30\uB85D\uC785\uB2C8\uB2E4. \uD604\uC7AC \uC218\uC2E0\uD55C \uD1B5\uD654\uC640 \uD569\uC0B0\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
+            __React.createElement("div", { className: "modal-actions" },
+                __React.createElement("button", { className: "button button-secondary", onClick: () => setSelectedId(null) }, "\uC0C1\uB2F4 \uAE30\uB85D \uB2EB\uAE30"))));
 }
 function StoredCustomers({ onAvailability }) {
     const [items, setItems] = (0, react_1.useState)([]);
@@ -3758,31 +3889,29 @@ function StoredCustomers({ onAvailability }) {
         const search = query.trim().toLocaleLowerCase('ko-KR');
         return items.filter(item => `${item.id} ${item.nameMasked} ${item.phoneMasked} ${item.latestPurpose}`.toLocaleLowerCase('ko-KR').includes(search));
     }, [items, query]);
-    const pages = Math.max(1, Math.ceil(filtered.length / 5));
-    const currentPage = Math.min(page, pages);
-    const visible = filtered.slice((currentPage - 1) * 5, currentPage * 5);
+    const pagination = (0, callPagination_1.paginateCalls)(filtered, page);
+    (0, react_1.useEffect)(() => { setPage(pagination.page); }, [pagination.page]);
+    const { totalPages: pages, page: currentPage, items: visible } = pagination;
     const choose = (id) => { setSelectedId(id); setLimit(5); };
-    return __React.createElement("section", { className: "card real-data-section", "aria-label": "\uC800\uC7A5\uB41C \uACE0\uAC1D\uACFC \uC0C1\uB2F4 \uC774\uB825" },
+    return __React.createElement("section", { className: "card real-data-section stored-customers", "aria-label": "\uC800\uC7A5\uB41C \uACE0\uAC1D\uACFC \uC0C1\uB2F4 \uC774\uB825" },
         __React.createElement("div", { className: "card-heading real-data-header" },
-            __React.createElement("div", null,
-                __React.createElement("h2", null, "\uC800\uC7A5\uB41C \uACE0\uAC1D"),
-                __React.createElement("p", { className: "real-data-notice" }, "\uD604\uC7AC \uB9E4\uC7A5\uC758 \uCD5C\uADFC \uC0C1\uB2F4 \uACE0\uAC1D \uCD5C\uB300 20\uBA85\uC744 \uC870\uD68C\uD569\uB2C8\uB2E4. \uACE0\uAC1D \uC815\uBCF4\uB294 \uB9C8\uC2A4\uD0B9\uD574 \uD45C\uC2DC\uD569\uB2C8\uB2E4.")),
-            __React.createElement("button", { className: "button button-secondary", disabled: availability === 'loading', onClick: () => setReloadKey(key => key + 1) },
+            __React.createElement("h2", null, "\uC800\uC7A5\uB41C \uACE0\uAC1D"),
+            availability === 'configured' && items.length > 0 && __React.createElement("div", { className: "real-data-tools" },
+                __React.createElement("label", { className: "search-field" },
+                    __React.createElement(Icon_1.Icon, { name: "search", size: 15 }),
+                    __React.createElement("input", { type: "search", value: query, placeholder: "\uACE0\uAC1D ID\u00B7\uC774\uB984\u00B7\uC0C1\uB2F4 \uBAA9\uC801 \uAC80\uC0C9", "aria-label": "\uC800\uC7A5\uB41C \uACE0\uAC1D \uAC80\uC0C9", onChange: event => { setQuery(event.target.value); setPage(1); setSelectedId(''); } })),
+                __React.createElement("span", { className: "count-label" },
+                    filtered.length,
+                    "\uBA85")),
+            errorCode !== 'REAL_DATA_ACCESS_RESTRICTED' && __React.createElement("button", { className: "button button-secondary", disabled: availability === 'loading', onClick: () => setReloadKey(key => key + 1) },
                 __React.createElement(Icon_1.Icon, { name: "refresh", size: 14 }),
                 "\uC0C8\uB85C\uACE0\uCE68")),
         availability === 'loading' ? __React.createElement("p", { className: "real-data-empty", role: "status" }, "\uC800\uC7A5\uB41C \uACE0\uAC1D\uC744 \uBD88\uB7EC\uC624\uB294 \uC911\uC785\uB2C8\uB2E4.")
             : availability !== 'configured' ? __React.createElement("div", { className: `real-data-${availability === 'unconfigured' ? 'notice' : 'error'}`, role: "status" },
                 __React.createElement("p", null, (0, realDataApi_js_1.realDataErrorMessage)(errorCode)),
-                __React.createElement("button", { className: "button button-secondary", onClick: () => setReloadKey(key => key + 1) }, "\uB2E4\uC2DC \uC2DC\uB3C4"))
+                errorCode !== 'REAL_DATA_ACCESS_RESTRICTED' && __React.createElement("button", { className: "button button-secondary", onClick: () => setReloadKey(key => key + 1) }, "\uB2E4\uC2DC \uC2DC\uB3C4"))
                 : items.length === 0 ? __React.createElement("p", { className: "real-data-empty" }, "\uD604\uC7AC \uB9E4\uC7A5\uC5D0 \uC800\uC7A5\uB41C \uC0C1\uB2F4 \uACE0\uAC1D\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.")
                     : __React.createElement(__React.Fragment, null,
-                        __React.createElement("div", { className: "real-data-tools" },
-                            __React.createElement("label", { className: "search-field" },
-                                __React.createElement(Icon_1.Icon, { name: "search", size: 15 }),
-                                __React.createElement("input", { type: "search", value: query, placeholder: "\uACE0\uAC1D ID\u00B7\uB9C8\uC2A4\uD0B9 \uC774\uB984\u00B7\uC0C1\uB2F4 \uBAA9\uC801 \uAC80\uC0C9", "aria-label": "\uC800\uC7A5\uB41C \uACE0\uAC1D \uAC80\uC0C9", onChange: event => { setQuery(event.target.value); setPage(1); setSelectedId(''); } })),
-                            __React.createElement("span", { className: "count-label" },
-                                filtered.length,
-                                "\uBA85")),
                         __React.createElement("div", { className: "real-data-grid" },
                             __React.createElement("div", { className: "real-data-list" },
                                 __React.createElement("div", { className: "table-scroll real-data-table-scroll", role: "region", tabIndex: 0, "aria-label": "\uC800\uC7A5\uB41C \uACE0\uAC1D \uBAA9\uB85D" },
@@ -3795,49 +3924,62 @@ function StoredCustomers({ onAvailability }) {
                                         __React.createElement("tbody", null, visible.map(item => __React.createElement("tr", { key: item.id, className: selectedId === item.id ? 'selected-row' : '' },
                                             __React.createElement("td", null,
                                                 __React.createElement("button", { className: "customer-select", onClick: () => choose(item.id), "aria-pressed": selectedId === item.id },
-                                                    __React.createElement("span", null,
-                                                        __React.createElement("strong", null, item.nameMasked),
-                                                        __React.createElement("small", null, item.phoneMasked || '연락처 미확인'))),
+                                                    __React.createElement("strong", null, item.nameMasked),
+                                                    __React.createElement("span", { className: "sr-only" }, item.phoneMasked || '연락처 미확인')),
                                                 __React.createElement("span", { className: "real-data-id" }, item.id)),
                                             __React.createElement("td", null,
-                                                __React.createElement("strong", null, item.latestPurpose || '상담 목적 미기록'),
+                                                __React.createElement("strong", { title: item.latestPurpose || '상담 목적 미기록' }, item.latestPurpose || '상담 목적 미기록'),
                                                 __React.createElement("small", { className: "real-data-meta" }, (0, realDataApi_js_1.formatRealDataDate)(item.latestConsultationAt))),
                                             __React.createElement("td", null,
                                                 __React.createElement("span", { className: "status-pill" }, item.latestStatus)))))),
                                     filtered.length === 0 && __React.createElement("p", { className: "real-data-empty" }, "\uAC80\uC0C9 \uC870\uAC74\uC5D0 \uB9DE\uB294 \uACE0\uAC1D\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.")),
-                                pages > 1 && __React.createElement("div", { className: "real-data-pagination", "aria-label": "\uC800\uC7A5\uB41C \uACE0\uAC1D \uBAA9\uB85D \uD398\uC774\uC9C0" },
-                                    __React.createElement("button", { className: "button button-secondary", disabled: currentPage === 1, onClick: () => setPage(currentPage - 1) }, "\uC774\uC804"),
-                                    __React.createElement("span", null,
+                                pages > 1 && __React.createElement("nav", { className: "call-pagination", "aria-label": "\uC800\uC7A5\uB41C \uACE0\uAC1D \uBAA9\uB85D \uD398\uC774\uC9C0" },
+                                    __React.createElement("button", { type: "button", "aria-label": "\uC774\uC804 \uC800\uC7A5 \uACE0\uAC1D \uD398\uC774\uC9C0", disabled: currentPage === 1, onClick: () => setPage(currentPage - 1) },
+                                        __React.createElement(Icon_1.Icon, { name: "chevron", className: "previous-chevron", size: 16 })),
+                                    __React.createElement("span", { role: "status", "aria-live": "polite" },
                                         currentPage,
                                         " / ",
                                         pages),
-                                    __React.createElement("button", { className: "button button-secondary", disabled: currentPage === pages, onClick: () => setPage(currentPage + 1) }, "\uB2E4\uC74C"))),
+                                    __React.createElement("button", { type: "button", "aria-label": "\uB2E4\uC74C \uC800\uC7A5 \uACE0\uAC1D \uD398\uC774\uC9C0", disabled: currentPage === pages, onClick: () => setPage(currentPage + 1) },
+                                        __React.createElement(Icon_1.Icon, { name: "chevron", size: 16 })))),
                             __React.createElement("div", { className: "real-data-detail", "aria-label": "\uC120\uD0DD\uD55C \uACE0\uAC1D\uC758 \uC800\uC7A5 \uC0C1\uB2F4 \uC774\uB825" }, !selected ? __React.createElement("p", { className: "real-data-empty" }, "\uACE0\uAC1D\uC744 \uC120\uD0DD\uD558\uBA74 \uC800\uC7A5\uB41C \uC0C1\uB2F4 \uC774\uB825\uC744 \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") : __React.createElement(__React.Fragment, null,
                                 __React.createElement("div", { className: "real-data-history-heading" },
-                                    __React.createElement("h3", null,
-                                        selected.nameMasked,
-                                        " \u00B7 \uC800\uC7A5 \uC0C1\uB2F4 \uC774\uB825"),
+                                    __React.createElement("div", null,
+                                        __React.createElement("h3", null,
+                                            selected.nameMasked,
+                                            " \u00B7 \uC800\uC7A5 \uC0C1\uB2F4 \uC774\uB825"),
+                                        __React.createElement("p", { className: "real-data-id" },
+                                            selected.id,
+                                            " \u00B7 ",
+                                            selected.phoneMasked || '연락처 미확인')),
                                     selected.privacyConsent && __React.createElement("button", { className: "button button-secondary", onClick: () => setHistoryKey(key => key + 1) }, "\uB2E4\uC2DC \uC870\uD68C")),
-                                __React.createElement("p", { className: "real-data-id" }, selected.id),
-                                selected.privacyConsent && __React.createElement("div", { className: "briefing-facts real-data-facts", "aria-label": "\uD604\uC7AC \uC774\uC6A9 \uC0C1\uD488\uACFC \uC694\uAE08\uC81C" },
-                                    __React.createElement("div", null,
-                                        __React.createElement("span", null, "\uD604\uC7AC \uC774\uC6A9 \uC0C1\uD488"),
-                                        __React.createElement("strong", null, selected.currentProduct ? `${selected.currentProduct.name} · ${selected.currentProduct.storageGb}GB · ${selected.currentProduct.color}` : '미기록')),
-                                    __React.createElement("div", null,
-                                        __React.createElement("span", null, "\uD604\uC7AC \uC774\uC6A9 \uC694\uAE08\uC81C"),
-                                        __React.createElement("strong", null, selected.currentPlan ? `${selected.currentPlan.name} · 월 ${selected.currentPlan.monthlyFee.toLocaleString('ko-KR')}원` : '미기록'))),
+                                selected.privacyConsent && __React.createElement("details", { className: "stored-customer-product" },
+                                    __React.createElement("summary", null, "\uC774\uC6A9 \uC0C1\uD488\u00B7\uC694\uAE08\uC81C"),
+                                    __React.createElement("div", { className: "briefing-facts real-data-facts", "aria-label": "\uD604\uC7AC \uC774\uC6A9 \uC0C1\uD488\uACFC \uC694\uAE08\uC81C" },
+                                        __React.createElement("div", null,
+                                            __React.createElement("span", null, "\uD604\uC7AC \uC774\uC6A9 \uC0C1\uD488"),
+                                            __React.createElement("strong", null, selected.currentProduct ? `${selected.currentProduct.name} · ${selected.currentProduct.storageGb}GB · ${selected.currentProduct.color}` : '미기록')),
+                                        __React.createElement("div", null,
+                                            __React.createElement("span", null, "\uD604\uC7AC \uC774\uC6A9 \uC694\uAE08\uC81C"),
+                                            __React.createElement("strong", null, selected.currentPlan ? `${selected.currentPlan.name} · 월 ${selected.currentPlan.monthlyFee.toLocaleString('ko-KR')}원` : '미기록')))),
                                 !selected.privacyConsent ? __React.createElement("p", { className: "real-data-notice" }, (0, realDataApi_js_1.realDataErrorMessage)('CUSTOMER_PRIVACY_RESTRICTED'))
                                     : history.customerId !== selected.id || history.limit !== limit || history.status === 'loading' ? __React.createElement("p", { className: "real-data-empty", role: "status" }, "\uC0C1\uB2F4 \uC774\uB825\uC744 \uBD88\uB7EC\uC624\uB294 \uC911\uC785\uB2C8\uB2E4.")
                                         : history.status === 'error' ? __React.createElement("div", { className: "real-data-error", role: "status" },
                                             __React.createElement("p", null, (0, realDataApi_js_1.realDataErrorMessage)(history.code)),
                                             __React.createElement("button", { className: "button button-secondary", onClick: () => setHistoryKey(key => key + 1) }, "\uB2E4\uC2DC \uC2DC\uB3C4"))
                                             : __React.createElement(__React.Fragment, null,
-                                                __React.createElement(StoredConsultationList, { items: history.items }),
-                                                limit === 5 && history.items.length === 5 && __React.createElement("button", { className: "button button-secondary", onClick: () => setLimit(20) }, "\uCD5C\uADFC \uC774\uB825 \uCD5C\uB300 20\uAC74 \uBCF4\uAE30"),
-                                                __React.createElement("p", { className: "real-data-notice" },
+                                                __React.createElement(StoredCustomerHistory, { key: selected.id, items: history.items, customerId: selected.id }),
+                                                limit === 5 && history.items.length === 5 && __React.createElement("button", { className: "button button-secondary stored-history-more", onClick: () => setLimit(20) }, "\uCD5C\uADFC \uC774\uB825 \uCD5C\uB300 20\uAC74 \uBCF4\uAE30"),
+                                                __React.createElement("p", { className: "sr-only" },
                                                     "\uCD5C\uADFC ",
                                                     limit,
-                                                    "\uAC74 \uBC94\uC704\uC758 \uC800\uC7A5 \uAE30\uB85D\uC785\uB2C8\uB2E4. \uD1B5\uD654\uBCC4\u00B7\uB2E8\uACC4\uBCC4 \uC810\uC218\uB294 \uAC01\uAC01 \uD45C\uC2DC\uD569\uB2C8\uB2E4.")))))));
+                                                    "\uAC74 \u00B7 \uD1B5\uD654\uBCC4\u00B7\uB2E8\uACC4\uBCC4 \uB3C5\uB9BD \uAE30\uB85D")))))),
+        __React.createElement("details", { className: "stored-customer-scope" },
+            __React.createElement("summary", null, "\uC870\uD68C \uBC94\uC704"),
+            __React.createElement("p", { className: "real-data-notice" },
+                "\uD604\uC7AC \uB9E4\uC7A5\uC758 \uCD5C\uADFC \uC0C1\uB2F4 \uACE0\uAC1D \uCD5C\uB300 20\uBA85\uC744 \uC870\uD68C\uD569\uB2C8\uB2E4. \uC120\uD0DD\uD55C \uACE0\uAC1D\uC758 \uCD5C\uADFC \uC0C1\uB2F4 ",
+                limit,
+                "\uAC74\uC744 \uC870\uD68C\uD558\uBA70, \uC704\uD5D8\uB3C4\uB294 \uD1B5\uD654\uBCC4\u00B7\uB2E8\uACC4\uBCC4 \uB3C5\uB9BD \uAE30\uB85D\uC785\uB2C8\uB2E4. \uC774\uB984\uACFC \uC5F0\uB77D\uCC98\uB294 \uB9C8\uC2A4\uD0B9\uD574 \uD45C\uC2DC\uD558\uBA70 DB\uC5D0 \uC800\uC7A5\uB41C \uAE30\uB85D\uB9CC \uC870\uD68C\uD569\uB2C8\uB2E4.")));
 }
 
 },
@@ -6058,6 +6200,17 @@ function formatRiskScore(score) {
 }
 
 },
+"src/lib/storedCustomerPresentation":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.latestCompletedStoredConsultation = latestCompletedStoredConsultation;
+/** A display-only choice: never recalculate risk or substitute an older scored call. */
+function latestCompletedStoredConsultation(items, customerId) {
+    return items.filter(item => item.customerId === customerId && item.status === '완료')
+        .slice().reverse().sort((a, b) => Date.parse(b.endedAt ?? b.startedAt) - Date.parse(a.endedAt ?? a.startedAt))[0];
+}
+
+},
 "src/lib/uiText":function(module,exports,require){const __React=require('react');
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -6074,6 +6227,136 @@ function uiText(value) {
         .replace(/데모 관리자/g, '지원 담당')
         .replace(/\s*데모점/g, '점')
         .trim();
+}
+
+},
+"src/live/CustomerCallHistory":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CustomerCallHistory = CustomerCallHistory;
+const react_1 = require("react");
+const Icon_1 = require("../components/Icon");
+const callPagination_1 = require("../lib/callPagination");
+const riskScoring_1 = require("../lib/riskScoring");
+const customerHistory_1 = require("./customerHistory");
+const liveCalls_1 = require("./liveCalls");
+const livePresentation_1 = require("./livePresentation");
+function endedTime(at) {
+    if (!at)
+        return null;
+    const date = new Date(at);
+    return Number.isNaN(date.getTime()) ? null : {
+        date: date.toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' }),
+        time: date.toLocaleTimeString('en-GB', { hour12: false }),
+    };
+}
+function CustomerCallHistory({ calls, onSelect }) {
+    const [customerKey, setCustomerKey] = (0, react_1.useState)('');
+    const [status, setStatus] = (0, react_1.useState)('all');
+    const [page, setPage] = (0, react_1.useState)(1);
+    const { groups, selectedGroup, filtered, pagination } = (0, customerHistory_1.customerCallHistory)(calls, customerKey, status, page);
+    (0, react_1.useEffect)(() => { setPage(pagination.page); }, [pagination.page]);
+    const latest = selectedGroup?.latestCompleted;
+    return __React.createElement("section", { className: "card live-customer-history customer-call-history", "aria-label": "\uACE0\uAC1D\uBCC4 \uC2E4\uC2DC\uAC04 \uD1B5\uD654 \uC774\uB825" },
+        __React.createElement("div", { className: "card-heading" },
+            __React.createElement("h2", null, "\uACE0\uAC1D\uBCC4 \uD1B5\uD654 \uC774\uB825"),
+            __React.createElement("div", { className: "customer-history-filters" },
+                __React.createElement("label", null,
+                    __React.createElement("span", null, "\uACE0\uAC1D \uC120\uD0DD"),
+                    __React.createElement("select", { value: customerKey, onChange: event => { setCustomerKey(event.target.value); setPage(1); } },
+                        __React.createElement("option", { value: "" }, "\uC804\uCCB4 \uACE0\uAC1D"),
+                        groups.map(group => __React.createElement("option", { value: group.key, key: group.key }, group.customerId || `미식별 통화 · ${group.calls[0].call_id}`)))),
+                __React.createElement("label", null,
+                    __React.createElement("span", null, "\uC0C1\uB2F4 \uC0C1\uD0DC"),
+                    __React.createElement("select", { value: status, onChange: event => { setStatus(event.target.value); setPage(1); } },
+                        __React.createElement("option", { value: "all" }, "\uC804\uCCB4 \uC0C1\uD0DC"),
+                        ['connecting', 'live', 'ended', 'error'].map(value => __React.createElement("option", { key: value, value: value }, liveCalls_1.liveStatusLabels[value])))),
+                __React.createElement("span", { className: "customer-history-count", role: "status", "aria-live": "polite" },
+                    "\uC870\uD68C ",
+                    filtered.length,
+                    " / ",
+                    calls.length,
+                    "\uAC74"))),
+        __React.createElement("div", { className: "customer-history-latest" }, selectedGroup ? __React.createElement(__React.Fragment, null,
+            __React.createElement("span", null, selectedGroup.customerId ? '고객 최근 완료 통화 위험도' : '미식별 통화 위험도'),
+            __React.createElement("strong", null, latest?.final_result ? (0, riskScoring_1.formatRiskScore)(latest.final_result.risk_score) : latest ? '점수 확정 보류' : '완료 통화 없음')) : __React.createElement("span", null, "\uACE0\uAC1D\uC744 \uC120\uD0DD\uD558\uBA74 \uCD5C\uADFC \uC644\uB8CC \uD1B5\uD654 \uC704\uD5D8\uB3C4\uB97C \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.")),
+        filtered.length > 0 ? __React.createElement("div", { className: "customer-history-scroll", role: "region", "aria-label": "\uACE0\uAC1D\uBCC4 \uD1B5\uD654 \uBAA9\uB85D \u00B7 \uC88C\uC6B0 \uC2A4\uD06C\uB864", tabIndex: 0 },
+            __React.createElement("table", { className: "customer-history-table" },
+                __React.createElement("thead", null,
+                    __React.createElement("tr", null,
+                        __React.createElement("th", { scope: "col" }, "\uACE0\uAC1D / \uC2DD\uBCC4 \uC815\uBCF4"),
+                        __React.createElement("th", { scope: "col" }, "\uC0C1\uB2F4 \uC0C1\uD0DC"),
+                        __React.createElement("th", { scope: "col" }, "\uC774\uBC88 \uD1B5\uD654 \uC704\uD5D8\uB3C4"),
+                        __React.createElement("th", { scope: "col" }, "\uC885\uB8CC \uC2DC\uAC01"),
+                        __React.createElement("th", { scope: "col" }, "\uC804\uC1A1 \uC0C1\uD0DC"),
+                        __React.createElement("th", { scope: "col" }, "\uAE30\uB85D"))),
+                __React.createElement("tbody", null, pagination.items.map(call => {
+                    const ended = endedTime(call.ended_at);
+                    return __React.createElement("tr", { key: call.call_id },
+                        __React.createElement("td", { className: "customer-history-identifiers" },
+                            __React.createElement("span", { title: call.customer_id || '미식별' }, call.customer_id || '미식별 고객'),
+                            __React.createElement("span", { title: call.call_id },
+                                "\uD1B5\uD654: ",
+                                call.call_id),
+                            __React.createElement("span", { className: "sr-only" },
+                                "\uC0C1\uB2F4: ",
+                                call.consultation_id || '확인 필요')),
+                        __React.createElement("td", null,
+                            __React.createElement("span", { className: `live-badge ${call.status}` }, liveCalls_1.liveStatusLabels[call.status])),
+                        __React.createElement("td", { className: "customer-history-score" }, call.final_result ? __React.createElement("strong", null, (0, riskScoring_1.formatRiskScore)(call.final_result.risk_score)) : __React.createElement("span", null, call.status === 'ended' ? '최종 위험도 확정 보류' : '종료 후 위험도 확정')),
+                        __React.createElement("td", { className: "customer-history-time" }, ended ? __React.createElement("time", { dateTime: call.ended_at },
+                            __React.createElement("span", null, ended.date),
+                            __React.createElement("span", null, ended.time)) : __React.createElement("span", null, call.status === 'live' ? '진행 중' : call.status === 'error' || call.status === 'ended' ? '종료 확인 필요' : '종료 전')),
+                        __React.createElement("td", { className: "customer-history-delivery" }, call.status === 'ended' || call.final_result ? (0, livePresentation_1.deliveryLabel)(call) : '종료 후 전송 확인'),
+                        __React.createElement("td", null,
+                            __React.createElement("button", { type: "button", className: "text-button customer-history-detail", onClick: () => onSelect(call.call_id) },
+                                "\uC0C1\uC138 \uBCF4\uAE30",
+                                __React.createElement("span", { className: "sr-only" },
+                                    " ",
+                                    call.call_id),
+                                __React.createElement(Icon_1.Icon, { name: "chevron", size: 13 }))));
+                })))) : __React.createElement("div", { className: "live-empty customer-history-empty", role: "status" },
+            __React.createElement("strong", null, calls.length === 0 ? '현재 수신한 통화 이력이 없습니다.' : '선택한 조건의 통화 이력이 없습니다.'),
+            calls.length === 0 && __React.createElement("p", null, "\uACE0\uAC1D\uC6A9 AI \uC0C1\uB2F4\uC774 \uC5F0\uACB0\uB418\uBA74 \uACE0\uAC1D ID\uC640 \uD1B5\uD654\uBCC4 \uAE30\uB85D\uC744 \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.")),
+        pagination.totalPages > 1 && __React.createElement("nav", { className: "call-pagination customer-history-pagination", "aria-label": "\uACE0\uAC1D\uBCC4 \uD1B5\uD654 \uC774\uB825 \uD398\uC774\uC9C0" },
+            __React.createElement("span", { className: "customer-history-page-count" },
+                (pagination.page - 1) * callPagination_1.CALLS_PER_PAGE + 1,
+                "\u2013",
+                Math.min(pagination.page * callPagination_1.CALLS_PER_PAGE, filtered.length),
+                " / ",
+                filtered.length,
+                "\uAC74"),
+            __React.createElement("button", { type: "button", "aria-label": "\uC774\uC804 \uD1B5\uD654 \uC774\uB825 \uD398\uC774\uC9C0", disabled: pagination.page === 1, onClick: () => setPage(pagination.page - 1) },
+                __React.createElement(Icon_1.Icon, { name: "chevron", className: "previous-chevron", size: 16 })),
+            __React.createElement("span", { role: "status", "aria-live": "polite", "aria-atomic": "true" },
+                __React.createElement("span", { className: "sr-only" }, "\uD604\uC7AC \uD398\uC774\uC9C0 "),
+                pagination.page,
+                " / ",
+                pagination.totalPages),
+            __React.createElement("button", { type: "button", "aria-label": "\uB2E4\uC74C \uD1B5\uD654 \uC774\uB825 \uD398\uC774\uC9C0", disabled: pagination.page === pagination.totalPages, onClick: () => setPage(pagination.page + 1) },
+                __React.createElement(Icon_1.Icon, { name: "chevron", size: 16 }))),
+        __React.createElement("details", { className: "live-call-id customer-history-scope" },
+            __React.createElement("summary", null, "\uC870\uD68C \uBC94\uC704"),
+            __React.createElement("p", { className: "live-small" }, "\uD604\uC7AC \uC218\uC2E0\uD55C \uAE30\uB85D\uB9CC \uD45C\uC2DC\uD558\uBA70 \uC11C\uBE44\uC2A4 \uC7AC\uC2DC\uC791 \uC804\uC758 \uC774\uB825\uC740 \uC870\uD68C\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uD1B5\uD654\uBCC4 \uC704\uD5D8\uB3C4\uB294 \uB3C5\uB9BD \uAE30\uB85D\uC774\uBA70 \uD569\uC0B0\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. n8n \uC218\uC2E0 \uC751\uB2F5\uB9CC\uC73C\uB85C DB \uC800\uC7A5 \uC131\uACF5\uC744 \uD655\uC778\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.")));
+}
+
+},
+"src/live/customerHistory":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.customerCallHistory = customerCallHistory;
+const callPagination_js_1 = require("../lib/callPagination.js");
+const livePresentation_js_1 = require("./livePresentation.js");
+/** Filters and pages affect visible rows only; the customer's latest result uses all received calls. */
+function customerCallHistory(calls, customerKey, status, requestedPage) {
+    const groups = (0, livePresentation_js_1.liveCustomerHistory)(calls);
+    const selectedGroup = groups.find(group => group.key === customerKey) ?? null;
+    const selectedIds = new Set(selectedGroup?.calls.map(call => call.call_id));
+    const customerCalls = customerKey ? calls.filter(call => selectedIds.has(call.call_id)) : calls;
+    const filtered = customerCalls.slice().reverse()
+        .sort((a, b) => (Date.parse(b.ended_at ?? b.started_at ?? b.updated_at) || 0) - (Date.parse(a.ended_at ?? a.started_at ?? a.updated_at) || 0))
+        .filter(call => status === 'all' || call.status === status);
+    return { groups, selectedGroup, filtered, pagination: (0, callPagination_js_1.paginateCalls)(filtered, requestedPage) };
 }
 
 },
@@ -6324,9 +6607,8 @@ const Icon_1 = require("../components/Icon");
 const liveCalls_1 = require("./liveCalls");
 const LiveRiskSignals_1 = require("./LiveRiskSignals");
 const LiveCallBriefing_1 = require("./LiveCallBriefing");
-const livePresentation_1 = require("./livePresentation");
+const CustomerCallHistory_1 = require("./CustomerCallHistory");
 const liveNotices_1 = require("./liveNotices");
-const riskScoring_1 = require("../lib/riskScoring");
 require("./live-calls.css");
 function clock(at) {
     return at ? new Date(at).toLocaleTimeString('ko-KR', { hour12: false }) : '—';
@@ -6427,38 +6709,7 @@ function LiveConsultations({ view = 'intake' }) {
         connection === 'reconnecting' && __React.createElement("p", { className: "live-connection-note", role: "status" },
             "\uC2E4\uC2DC\uAC04 \uC0C1\uB2F4 \uC5F0\uACB0\uC744 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4. ",
             __React.createElement("button", { className: "text-button", onClick: () => setReconnectVersion(value => value + 1) }, "\uB2E4\uC2DC \uC5F0\uACB0")),
-        view === 'history' && __React.createElement("section", { className: "card live-customer-history", "aria-label": "\uACE0\uAC1D\uBCC4 \uC2E4\uC2DC\uAC04 \uD1B5\uD654 \uC774\uB825" },
-            __React.createElement("div", { className: "card-heading" },
-                __React.createElement("h2", null, "\uACE0\uAC1D\uBCC4 \uD1B5\uD654 \uC774\uB825")),
-            calls.length === 0 && __React.createElement("div", { className: "live-empty", role: "status" },
-                __React.createElement("strong", null, "\uD604\uC7AC \uC218\uC2E0\uD55C \uD1B5\uD654 \uC774\uB825\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."),
-                __React.createElement("p", null, "\uACE0\uAC1D\uC6A9 AI \uC0C1\uB2F4\uC774 \uC5F0\uACB0\uB418\uBA74 \uACE0\uAC1D ID\uC640 \uD1B5\uD654\uBCC4 \uAE30\uB85D\uC744 \uC5EC\uAE30\uC5D0\uC11C \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.")),
-            (0, livePresentation_1.liveCustomerHistory)(calls).map(group => __React.createElement("section", { className: "live-customer-group", key: group.key, "aria-label": group.customerId || '고객 미식별 통화 ' + group.calls[0].call_id },
-                __React.createElement("h3", null, group.customerId ? __React.createElement(__React.Fragment, null,
-                    "\uACE0\uAC1D ",
-                    __React.createElement("span", { className: "live-identifier" }, group.customerId)) : '고객 미식별 · 통화별 개별 표시'),
-                __React.createElement("p", { className: "live-customer-risk" },
-                    "\uCD5C\uADFC \uC644\uB8CC \uD1B5\uD654 \uC704\uD5D8\uB3C4: ",
-                    __React.createElement("strong", null, group.latestCompleted?.final_result ? (0, riskScoring_1.formatRiskScore)(group.latestCompleted.final_result.risk_score) : group.latestCompleted ? '점수 확정 보류' : '완료 통화 없음')),
-                group.calls.map(call => __React.createElement("div", { className: "live-intake-row", key: call.call_id },
-                    __React.createElement("div", null,
-                        __React.createElement("strong", { className: "live-identifier" }, call.call_id),
-                        __React.createElement("span", { className: `live-badge ${call.status}` }, liveCalls_1.liveStatusLabels[call.status]),
-                        __React.createElement("p", { className: "live-row-risk" },
-                            call.final_result ? (0, riskScoring_1.formatRiskScore)(call.final_result.risk_score) : call.status === 'ended' ? '최종 위험도 확정 보류' : '종료 후 위험도 확정',
-                            " ",
-                            __React.createElement("span", { className: "live-row-time" },
-                                "\u00B7 ",
-                                clock(call.ended_at ?? call.started_at))),
-                        call.status === 'ended' && __React.createElement("p", { className: "live-row-delivery" }, (0, livePresentation_1.deliveryLabel)(call))),
-                    __React.createElement("button", { className: "button button-secondary", onClick: () => setSelectedId(call.call_id) },
-                        "\uD1B5\uD654 \uAE30\uB85D \uBCF4\uAE30",
-                        __React.createElement("span", { className: "sr-only" },
-                            " ",
-                            call.call_id)))))),
-            __React.createElement("details", { className: "live-call-id" },
-                __React.createElement("summary", null, "\uC870\uD68C \uBC94\uC704"),
-                __React.createElement("p", { className: "live-small" }, "\uD604\uC7AC \uC218\uC2E0\uD55C \uAE30\uB85D\uC744 \uACE0\uAC1D ID\uB85C \uAD6C\uBD84\uD569\uB2C8\uB2E4. \uC11C\uBE44\uC2A4 \uC7AC\uC2DC\uC791 \uC804\uC758 \uC774\uB825\uC740 \uC774 \uD654\uBA74\uC5D0\uC11C \uC870\uD68C\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uAC01 \uD1B5\uD654 \uC704\uD5D8\uB3C4\uB294 \uB3C5\uB9BD \uAE30\uB85D\uC774\uBA70 \uD569\uC0B0\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."))),
+        view === 'history' && __React.createElement(CustomerCallHistory_1.CustomerCallHistory, { calls: calls, onSelect: setSelectedId }),
         view === 'intake' && displayed.length > 0 && __React.createElement("section", { className: "card live-intake", "aria-label": "\uC2E4\uC2DC\uAC04 AI \uC0C1\uB2F4 \uC778\uC785" },
             __React.createElement("div", { className: "card-heading" },
                 __React.createElement("div", { className: "title-with-icon" },
@@ -7061,6 +7312,7 @@ function ModalPriceTool({ open, onClose, ...props }) {
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SecondaryPages = SecondaryPages;
+const react_1 = require("react");
 const ProductsPage_1 = require("./ProductsPage");
 const StoreManagementPage_1 = require("./StoreManagementPage");
 const SmartInventoryPage_1 = require("./SmartInventoryPage");
@@ -7068,7 +7320,10 @@ const InventoryPanel_1 = require("../components/InventoryPanel");
 const LiveConsultations_1 = require("../live/LiveConsultations");
 const customerName_1 = require("../lib/customerName");
 const StoredCustomers_1 = require("../components/StoredCustomers");
+const Tabs_1 = require("../components/Tabs");
+const customerViews = [{ id: 'live', label: '수신 통화 이력' }, { id: 'stored', label: '저장된 고객' }];
 function SecondaryPages({ page, data }) {
+    const [customerView, setCustomerView] = (0, react_1.useState)('live');
     if (page === 'inventory')
         return __React.createElement(SmartInventoryPage_1.SmartInventoryPage, { fallback: __React.createElement(InventoryPanel_1.InventoryPanel, { data: data, expanded: true }) });
     if (page === 'products')
@@ -7076,15 +7331,18 @@ function SecondaryPages({ page, data }) {
     if (page === 'stores')
         return __React.createElement(StoreManagementPage_1.StoreManagementPage, { data: data });
     if (page === 'customers')
-        return __React.createElement(__React.Fragment, null,
+        return __React.createElement("div", { className: "customers-page" },
             __React.createElement("div", { className: "page-heading" },
                 __React.createElement("div", null,
                     __React.createElement("span", { className: "eyebrow" }, "\uACE0\uAC1D\uAD00\uB9AC"),
                     __React.createElement("h1", null, "\uACE0\uAC1D\uAD00\uB9AC"),
                     __React.createElement("p", null, "\uACE0\uAC1D\uBCC4 \uD1B5\uD654 \uC774\uB825\uACFC \uBC29\uBB38 \uC608\uC57D \uC815\uBCF4\uB97C \uD655\uC778\uD558\uC138\uC694.")),
                 __React.createElement("span", { className: "small-badge" }, "\uC870\uD68C")),
-            __React.createElement(LiveConsultations_1.LiveConsultations, { view: "history" }),
-            __React.createElement(StoredCustomers_1.StoredCustomers, null),
+            __React.createElement(Tabs_1.Tabs, { id: "customers", label: "\uACE0\uAC1D \uAE30\uB85D \uC870\uD68C \uBC29\uC2DD", tabs: customerViews, active: customerView, onChange: setCustomerView }),
+            __React.createElement("section", { role: "tabpanel", hidden: customerView !== 'live', id: "customers-panel-live", "aria-labelledby": "customers-tab-live", tabIndex: 0 },
+                __React.createElement(LiveConsultations_1.LiveConsultations, { view: "history" })),
+            __React.createElement("section", { role: "tabpanel", hidden: customerView !== 'stored', id: "customers-panel-stored", "aria-labelledby": "customers-tab-stored", tabIndex: 0 },
+                __React.createElement(StoredCustomers_1.StoredCustomers, null)),
             __React.createElement("details", { className: "reference-data-details" },
                 __React.createElement("summary", null, "\uBCC4\uB3C4 \uCC38\uACE0 \uC790\uB8CC \u00B7 \uBC29\uBB38 \uC608\uC57D \uACE0\uAC1D"),
                 __React.createElement("section", { className: "card appointments-card", "aria-label": "\uBC29\uBB38 \uC608\uC57D \uACE0\uAC1D" },
@@ -8412,7 +8670,7 @@ const errorMessages = {
     REAL_DATA_CONFIG_INVALID: '저장 자료 조회 설정을 확인할 수 없습니다. 관리자에게 문의해 주세요.',
     HOME_STORE_NOT_CONFIGURED: '현재 매장 범위를 확인할 수 없습니다. 관리자에게 문의해 주세요.',
     REAL_DATA_ACCESS_DENIED: '저장 자료를 조회할 수 있는 권한을 확인해 주세요.',
-    REAL_DATA_ACCESS_RESTRICTED: '공개 환경의 직원 조회 접근 설정이 준비되지 않았습니다. 관리자에게 문의해 주세요.',
+    REAL_DATA_ACCESS_RESTRICTED: '직원 인증이 연결되기 전까지 공개 화면의 저장 자료 조회가 제한됩니다. 관리자에게 문의해 주세요.',
     REAL_DATA_UNAVAILABLE: '저장 자료를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
     REAL_DATA_TIMEOUT: '자료 조회가 지연되고 있습니다. 잠시 후 다시 시도해 주세요.',
     REAL_DATA_INVALID_RESPONSE: '조회한 자료를 확인할 수 없습니다. 다시 시도해 주세요.',

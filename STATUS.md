@@ -1084,3 +1084,33 @@ npm.cmd run dev
 
 ### 적용 상태
 - 수정은 작업 브랜치의 로컬 커밋에만 보관합니다. main/GitHub push·Render 배포는 수행하지 않았으며 공개 홈은 아직 이전 화면입니다. 고객관리 화면 조정은 이번 범위에서 진행하지 않았습니다.
+
+## 고객관리 목록·이력 압축과 저장 자료 접근 진단 — 2026-10-07
+
+### 기준과 변경
+- fetch한 origin/main `0ef0e8e2aa2f4274553cc3dfabd8befa6bac3ff0`에서 `fix/customers-compact-history`를 생성했습니다. 기존 주 작업 폴더와 다른 worktree의 수정·미추적 문서는 보존했습니다.
+- 고객관리의 수신 통화 이력과 저장 고객을 별도 탭으로 나눴습니다. 탭만 바꿀 때 컴포넌트를 유지하여 SSE 수신, 선택 고객, 검색·필터·페이지 상태가 유지됩니다.
+- 수신 통화는 고객/상담 상태 필터 후 5건씩 표시합니다. 필터 변경은 첫 페이지, 기록 축소는 유효 범위로 보정하며 5건 이하는 페이지 버튼을 숨깁니다. 같은 고객의 최근 완료 위험도는 전체 수신 이력에서 선택하고, 각 통화의 독립 위험도·전송 상태는 행에서 구분합니다. 미식별 통화는 각각 별도 고객 선택 항목입니다.
+- 저장 고객 목록과 조회된 상담 이력은 각각 5건씩 표시합니다. 최근 이력 5→최대20건 조회 정책과 개인정보 동의 제한을 유지합니다. 위험도는 ‘조회 이력 중 최근 완료 위험도’로 범위를 명시하고, 최신 기록의 점수 누락을 더 오래된 점수로 대체하지 않습니다. 위험도를 재계산하거나 합산하지 않습니다.
+- 긴 상담 목적은 목록에서 한 줄 미리보기와 title로 표시하고, 저장 상담 요약·전체 ID·단계별 위험도는 기존 Modal과 그대로 보존한 StoredConsultationList에서 확인합니다. 연락처는 선택 고객 정보에 표시하고 상품·요금제는 펼쳐 볼 수 있습니다. 기존 방문 예약 참고 자료는 접힌 영역에 유지합니다.
+- 고객관리 범위에서만 카드·표·제목·푸터 여백을 정리했습니다. 고객명13px/본문12px/보조정보11px를 유지하고 표 행은48px 기준입니다. 페이지 고정 높이·본문 overflow 숨김·글자 축소로 내용을 가리지 않았습니다. 모바일 표만 내부 가로 스크롤을 허용합니다.
+- 변경 파일: `src/pages/SecondaryPages.tsx`, `src/components/StoredCustomers.tsx`, `src/live/LiveConsultations.tsx`, `src/live/CustomerCallHistory.tsx`, `src/live/customerHistory.ts`, `src/live/live-calls.css`, `src/lib/storedCustomerPresentation.ts`, `src/services/realDataApi.ts`, `src/styles.css`, 관련 테스트4개, `00_KCM_미리보기.html`, `STATUS.md`.
+
+### 공개 저장 자료 조회 진단
+- Production read-only GET: `/health`200, `/api/data/status`200(configured/scopeConfigured=true), `/api/data/customers`와 `/api/data/appointments`503 `REAL_DATA_ACCESS_RESTRICTED`를 확인했습니다. status 응답은 설정 형식/매장 범위 확인이며 DB SELECT 성공을 의미하지 않습니다.
+- 원인은 `server/app.mjs`의 기존 공개 배포 접근 제한입니다. 배포 origin이 localhost가 아니면 저장 고객/예약·예약 브리핑 요청을 DB 조회 전에 차단합니다. Supabase key 변경으로 이 제한이 해제되지 않습니다. 직원 인증 구현이나 실제 인증 검증 경로는 현재 없습니다.
+- 이번에는 서버 guard·권한·환경변수를 변경하지 않았습니다. 화면 안내를 직원 인증 전 공개 조회 제한으로 명확히 했으며 영구 제한 상태에서는 무의미한 재시도 버튼을 숨겼습니다. 일시 조회 실패의 재시도는 유지합니다. 실제 DB 자료를 공개 노출하는 우회는 하지 않았습니다.
+
+### 실행한 검증
+- 전체 **902/902 테스트 통과**(기존893개 + 고객 이력 회귀9개), 실패/skip0. frontend `tsc --noEmit`, backend `tsc -p tsconfig.server.json`, production build 통과. 기존 Retell SDK chunk500kB 경고만 남습니다. 테스트 삭제·약화·의존성 변경은 없습니다. 로컬 HTTP 검사를 포함한 최종 전체 검사는 승인 환경에서 실행했습니다.
+- 자동 검사: 필터 후 페이지 이동/경계, 원본 보존, 전체 이력의 최신 위험도 유지, 최신 점수 미확정 시 과거 점수 대체 금지, 미식별 통화 분리, 저장 이력 고객별 분리·완료 상태·단계별60/0점 독립 보존, 빈 목록/범위 보정. 기존 공개 배포 guard 테스트도 유지·통과했습니다.
+- production dist를 외부 연결 없는 localhost fixture로 제공했습니다. 합성 통화19건(동일 고객11건), 저장 고객12명, 고객별 상담12건에서 마지막 페이지/5건 이하 페이지 숨김, 필터 빈 결과, 최근 완료60점과 진행 통화 미확정 구분, 저장 이력 페이지를 바꿔도 최신60점 유지, 통화/저장 상담 상세 열기·Escape 닫기·초점 복귀, 탭 왕복 후 검색/필터 보존을 확인했습니다.
+- 저장 자료 없음/고객 조회 실패/상담 조회 실패/이력 없음/공개 접근 제한을 확인했습니다. 지연된 첫 고객 응답 중 다른 고객으로 전환한 뒤 이전 기록이 섞이지 않았고, 목록12→3건 새로고침과 개인정보 미동의 고객의 조회 차단도 확인했습니다. HTML처럼 보이는 합성 요약은 텍스트로 표시되고 script 요소가 생성되지 않습니다.
+- 실제 CSS viewport1920×1080와1366×768에서 두 탭의 기본5행은 문서 크기가 viewport와 같고 페이지 가로/세로 스크롤이 없습니다. 390×844와320×720에서는 페이지 가로 넘침 없이 표 내부 가로 스크롤·필터 줄바꿈을 확인했습니다. 긴 저장 상담 Modal과 기존 실시간 Modal은 viewport 안에 있고 닫기 접근이 가능합니다. 좁은 화면/펼친 상품·참고 자료/여러 단계 위험도에는 필요한 세로 스크롤을 허용합니다.
+- 격리 화면에서 home/appointments/customers/support/products/inventory/marketing/stores/retell-test 9개 route의 기본 제목/본문 렌더링과 고객 화면 title을 확인했습니다. JS runtime 오류는 없었습니다. 브라우저 메시지 채널 오류3건은 별도 관측되었으며 원인은 미확정입니다. 격리 서버의 외부 API 오류 안내 확인은 실제 외부 업무 성공을 의미하지 않습니다.
+- 읽기 전용 코드 리뷰에서 중요한 상태·페이지·위험도 표시·권한 회귀를 발견하지 못했습니다. Retell/Monitor/SSE 수신·브리핑 조회·고성/위험 점수/n8n/스마트재고 업무 로직은 변경하지 않았습니다. LiveConsultations는 고객 이력 표시 분기만 교체했습니다.
+- `npm.cmd run preview:standalone`으로 HTML 갱신, inline JavaScript 문법 검사와 localhost HTTP 직접 실행으로 고객관리 탭/본문을 확인했습니다. 파일 더블클릭 실행은 별도 미검증입니다. 검증 fixture·로그·캡처는 Git 제외 `.cache/customers-layout/` 등에만 보관하며 실제 통화·사용자 저장 데이터 초기화·외부 DB write는 하지 않았습니다.
+
+### 적용 상태와 남은 범위
+- 이번 수정은 작업 브랜치 로컬 커밋에 보관하며 main 병합/GitHub push/Render 배포는 수행하지 않습니다. 공개 고객관리 화면은 아직 이전 버전입니다.
+- 실제 직원 인증과 허가된 저장 자료 조회 연결은 별도 범위입니다. 공개 조회 제한은 유지하며 이번 UI 변경만으로 저장 고객·예약이 Production에서 조회된다고 보고하지 않습니다. 실제 음성 통화·n8n/DB 저장 E2E도 이번에 실행하지 않았습니다.
