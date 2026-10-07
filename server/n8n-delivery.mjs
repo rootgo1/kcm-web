@@ -1,12 +1,25 @@
+import { createHmac, randomUUID } from 'node:crypto';
+
 /** Server-only configuration; no default customer identity or production URL. */
 export function n8nConfig(/** @type {NodeJS.ProcessEnv} */ env = process.env) {
   return {
     webhookUrl: env.N8N_WEBHOOK_URL?.trim() ?? '',
     // Do not silently repair whitespace or control characters in a shared secret.
-    webhookAuthToken: env.N8N_WEBHOOK_AUTH_TOKEN ?? '',
+    webhookJwtSecret: env.N8N_WEBHOOK_JWT_SECRET ?? '',
     demoCustomerId: env.KCM_DEMO_CUSTOMER_ID?.trim() || null,
     demoStoreId: env.KCM_DEMO_STORE_ID?.trim() || null,
   };
+}
+
+/** Fresh, short-lived authentication only: no call, customer or store data in the JWT. */
+function shortLivedJwt(/** @type {string} */ secret, /** @type {number} */ nowMs) {
+  if (typeof nowMs !== 'number' || !Number.isFinite(nowMs)) throw new Error();
+  const iat = Math.floor(nowMs / 1000);
+  if (!Number.isSafeInteger(iat) || iat < 0 || !Number.isSafeInteger(iat + 60)) throw new Error();
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const claims = Buffer.from(JSON.stringify({ iat, exp: iat + 60, jti: randomUUID() })).toString('base64url');
+  const unsigned = header + '.' + claims;
+  return unsigned + '.' + createHmac('sha256', secret).update(unsigned).digest('base64url');
 }
 
 /** Validate the store's existing ISO UTC timestamps; never invent or replace them. */
@@ -62,10 +75,10 @@ export function callResultPayload(/** @type {import('../src/live/types.js').Live
 /**
  * One attempt per call in this server process. No persistent queue or implicit retry:
  * after a lost response we cannot know whether the receiving workflow already ran.
- * @param {{liveCalls: ReturnType<import('./live-calls.mjs').createLiveCallStore>, webhookUrl: string, webhookAuthToken?: string,
- * fetchImpl?: typeof fetch, log?: (line: string) => void, timeoutMs?: number}} options
+ * @param {{liveCalls: ReturnType<import('./live-calls.mjs').createLiveCallStore>, webhookUrl: string, webhookJwtSecret?: string,
+ * fetchImpl?: typeof fetch, log?: (line: string) => void, timeoutMs?: number, now?: () => number}} options
  */
-export function createN8nDelivery({ liveCalls, webhookUrl, webhookAuthToken = '', fetchImpl = fetch, log = console.log, timeoutMs = 10_000 }) {
+export function createN8nDelivery({ liveCalls, webhookUrl, webhookJwtSecret = '', fetchImpl = fetch, log = console.log, timeoutMs = 10_000, now = Date.now }) {
   const controllers = new Set();
   let closed = false;
   const report = (/** @type {string} */ message) => { try { log(message); } catch { /* logging must not affect a call */ } };
@@ -84,10 +97,10 @@ export function createN8nDelivery({ liveCalls, webhookUrl, webhookAuthToken = ''
       const url = new URL(webhookUrl);
       if (url.protocol !== 'https:' || url.username || url.password || url.hash) throw new Error();
       failure = 'N8N_WEBHOOK_AUTH_MISSING';
-      if (!webhookAuthToken) throw new Error();
+      if (!webhookJwtSecret) throw new Error();
       failure = 'N8N_WEBHOOK_AUTH_INVALID';
       // JavaScript's $ anchor also matches before a final newline; compare the whole match.
-      if (typeof webhookAuthToken !== 'string' || /^[A-Za-z0-9_-]{32,256}$/.exec(webhookAuthToken)?.[0] !== webhookAuthToken) throw new Error();
+      if (typeof webhookJwtSecret !== 'string' || /^[A-Za-z0-9_-]{64,256}$/.exec(webhookJwtSecret)?.[0] !== webhookJwtSecret) throw new Error();
       failure = 'CUSTOMER_ID_MISSING';
       if (!call.customer_id) throw new Error();
       failure = 'RESULT_INVALID';
@@ -95,8 +108,9 @@ export function createN8nDelivery({ liveCalls, webhookUrl, webhookAuthToken = ''
       if (!validCallTimes(call)) { failure = 'CONSULTATION_TIMES_INVALID'; throw new Error(); }
       const payload = callResultPayload(call);
       failure = 'NETWORK_ERROR';
+      const authorization = 'Bearer ' + shortLivedJwt(webhookJwtSecret, now());
       const response = await fetchImpl(webhookUrl, {
-        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + webhookAuthToken },
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: authorization },
         body: JSON.stringify(payload), redirect: 'manual',
         signal: AbortSignal.any([controller.signal, AbortSignal.timeout(timeoutMs)]),
       });

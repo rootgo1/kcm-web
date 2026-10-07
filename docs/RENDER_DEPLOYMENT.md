@@ -19,12 +19,13 @@
 | RETELL_AGENT_ID | `agent_0cf2b1f09a8e52e6d2abc45b71` |
 | RETELL_API_KEY | 사용자가 직접 입력하는 실제 Retell 키 |
 | N8N_WEBHOOK_URL | 사용자가 Environment에 직접 입력하는 HTTPS Production Webhook URL |
+| N8N_WEBHOOK_JWT_SECRET | 사용자 직접 입력하는 새 무작위 64~256자 JWT 서명키. n8n JWT Credential과 동일한 원문, 값 자체를 요청에 전송하지 않음 |
 | KCM_DEMO_CUSTOMER_ID | 사용자가 Environment에 직접 입력하는 E2E 테스트 고객 ID |
 | KCM_DEMO_STORE_ID | 사용자가 Environment에 직접 입력하는 E2E 테스트 매장 ID |
 | SUPABASE_AUTH_PUBLISHABLE_KEY | 관리자 승인을 받은 같은 Supabase 프로젝트의 Auth 공개 키, 실제 값은 문서/Git에 기록하지 않음 |
 | STAFF_READ_ACCOUNTS_JSON | 관리자 승인을 받은 계정·매장 조회 매핑, 실제 계정 식별정보는 문서/Git에 기록하지 않음 |
 
-Webhook/고객/매장 변수는 `sync: false`이며 실제 값은 Git에 포함하지 않습니다. 기존 서비스에서는 **Environment**에서 직접 추가한 뒤 **Manual Deploy → Deploy latest commit**으로 main의 최신 코드를 적용합니다. 자동 배포 설정은 변경하지 않습니다. 전송 조건·계약·실패 처리·실제 검증 절차는 [n8n 전송 안내](N8N_DELIVERY.md)를 확인하세요.
+Webhook/고객/매장 변수는 `sync: false`이며 실제 값은 Git에 포함하지 않습니다. JWT 전환은 **Environment → Save only → 통화 없음 확인 → n8n JWT 발행 → 검증된 특정 커밋 배포** 순서입니다. 이번 검증된 실행 변경은 `f79cc3d`이며 이후 문서만 수정한 커밋은 같은 실행 코드를 사용합니다. `Deploy latest commit`은 main 병합 후 최신 SHA가 검증된 실행 코드와 일치할 때만 사용합니다. 자동 배포는 유지합니다. [전송 계약](N8N_DELIVERY.md), [인증 전환](N8N_WEBHOOK_AUTH.md)
 
 `PORT`와 `RENDER_EXTERNAL_URL`은 Render 자동 설정을 사용합니다. 별도 도메인을 사용하는 경우에만 `KCM_PUBLIC_ORIGIN`에 경로 없는 HTTPS 원본 주소를 설정합니다. 비밀 값·HTTPS 주소·빌드 화면이 누락되면 공개 서버를 실행하지 않습니다.
 
@@ -32,7 +33,7 @@ Webhook/고객/매장 변수는 `sync: false`이며 실제 값은 Git에 포함�
 
 - 직원: https://kcm-team-test.onrender.com/#/home
 - 고객: https://kcm-team-test.onrender.com/#/retell-test
-- 화면·정적 파일·기존 공개 API·SSE의 접근 범위는 유지합니다. 저장 고객 목록·고객별 상담 요약 조회는 승인된 조회 계정 로그인이 필요하며, 다른 개인자료 경로의 기존 공개 제한은 유지합니다. HTTPS·Host/Origin 검사·CORS와 서버의 Retell 인증은 유지합니다. `/health`는 비밀 정보 없는 상태 확인 응답을 제공합니다. 별도 n8n 인증은 구현하지 않습니다.
+- 화면·정적 파일·기존 공개 API·SSE의 접근 범위는 유지합니다. 저장 고객 목록·상담 요약은 승인된 계정 로그인이 필요하며 다른 자료의 공개 제한도 유지합니다. HTTPS·Host/Origin 검사·CORS와 Retell 인증을 유지합니다. `/health`는 비밀값 없는 상태 응답입니다. 앱 결과 저장 Webhook은 서버의 짧은 JWT와 n8n JWT Auth로 보호합니다. [인증 전환 절차와 적용 상태](N8N_WEBHOOK_AUTH.md)를 확인하고 구버전 앱과 새 인증 사이 전환 중에는 새 통화를 시작하지 않습니다.
 - 고객 화면에서 보조 마이크 시작 → 정상 확인 → 통화 시작 → 실제 발화 → 종료합니다. 직원 화면에서 실시간 대화·다섯 신호·최종 결과를 확인합니다. 고객 화면을 전경에 유지해야 보조 마이크 측정 공백을 피할 수 있습니다.
 - 공유한 링크의 바로 접속, 두 번째 통화, 서로 다른 브라우저/기기의 직원·고객 흐름도 확인합니다. 실제 Retell 통화는 기존 Retell 이용 요금이 적용되며 무료 Render 호스팅과 별개입니다.
 

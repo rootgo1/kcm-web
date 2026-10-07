@@ -2,9 +2,9 @@
 
 기존 Retell Web Call·Monitor·SSE·신호 분석·점수 정책을 유지합니다. 전송은 Node 백엔드만 수행하며 직원 화면과 브라우저는 Webhook을 호출하지 않습니다. KCM은 DB에 직접 저장하지 않습니다.
 
-2026-10-07 인증 변경의 `npm run check`는 **978/978 테스트 통과**, 실패·건너뜀·취소 0이며 프런트·서버 타입 검사와 production build도 통과했습니다. `npm run preview:standalone`과 `git diff --check`도 통과했습니다. 운영 적용 순서와 자세한 확인 범위는 [웹훅 인증 안내](N8N_WEBHOOK_AUTH.md)를 참조하세요.
+이전 Header Auth 변경은 978/978 검사를 통과했습니다. 이번 짧은 JWT와 시연 이름 변경의 통합 검사는 **985/985**, 프런트·서버 타입 검사와 production build, 독립 미리보기 재생성과 문법 검사, diff 형식 검사를 통과했습니다. 실제 JWT 운영 거부·통화 검증은 설정·발행·배포 뒤 별도로 확인합니다. [적용 절차와 보호 범위](N8N_WEBHOOK_AUTH.md)
 
-사용자 승인으로 Start Header Auth와 팀원 문자 변경을 함께 발행했습니다. 최초 13:54 테스트는 `failed / HTTP_403`, 해당 DB 상담·요약 0건이었으며 사용자 인증값 재저장 후 코드 `6f1be81`의 재배포 `dep-db2tap2jnfac73fv7s10`가 **14:16:11(Asia/Seoul) Live**로 완료됐습니다. **14:18~14:19 새 통화에서 인증·전송 성공과 중복 없는 DB 상담 1건, 상담 목적·요약·전문·위험분석 저장을 확인했습니다.** 앱은 finalized=true, webhook sent/error=null이며 매장 매핑과 완료 상태도 일치했습니다. n8n [실행 1791](https://rootgo.app.n8n.cloud/workflow/GvZZqJGAAH9EpHuY/executions/1791)의 저장·요약 관련 7개 노드 성공과 마지막 요약 저장 출력도 DB 조회 결과와 일치했습니다. 실제 문자 전달·인증 헤더 보관은 미검증이며 실패 통화는 재전송하지 않았습니다.
+이전 Header Auth 운영 검증: 최초 13:54 통화는 HTTP403/DB0건이었으며 사용자 인증값 재입력 뒤 `6f1be81`의 재배포가 14:16:11 Live로 완료됐습니다. 14:18~14:19 새 통화는 앱 finalized/sent, 중복 없는 DB 상담1건과 목적·요약·전문·위험분석 저장, [실행1791](https://rootgo.app.n8n.cloud/workflow/GvZZqJGAAH9EpHuY/executions/1791)의 저장·요약7개 노드 성공을 확인했습니다. 이후 Start 출력에 재사용 Bearer 값이 가려지지 않는 문제를 확인하여 짧은 JWT로 전환합니다. 실제 문자 수신은 미검증이며 실패 통화는 재전송하지 않습니다. 새 JWT 코드의 검증과 운영 전환 결과는 STATUS.md에 별도로 기록합니다.
 
 ## 사용자 설정과 적용
 
@@ -12,17 +12,17 @@
 
 ```dotenv
 N8N_WEBHOOK_URL=
-N8N_WEBHOOK_AUTH_TOKEN=
+N8N_WEBHOOK_JWT_SECRET=
 KCM_DEMO_CUSTOMER_ID=
 KCM_DEMO_STORE_ID=
 ```
 
 - `N8N_WEBHOOK_URL`: 사용자가 확인한 HTTPS Production Webhook URL입니다. 코드·문서·로그에는 실제 URL을 기록하지 않습니다.
-- `N8N_WEBHOOK_AUTH_TOKEN`: 서버 전용 인증값입니다. `Bearer ` 접두어 없는 원문 토큰을 저장하며 영문 대소문자·숫자·`_`·`-`만 32~256자 허용합니다. 앞뒤 공백이나 줄바꿈은 자동 제거하지 않고 거부합니다. 브라우저/VITE 변수·본문·소스·문서·대화에는 실제 값을 넣지 않습니다. n8n Header Auth에는 같은 토큰 앞에 `Bearer `를 붙인 값을 사용합니다.
+- `N8N_WEBHOOK_JWT_SECRET`: 서버 전용 JWT 서명키입니다. 새 무작위 영문·숫자·`_`·`-` 64~256자 원문을 저장하며 공백·줄바꿈·접두어를 허용하지 않습니다. n8n JWT Credential은 `Passphrase`/동일 원문 `Secret`/`HS256`으로 설정합니다. 키는 요청에 보내지 않고 매번 새 60초 JWT를 Authorization에 넣습니다. 이전 토큰으로 자동 대체하지 않습니다.
 - `KCM_DEMO_CUSTOMER_ID`: 첫 E2E 검증에서 사용하기로 한 DB의 테스트 고객 ID입니다. 값을 지정하면 이 서버가 새로 만드는 테스트 Web Call에 공통 적용됩니다. 실제 고객을 식별하거나 DB를 조회하는 기능은 아닙니다. 미설정 시 `null`을 유지하며 임의의 고객을 대입하지 않습니다.
 - `KCM_DEMO_STORE_ID`: 사용자가 지정하는 데모 매장 ID입니다. 고객 ID와 같이 새 통화 생성 시 서버 설정에서 보관합니다. 브라우저가 지정할 수 없으며 재등록으로 덮어쓰지 않습니다. 미설정 시 임의 값을 만들지 않고 전송을 `failed / STORE_ID_MISSING`으로 처리합니다.
 - 로컬: 통화가 없을 때 백엔드를 재시작합니다(`npm.cmd run server`). 실제 `.env`는 이 작업에서 읽거나 변경하지 않습니다.
-- Render: 현재 자동 배포는 꺼져 있습니다. Blueprint의 `sync: false`는 기존 서비스에 새 값을 자동 입력하지 않으므로 Environment에 직접 추가해야 합니다. 새 인증값은 먼저 **Save only**로 저장하며 즉시 재배포하지 않습니다. 통화가 없는 시점에 n8n `Start` Header Auth를 publish한 다음 승인된 앱 인증 버전을 배포합니다. 자세한 순서는 [웹훅 인증 적용 절차](N8N_WEBHOOK_AUTH.md#운영-적용-순서)를 따릅니다. [Render 공식 안내](https://render.com/docs/blueprint-spec#prompting-for-secret-values)
+- Render: 자동 배포가 꺼져 있어 새 환경값은 직접 **Save only**로 저장합니다. 통화가 없는 시점에 n8n Start의 JWT Auth를 발행하고 검증된 앱을 배포합니다. 입력·발행·Live·새 통화 검증까지 구분하여 확인합니다. [웹훅 인증 적용 절차](N8N_WEBHOOK_AUTH.md#적용-순서), [Render 공식 안내](https://render.com/docs/blueprint-spec#prompting-for-secret-values)
 
 URL/고객 ID/매장 ID 미설정 또는 잘못된 URL은 최종 결과 전송을 `failed`로 남깁니다. KCM 화면·Retell 통화·위험 결과 계산은 계속 사용할 수 있습니다. 설정 변경 후에는 새 통화로 검증합니다. 과거 실패 결과의 자동 재전송은 없습니다.
 
@@ -38,7 +38,7 @@ URL/고객 ID/매장 ID 미설정 또는 잘못된 URL은 최종 결과 전송�
 
 ## POST 계약
 
-`POST N8N_WEBHOOK_URL`, `Content-Type: application/json`, `Authorization: Bearer <서버에 저장한 동일 토큰>`을 사용하도록 변경합니다. 인증값은 HTTP 헤더에만 추가하며 기존 JSON 본문은 바꾸지 않습니다. 아래는 **가상의 계약 예시**이며 실제 전송 이력이 아닙니다. `body`나 배열로 감싸지 않습니다.
+`POST N8N_WEBHOOK_URL`, `Content-Type: application/json`, `Authorization: Bearer <이번 요청의 60초 JWT>`를 사용합니다. 서명키는 전송하지 않습니다. JWT에는 iat/exp/무작위 jti만 넣고 JSON 본문은 유지합니다. 아래는 **가상의 계약 예시**이며 실제 전송 이력이 아닙니다. `body`나 배열로 감싸지 않습니다.
 
 ```json
 {
@@ -103,7 +103,7 @@ Start → KCM Normalize → KCM Payload Check → KCM Atomic Save
 
 - `npm.cmd run check`: 기존 전체 테스트와 n8n 테스트, 프런트·백엔드 타입 검사 및 빌드.
 - 자동 검증은 실제 Production URL/키/고객/매장 대신 격리된 모의 Retell 전송과 로컬 HTTP 수신기를 사용합니다. 두 통화의 ID 연결, 최종화 순서, 기존 JSON 계약 보존과 consultation 추가, 최종 대화 투영/시각 검증/매장 설정 누락, 1회 POST, 실패 보존, SSE/키 보호를 확인합니다.
-- 인증 변경의 모의 전송 검사 41개를 포함합니다. 최초 발행 후 운영 Production Webhook에 인증 없는 빈 JSON과 잘못된 Bearer 인증의 빈 JSON을 순서대로 각각 1회 보내 두 요청 모두 HTTP 403임을 확인했습니다. 리디렉션을 허용하지 않았고 응답 본문은 읽지 않았습니다. 이 거부 확인만으로 실제 통화의 인증 성공을 단정하지 않습니다.
+- 이전 Header Auth 검증은 모의 전송41개와 실제 인증 없음/잘못된 Bearer 빈 JSON의 HTTP403 확인을 포함했습니다. 이번 JWT는 서명·변조·다른 키·60초 만료 경계·매 요청 jti 차이·설정 오류·기존 토큰 배제와 비밀값/JWT의 로그·SSE 비노출을 검사합니다. 실제 JWT의 운영 거부·새 통화 검증은 이전 Header Auth 결과로 대체하지 않습니다.
 - 실제 검증: Production 워크플로 활성 확인 → 고객 `#/retell-test`에서 보조 마이크 시작 → Web Call → 발화 → 종료 → 서버 성공 로그 확인 → n8n **Executions**에서 해당 `call_id`와 `body.consultation_id`, `body.customer_id`, `body.signals`, `body.scores`, `body.risk_score`, `body.risk_level` 확인. [n8n 공식 Webhook 안내](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.webhook/)
 - HTTP 200/요약 대기 응답과 후속 `KCM Update Summary` 완료는 별도로 확인합니다. 검증 기록에는 실제 인증값·식별자·고객 내용을 넣지 않습니다.
-- n8n About의 실제 버전은 `2.43.0`입니다. 해당 버전 소스와 Executions `headers`의 인증값 보관 여부는 아직 미검증이며 최신 master 소스만으로 미보관을 단정하지 않습니다. 우리 발행 직후 팀원 편집을 확인했으며 해당 후속 변경을 우리가 추가 publish하거나 수정하지 않았습니다.
+- n8n **2.43.0**의 실행1791 Start 출력에 이전 재사용 Bearer 값이 가려지지 않고 표시되는 것을 확인했습니다. 실제 값은 출력·복사·캡처하지 않았습니다. 설치 버전 공식 소스도 원본 헤더 출력을 확인했습니다. JWT 전환 뒤에도 짧은 JWT가 기록에 남을 수 있지만 서명키는 전송하지 않습니다. n8n 기본 JWT 인증은 만료 전 재사용을 자동 거부하지 않습니다. 자세한 보호 범위와 기존 기록 처리 원칙은 [인증 안내](N8N_WEBHOOK_AUTH.md#보호-범위와-기존-기록)에 기록합니다.

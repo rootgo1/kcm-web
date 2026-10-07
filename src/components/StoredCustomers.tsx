@@ -6,7 +6,7 @@ import { StaffReadGate } from './StaffReadGate';
 import { Modal } from './Modal';
 import { paginateCalls } from '../lib/callPagination';
 import { latestCompletedStoredConsultation } from '../lib/storedCustomerPresentation';
-import { storedCustomerDisplayName } from '../lib/customerName';
+import { isDemoDisplayCustomer, storedCustomerDisplayName } from '../lib/customerName';
 
 const stageLabels = { AI: 'AI 응대', PHONE: '전화', VISIT: '방문' } as const;
 const codeOf = (error: unknown) => error instanceof RealDataApiError ? error.code : 'UNKNOWN_ERROR';
@@ -17,7 +17,8 @@ export function StoredConsultationList({ items }: { items: StoredConsultation[] 
   if (items.length === 0) return <p className="real-data-empty">이 고객의 저장된 상담 이력이 없습니다.</p>;
   return <div className="real-data-history-list">{items.map(item => <article className="real-data-history-item" key={item.id}>
     <div className="real-data-history-heading"><strong>{item.purpose || '상담 목적 미기록'}</strong><span className="status-pill">{item.status}</span></div>
-    <p className="real-data-id">{item.id}{item.callId ? ` · ${item.callId}` : ''}</p>
+    {isDemoDisplayCustomer(item.customerId) ? <details className="real-data-id"><summary>상담 식별 정보</summary><p>{item.id}{item.callId ? ` · ${item.callId}` : ''}</p></details>
+      : <p className="real-data-id">{item.id}{item.callId ? ` · ${item.callId}` : ''}</p>}
     <p className="real-data-meta">시작 {formatRealDataDate(item.startedAt)}{item.endedAt ? ` · 종료 ${formatRealDataDate(item.endedAt)}` : ' · 종료 시각 미기록'}</p>
     <p className="real-data-summary">{item.summaryStatus === 'available' ? item.summaryPreview : '저장된 AI 요약이 없습니다.'}</p>
     <div className="real-data-risk-list">{item.risks.length > 0 ? item.risks.map(risk => <div className="real-data-risk" key={risk.id}>
@@ -59,7 +60,8 @@ function StoredCustomerHistory({ items, customerId }: { items: StoredConsultatio
       <button type="button" aria-label="다음 저장 상담 페이지" disabled={pagination.page === pagination.totalPages} onClick={() => setPage(pagination.page + 1)}><Icon name="chevron" size={16}/></button>
     </nav>}
     {selected && <Modal title="저장 상담 기록" eyebrow="KCM · 고객 이력" className="stored-customer-modal" onClose={() => setSelectedId(null)}>
-      <p className="real-data-id">고객 {customerId} · 매장 {selected.storeId}</p>
+      {isDemoDisplayCustomer(customerId) ? <details className="real-data-id"><summary>고객 식별 정보</summary><p>고객 {customerId} · 매장 {selected.storeId}</p></details>
+        : <p className="real-data-id">고객 {customerId} · 매장 {selected.storeId}</p>}
       <StoredConsultationList items={[selected]}/>
       <p className="real-data-notice">DB에 저장된 상담·단계별 위험 기록입니다. 현재 수신한 통화와 합산하지 않습니다.</p>
       <div className="modal-actions"><button className="button button-secondary" onClick={() => setSelectedId(null)}>상담 기록 닫기</button></div>
@@ -136,13 +138,13 @@ function StoredCustomersBody({ onAvailability }: { onAvailability?: (state: Real
       : <>
         <div className="real-data-grid">
           <div className="real-data-list"><div className="table-scroll real-data-table-scroll" role="region" tabIndex={0} aria-label="저장된 고객 목록"><table className="appointment-table real-data-table"><thead><tr><th scope="col">고객</th><th scope="col">최근 상담</th><th scope="col">상태</th></tr></thead><tbody>{visible.map(item => <tr key={item.id} className={selectedId === item.id ? 'selected-row' : ''}>
-            <td><button className="customer-select" onClick={() => choose(item.id)} aria-pressed={selectedId === item.id}><strong>{storedCustomerDisplayName(item.nameMasked, item.id)}</strong><span className="sr-only">{item.phoneMasked || '연락처 미확인'}</span></button><span className="real-data-id">{item.id}</span></td>
+            <td><button className="customer-select" onClick={() => choose(item.id)} aria-pressed={selectedId === item.id}><strong>{storedCustomerDisplayName(item.nameMasked, item.id)}</strong><span className="sr-only">{item.phoneMasked || '연락처 미확인'}</span></button>{!isDemoDisplayCustomer(item.id) && <span className="real-data-id">{item.id}</span>}</td>
             <td><strong title={item.latestPurpose || '상담 목적 미기록'}>{item.latestPurpose || '상담 목적 미기록'}</strong><small className="real-data-meta">{formatRealDataDate(item.latestConsultationAt)}</small></td><td><span className="status-pill">{item.latestStatus}</span></td>
           </tr>)}</tbody></table>{filtered.length === 0 && <p className="real-data-empty">검색 조건에 맞는 고객이 없습니다.</p>}</div>
           {pages > 1 && <nav className="call-pagination" aria-label="저장된 고객 목록 페이지"><button type="button" aria-label="이전 저장 고객 페이지" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}><Icon name="chevron" className="previous-chevron" size={16}/></button><span role="status" aria-live="polite">{currentPage} / {pages}</span><button type="button" aria-label="다음 저장 고객 페이지" disabled={currentPage === pages} onClick={() => setPage(currentPage + 1)}><Icon name="chevron" size={16}/></button></nav>}</div>
           <div className="real-data-detail" aria-label="선택한 고객의 저장 상담 이력">
             {!selected ? <p className="real-data-empty">고객을 선택하면 저장된 상담 이력을 확인할 수 있습니다.</p> : <>
-              <div className="real-data-history-heading"><div><h3>{storedCustomerDisplayName(selected.nameMasked, selected.id)} · 저장 상담 이력</h3><p className="real-data-id">{selected.id} · {selected.phoneMasked || '연락처 미확인'}</p></div>{selected.privacyConsent && <button className="button button-secondary" onClick={() => setHistoryKey(key => key + 1)}>다시 조회</button>}</div>
+              <div className="real-data-history-heading"><div><h3>{storedCustomerDisplayName(selected.nameMasked, selected.id)} · 저장 상담 이력</h3><p className="real-data-id">{!isDemoDisplayCustomer(selected.id) && `${selected.id} · `}{selected.phoneMasked || '연락처 미확인'}</p></div>{selected.privacyConsent && <button className="button button-secondary" onClick={() => setHistoryKey(key => key + 1)}>다시 조회</button>}</div>
               {selected.privacyConsent && <details className="stored-customer-product"><summary>이용 상품·요금제</summary><div className="briefing-facts real-data-facts" aria-label="현재 이용 상품과 요금제">
                 <div><span>현재 이용 상품</span><strong>{selected.currentProduct ? `${selected.currentProduct.name} · ${selected.currentProduct.storageGb}GB · ${selected.currentProduct.color}` : '미기록'}</strong></div>
                 <div><span>현재 이용 요금제</span><strong>{selected.currentPlan ? `${selected.currentPlan.name} · 월 ${selected.currentPlan.monthlyFee.toLocaleString('ko-KR')}원` : '미기록'}</strong></div>

@@ -3847,9 +3847,14 @@ function StoredConsultationList({ items }) {
         __React.createElement("div", { className: "real-data-history-heading" },
             __React.createElement("strong", null, item.purpose || '상담 목적 미기록'),
             __React.createElement("span", { className: "status-pill" }, item.status)),
-        __React.createElement("p", { className: "real-data-id" },
-            item.id,
-            item.callId ? ` · ${item.callId}` : ''),
+        (0, customerName_1.isDemoDisplayCustomer)(item.customerId) ? __React.createElement("details", { className: "real-data-id" },
+            __React.createElement("summary", null, "\uC0C1\uB2F4 \uC2DD\uBCC4 \uC815\uBCF4"),
+            __React.createElement("p", null,
+                item.id,
+                item.callId ? ` · ${item.callId}` : ''))
+            : __React.createElement("p", { className: "real-data-id" },
+                item.id,
+                item.callId ? ` · ${item.callId}` : ''),
         __React.createElement("p", { className: "real-data-meta" },
             "\uC2DC\uC791 ",
             (0, realDataApi_js_1.formatRealDataDate)(item.startedAt),
@@ -3921,11 +3926,18 @@ function StoredCustomerHistory({ items, customerId }) {
             __React.createElement("button", { type: "button", "aria-label": "\uB2E4\uC74C \uC800\uC7A5 \uC0C1\uB2F4 \uD398\uC774\uC9C0", disabled: pagination.page === pagination.totalPages, onClick: () => setPage(pagination.page + 1) },
                 __React.createElement(Icon_1.Icon, { name: "chevron", size: 16 }))),
         selected && __React.createElement(Modal_1.Modal, { title: "\uC800\uC7A5 \uC0C1\uB2F4 \uAE30\uB85D", eyebrow: "KCM \u00B7 \uACE0\uAC1D \uC774\uB825", className: "stored-customer-modal", onClose: () => setSelectedId(null) },
-            __React.createElement("p", { className: "real-data-id" },
-                "\uACE0\uAC1D ",
-                customerId,
-                " \u00B7 \uB9E4\uC7A5 ",
-                selected.storeId),
+            (0, customerName_1.isDemoDisplayCustomer)(customerId) ? __React.createElement("details", { className: "real-data-id" },
+                __React.createElement("summary", null, "\uACE0\uAC1D \uC2DD\uBCC4 \uC815\uBCF4"),
+                __React.createElement("p", null,
+                    "\uACE0\uAC1D ",
+                    customerId,
+                    " \u00B7 \uB9E4\uC7A5 ",
+                    selected.storeId))
+                : __React.createElement("p", { className: "real-data-id" },
+                    "\uACE0\uAC1D ",
+                    customerId,
+                    " \u00B7 \uB9E4\uC7A5 ",
+                    selected.storeId),
             __React.createElement(StoredConsultationList, { items: [selected] }),
             __React.createElement("p", { className: "real-data-notice" }, "DB\uC5D0 \uC800\uC7A5\uB41C \uC0C1\uB2F4\u00B7\uB2E8\uACC4\uBCC4 \uC704\uD5D8 \uAE30\uB85D\uC785\uB2C8\uB2E4. \uD604\uC7AC \uC218\uC2E0\uD55C \uD1B5\uD654\uC640 \uD569\uC0B0\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
             __React.createElement("div", { className: "modal-actions" },
@@ -4037,7 +4049,7 @@ function StoredCustomersBody({ onAvailability }) {
                                                 __React.createElement("button", { className: "customer-select", onClick: () => choose(item.id), "aria-pressed": selectedId === item.id },
                                                     __React.createElement("strong", null, (0, customerName_1.storedCustomerDisplayName)(item.nameMasked, item.id)),
                                                     __React.createElement("span", { className: "sr-only" }, item.phoneMasked || '연락처 미확인')),
-                                                __React.createElement("span", { className: "real-data-id" }, item.id)),
+                                                !(0, customerName_1.isDemoDisplayCustomer)(item.id) && __React.createElement("span", { className: "real-data-id" }, item.id)),
                                             __React.createElement("td", null,
                                                 __React.createElement("strong", { title: item.latestPurpose || '상담 목적 미기록' }, item.latestPurpose || '상담 목적 미기록'),
                                                 __React.createElement("small", { className: "real-data-meta" }, (0, realDataApi_js_1.formatRealDataDate)(item.latestConsultationAt))),
@@ -4060,8 +4072,7 @@ function StoredCustomersBody({ onAvailability }) {
                                             (0, customerName_1.storedCustomerDisplayName)(selected.nameMasked, selected.id),
                                             " \u00B7 \uC800\uC7A5 \uC0C1\uB2F4 \uC774\uB825"),
                                         __React.createElement("p", { className: "real-data-id" },
-                                            selected.id,
-                                            " \u00B7 ",
+                                            !(0, customerName_1.isDemoDisplayCustomer)(selected.id) && `${selected.id} · `,
                                             selected.phoneMasked || '연락처 미확인')),
                                     selected.privacyConsent && __React.createElement("button", { className: "button button-secondary", onClick: () => setHistoryKey(key => key + 1) }, "\uB2E4\uC2DC \uC870\uD68C")),
                                 selected.privacyConsent && __React.createElement("details", { className: "stored-customer-product" },
@@ -5932,6 +5943,8 @@ function consultationTime(at) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.maskCustomerName = maskCustomerName;
 exports.storedCustomerDisplayName = storedCustomerDisplayName;
+exports.isDemoDisplayCustomer = isDemoDisplayCustomer;
+exports.liveCustomerDisplayName = liveCustomerDisplayName;
 /** 원본 이름을 변경하지 않는 화면 표시용 마스킹입니다. */
 function maskCustomerName(name) {
     const letters = Array.from(name?.trim() ?? '');
@@ -5949,6 +5962,14 @@ function storedCustomerDisplayName(nameMasked, customerId) {
         return nameMasked;
     const id = /^customer_([0-9]{3,})$/.exec(customerId);
     return id ? `고객 ${id[1]}` : nameMasked;
+}
+/** 승인된 시연 고객 1명의 화면 표시만 구분합니다. 식별·조회·권한 판단에는 사용하지 않습니다. */
+function isDemoDisplayCustomer(customerId) {
+    return customerId === 'customer_9999';
+}
+/** 이름 없는 실시간 DTO의 시연 고객만 마스킹 표시합니다. 나머지 고객 식별자는 보존합니다. */
+function liveCustomerDisplayName(customerId, fallback = '고객 확인 전') {
+    return isDemoDisplayCustomer(customerId) ? '정*민' : customerId || fallback;
 }
 
 },
@@ -6372,6 +6393,7 @@ const riskScoring_1 = require("../lib/riskScoring");
 const customerHistory_1 = require("./customerHistory");
 const liveCalls_1 = require("./liveCalls");
 const livePresentation_1 = require("./livePresentation");
+const customerName_1 = require("../lib/customerName");
 function endedTime(at) {
     if (!at)
         return null;
@@ -6396,7 +6418,7 @@ function CustomerCallHistory({ calls, onSelect }) {
                     __React.createElement("span", null, "\uACE0\uAC1D \uC120\uD0DD"),
                     __React.createElement("select", { value: customerKey, onChange: event => { setCustomerKey(event.target.value); setPage(1); } },
                         __React.createElement("option", { value: "" }, "\uC804\uCCB4 \uACE0\uAC1D"),
-                        groups.map(group => __React.createElement("option", { value: group.key, key: group.key }, group.customerId || `미식별 통화 · ${group.calls[0].call_id}`)))),
+                        groups.map(group => __React.createElement("option", { value: group.key, key: group.key }, (0, customerName_1.liveCustomerDisplayName)(group.customerId, `미식별 통화 · ${group.calls[0].call_id}`))))),
                 __React.createElement("label", null,
                     __React.createElement("span", null, "\uC0C1\uB2F4 \uC0C1\uD0DC"),
                     __React.createElement("select", { value: status, onChange: event => { setStatus(event.target.value); setPage(1); } },
@@ -6425,13 +6447,25 @@ function CustomerCallHistory({ calls, onSelect }) {
                     const ended = endedTime(call.ended_at);
                     return __React.createElement("tr", { key: call.call_id },
                         __React.createElement("td", { className: "customer-history-identifiers" },
-                            __React.createElement("span", { title: call.customer_id || '미식별' }, call.customer_id || '미식별 고객'),
-                            __React.createElement("span", { title: call.call_id },
-                                "\uD1B5\uD654: ",
-                                call.call_id),
-                            __React.createElement("span", { className: "sr-only" },
-                                "\uC0C1\uB2F4: ",
-                                call.consultation_id || '확인 필요')),
+                            __React.createElement("span", { title: (0, customerName_1.liveCustomerDisplayName)(call.customer_id, '미식별') }, (0, customerName_1.liveCustomerDisplayName)(call.customer_id, '미식별 고객')),
+                            (0, customerName_1.isDemoDisplayCustomer)(call.customer_id) ? __React.createElement("details", { className: "live-call-id" },
+                                __React.createElement("summary", null, "\uD1B5\uD654 \uC2DD\uBCC4 \uC815\uBCF4"),
+                                __React.createElement("code", null,
+                                    "\uD1B5\uD654: ",
+                                    call.call_id),
+                                __React.createElement("code", null,
+                                    "\uC0C1\uB2F4: ",
+                                    call.consultation_id || '확인 필요'),
+                                __React.createElement("code", null,
+                                    "\uACE0\uAC1D: ",
+                                    call.customer_id))
+                                : __React.createElement(__React.Fragment, null,
+                                    __React.createElement("span", { title: call.call_id },
+                                        "\uD1B5\uD654: ",
+                                        call.call_id),
+                                    __React.createElement("span", { className: "sr-only" },
+                                        "\uC0C1\uB2F4: ",
+                                        call.consultation_id || '확인 필요'))),
                         __React.createElement("td", null,
                             __React.createElement("span", { className: `live-badge ${call.status}` }, liveCalls_1.liveStatusLabels[call.status])),
                         __React.createElement("td", { className: "customer-history-score" }, call.final_result ? __React.createElement("strong", null, (0, riskScoring_1.formatRiskScore)(call.final_result.risk_score)) : __React.createElement("span", null, call.status === 'ended' ? '최종 위험도 확정 보류' : '종료 후 위험도 확정')),
@@ -6535,7 +6569,12 @@ function LiveCallBriefing({ callId, customerId }) {
         data && __React.createElement(__React.Fragment, null,
             __React.createElement("div", { className: "live-briefing-customer" },
                 __React.createElement("strong", null, (0, customerName_1.storedCustomerDisplayName)(data.customer.nameMasked, data.customer.id)),
-                __React.createElement("span", { className: "live-identifier" }, data.customer.id)),
+                !(0, customerName_1.isDemoDisplayCustomer)(data.customer.id) && __React.createElement("span", { className: "live-identifier" }, data.customer.id)),
+            (0, customerName_1.isDemoDisplayCustomer)(data.customer.id) && __React.createElement("details", { className: "live-call-id" },
+                __React.createElement("summary", null, "\uACE0\uAC1D \uC2DD\uBCC4 \uC815\uBCF4"),
+                __React.createElement("code", null,
+                    "\uACE0\uAC1D: ",
+                    data.customer.id)),
             !data.privacyConsent ? __React.createElement("p", { className: "live-briefing-state", role: "status" }, "\uACE0\uAC1D \uAC1C\uC778\uC815\uBCF4 \uB3D9\uC758 \uD655\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.") : __React.createElement(__React.Fragment, null,
                 __React.createElement("dl", { className: "live-briefing-products" },
                     __React.createElement("div", null,
@@ -6741,6 +6780,7 @@ const LiveRiskSignals_1 = require("./LiveRiskSignals");
 const LiveCallBriefing_1 = require("./LiveCallBriefing");
 const CustomerCallHistory_1 = require("./CustomerCallHistory");
 const liveNotices_1 = require("./liveNotices");
+const customerName_1 = require("../lib/customerName");
 require("./live-calls.css");
 function clock(at) {
     return at ? new Date(at).toLocaleTimeString('ko-KR', { hour12: false }) : '—';
@@ -6764,7 +6804,7 @@ function LiveConversation({ call, connection, onClose }) {
                 __React.createElement("div", { className: "live-conversation-current" },
                     __React.createElement("h3", { className: "live-current-heading" }, "\uC774\uBC88 \uD1B5\uD654"),
                     __React.createElement("div", { className: "live-conversation-meta" },
-                        __React.createElement("strong", { className: call.customer_id ? 'live-identifier' : undefined }, call.customer_id || '고객 확인 전'),
+                        __React.createElement("strong", { className: call.customer_id && !(0, customerName_1.isDemoDisplayCustomer)(call.customer_id) ? 'live-identifier' : undefined }, (0, customerName_1.liveCustomerDisplayName)(call.customer_id)),
                         __React.createElement("span", { className: `live-badge ${call.status}` }, liveCalls_1.liveStatusLabels[call.status]),
                         __React.createElement("span", null, call.status === 'live' ? '통화 진행 중' : call.status === 'ended' ? '통화 종료' : call.status === 'error' ? '통화 상태 확인 필요' : '통화 연결을 기다리고 있습니다.')),
                     __React.createElement("p", { className: "live-small" },
@@ -6850,12 +6890,10 @@ function LiveConsultations({ view = 'intake' }) {
                     __React.createElement("h2", null, "\uC2E4\uC2DC\uAC04 AI \uC0C1\uB2F4"))),
             displayed.map(call => __React.createElement("div", { className: "live-intake-row", key: call.call_id },
                 __React.createElement("div", null,
-                    __React.createElement("strong", { className: call.customer_id ? 'live-identifier' : undefined }, call.customer_id || '고객 확인 전'),
+                    __React.createElement("strong", { className: call.customer_id && !(0, customerName_1.isDemoDisplayCustomer)(call.customer_id) ? 'live-identifier' : undefined }, (0, customerName_1.liveCustomerDisplayName)(call.customer_id)),
                     __React.createElement("span", { className: `live-badge ${call.status}` }, liveCalls_1.liveStatusLabels[call.status]),
                     __React.createElement("p", null, call.status === 'live' ? '실시간 상담이 진행 중입니다.' : call.status === 'ended' ? '마지막 종료 통화의 대화를 확인할 수 있습니다.' : call.status === 'error' ? '마지막 수신 대화를 확인할 수 있습니다.' : '통화 연결 상태를 확인하고 있습니다.'),
-                    displayed.length > 1 && __React.createElement("small", { className: "live-short-id" },
-                        "\uD1B5\uD654 \u2026",
-                        call.call_id.slice(-8))),
+                    displayed.length > 1 && __React.createElement("small", { className: "live-short-id" }, (0, customerName_1.isDemoDisplayCustomer)(call.customer_id) ? `시작 ${clock(call.started_at)}` : `통화 …${call.call_id.slice(-8)}`)),
                 __React.createElement("button", { className: "button button-secondary", onClick: () => setSelectedId(call.call_id) }, "\uC2E4\uC2DC\uAC04 \uC0C1\uB2F4 \uBCF4\uAE30"))),
             history.length > 0 && __React.createElement("details", { className: "live-call-id" },
                 __React.createElement("summary", null,

@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { createServer } from 'node:http';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { createConsultationIdFactory } from '../call-identity.mjs';
 import { createLiveCallStore } from '../live-calls.mjs';
 import { createN8nDelivery, callResultPayload, n8nConfig } from '../n8n-delivery.mjs';
@@ -10,20 +11,39 @@ import { createMonitorRegistry } from '../monitor.mjs';
 
 // Synthetic fixtures only: never the user's production webhook/customer/credentials.
 const webhookUrl = 'https://workflow.example.test/webhook/synthetic-private-path';
-const webhookAuthToken = 'synthetic_n8n_auth_token_for_isolated_tests_only_1234567890';
+const webhookJwtSecret = 'synthetic_n8n_jwt_signing_secret_for_isolated_tests_only_01234567890_abcdef';
 const customerId = 'customer_unit_fixture';
 const storeId = 'store_unit_fixture';
 const audio = (sequence = 1, closed = true) => ({ sequence, shouting_count: 2, is_shouting: false, available: true, coverage_complete: true, closed });
 const transcript = [{ id: 'u1', role: 'user', time_sec: 1, content: '씨발 씨발. 내가 너 찾아간다. 일을 왜 이렇게 못해요? 말이 안 통하네. 이것도 제대로 못해요?' }];
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const getCall = (store, id = 'call_test') => store.snapshot().find(call => call.call_id === id);
+// Independently check the compact JWT contract and signature as a receiver would.
+function readVerifiedJwt(authorization, secret = webhookJwtSecret, nowSeconds = Math.floor(Date.now() / 1000)) {
+  assert.match(authorization, /^Bearer [A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
+  const jwt = authorization.slice('Bearer '.length), parts = jwt.split('.');
+  const decoded = parts.map(part => Buffer.from(part, 'base64url'));
+  decoded.forEach((part, i) => assert.equal(part.toString('base64url'), parts[i]));
+  const signature = createHmac('sha256', secret).update(parts[0] + '.' + parts[1]).digest();
+  assert.equal(decoded[2].length, signature.length);
+  assert.ok(timingSafeEqual(decoded[2], signature), 'JWT signature must match');
+  const header = JSON.parse(decoded[0].toString('utf8')), claims = JSON.parse(decoded[1].toString('utf8'));
+  assert.deepEqual(header, { alg: 'HS256', typ: 'JWT' });
+  assert.deepEqual(Object.keys(claims).sort(), ['exp', 'iat', 'jti']);
+  assert.ok(Number.isSafeInteger(claims.iat) && claims.iat >= 0);
+  assert.equal(claims.exp, claims.iat + 60);
+  assert.match(claims.jti, /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);
+  if (nowSeconds >= claims.exp) throw new Error('JWT_EXPIRED');
+  assert.equal(jwt.includes(secret), false);
+  return { jwt, header, claims };
+}
 function prepare(store, id = 'call_test', customer = customerId, demoStore = storeId) {
   store.connecting(id, customer, undefined, demoStore); store.live(id); store.transcript(id, transcript);
 }
 function finish(store, id = 'call_test') { store.audio(id, audio()); store.ended(id); }
 function fixture(t, overrides = {}) {
   const store = createLiveCallStore(), requests = [], logs = [];
-  const delivery = createN8nDelivery({ liveCalls: store, webhookUrl, webhookAuthToken,
+  const delivery = createN8nDelivery({ liveCalls: store, webhookUrl, webhookJwtSecret,
     fetchImpl: async (url, init) => { requests.push({ url, init }); return new Response('ok'); },
     log: line => logs.push(line), ...overrides });
   t.after(() => delivery.close());
@@ -39,9 +59,9 @@ test('consultation IDs are numeric, unique in the same millisecond and survive a
 });
 
 test('server config has no implicit demo customer/store or URL; configured values are trimmed', () => {
-  assert.deepEqual(n8nConfig({}), { webhookUrl: '', webhookAuthToken: '', demoCustomerId: null, demoStoreId: null });
+  assert.deepEqual(n8nConfig({}), { webhookUrl: '', webhookJwtSecret: '', demoCustomerId: null, demoStoreId: null });
   assert.deepEqual(n8nConfig({ N8N_WEBHOOK_URL: ` ${webhookUrl} `, KCM_DEMO_CUSTOMER_ID: ` ${customerId} `, KCM_DEMO_STORE_ID: ` ${storeId} ` }),
-    { webhookUrl, webhookAuthToken: '', demoCustomerId: customerId, demoStoreId: storeId });
+    { webhookUrl, webhookJwtSecret: '', demoCustomerId: customerId, demoStoreId: storeId });
   assert.equal(n8nConfig({ KCM_DEMO_STORE_ID: '  ' }).demoStoreId, null);
 });
 
@@ -58,7 +78,9 @@ test('final audio before end never posts early; finalized JSON matches the exact
   assert.equal(requests.length, 1);
   const { url, init } = requests[0];
   assert.equal(url, webhookUrl); assert.equal(init.method, 'POST');
-  assert.deepEqual(init.headers, { 'Content-Type': 'application/json', Authorization: 'Bearer ' + webhookAuthToken });
+  assert.deepEqual(Object.keys(init.headers).sort(), ['Authorization', 'Content-Type']);
+  assert.equal(init.headers['Content-Type'], 'application/json');
+  readVerifiedJwt(init.headers.Authorization);
   assert.equal(init.redirect, 'manual');
   const payload = JSON.parse(init.body);
   assert.deepEqual(payload, {
@@ -275,7 +297,7 @@ test('finalized risk with no Monitor start time becomes failed, preserving the o
 
 test('two delivery subscribers still share the same atomic per-call claim', async t => {
   const a = fixture(t), otherPosts = [];
-  const second = createN8nDelivery({ liveCalls: a.store, webhookUrl, webhookAuthToken, fetchImpl: async () => { otherPosts.push(1); return new Response(); }, log() {} });
+  const second = createN8nDelivery({ liveCalls: a.store, webhookUrl, webhookJwtSecret, fetchImpl: async () => { otherPosts.push(1); return new Response(); }, log() {} });
   t.after(() => second.close());
   prepare(a.store); finish(a.store); await tick();
   assert.equal(a.requests.length + otherPosts.length, 1);
@@ -283,13 +305,13 @@ test('two delivery subscribers still share the same atomic per-call claim', asyn
 
 test('HTTP create + actual Monitor SDK frames + final audio automatically POST to isolated receiver; IDs and SSE remain isolated', { timeout: 10_000 }, async t => {
   // Only Retell transport and outbound HTTPS destination are substituted; actual Node HTTP/fetch and SDK are used.
-  const original = globalThis.WebSocket, sockets = [], received = [], logs = [];
+  const original = globalThis.WebSocket, sockets = [], received = [], logs = [], sentJwts = [];
   class FakeSocket { constructor() { sockets.push(this); } frame(data) { this.onmessage?.({ data: JSON.stringify(data) }); } close() {} }
   globalThis.WebSocket = FakeSocket;
   t.after(() => { globalThis.WebSocket = original; });
   const receiver = createServer(async (req, res) => {
     let text = ''; for await (const part of req) text += part;
-    assert.equal(req.headers.authorization, 'Bearer ' + webhookAuthToken);
+    readVerifiedJwt(req.headers.authorization);
     received.push({ method: req.method, type: req.headers['content-type'], body: JSON.parse(text) });
     res.writeHead(200); res.end('received');
   });
@@ -300,7 +322,7 @@ test('HTTP create + actual Monitor SDK frames + final audio automatically POST t
   let createIndex = 0;
   const identities = [];
   const server = createBackend({ key: 'synthetic-retell-key', agentId: 'agent_fixture', liveCalls: store,
-    monitors, ...n8nConfig({ N8N_WEBHOOK_URL: webhookUrl, N8N_WEBHOOK_AUTH_TOKEN: webhookAuthToken,
+    monitors, ...n8nConfig({ N8N_WEBHOOK_URL: webhookUrl, N8N_WEBHOOK_JWT_SECRET: webhookJwtSecret,
       KCM_DEMO_CUSTOMER_ID: customerId, KCM_DEMO_STORE_ID: storeId }), log: line => logs.push(line),
     fetchImpl: async (_url, init) => {
       assert.equal(init.headers.Authorization, 'Bearer synthetic-retell-key');
@@ -308,7 +330,7 @@ test('HTTP create + actual Monitor SDK frames + final audio automatically POST t
       return Response.json({ call_id: `call_http_${++createIndex}`, access_token: 'synthetic-access-token' });
     },
     webhookFetchImpl: (url, init) => {
-      assert.equal(url, webhookUrl); assert.equal(init.headers.Authorization, 'Bearer ' + webhookAuthToken);
+      assert.equal(url, webhookUrl); sentJwts.push(readVerifiedJwt(init.headers.Authorization).jwt);
       return fetch(`http://127.0.0.1:${receiver.address().port}/receive`, init);
     },
   });
@@ -323,7 +345,7 @@ test('HTTP create + actual Monitor SDK frames + final audio automatically POST t
     const data = await response.json(); await tick();
     assert.equal(response.status, 200);
     assert.doesNotMatch(JSON.stringify(data), /webhook|customer|consultation|store_id|synthetic-retell-key/);
-    assert.equal(JSON.stringify(data).includes(webhookAuthToken), false);
+    assert.equal(JSON.stringify(data).includes(webhookJwtSecret), false);
     const before = getCall(store, data.call_id);
     identities.push(before.consultation_id);
     assert.match(before.consultation_id, /^consultation_\d+$/); assert.equal(before.customer_id, customerId);
@@ -348,17 +370,73 @@ test('HTTP create + actual Monitor SDK frames + final audio automatically POST t
   await reader.cancel();
   assert.match(snapshot, /call_http_1/); assert.match(snapshot, /call_http_2/); assert.match(snapshot, /"status":"sent"/);
   assert.doesNotMatch(snapshot + JSON.stringify(logs), /https:|synthetic-private-path|synthetic-retell-key|synthetic-access-token/);
-  assert.equal((snapshot + JSON.stringify(logs)).includes(webhookAuthToken), false);
+  assert.equal((snapshot + JSON.stringify(logs)).includes(webhookJwtSecret), false);
+  assert.equal(sentJwts.length, 2); assert.notEqual(sentJwts[0], sentJwts[1]);
+  for (const jwt of sentJwts) assert.equal((snapshot + JSON.stringify(logs)).includes(jwt), false);
 });
 
-test('auth configuration preserves the exact bare token and never falls back to other keys', () => {
-  const raw = ' ' + webhookAuthToken + '\n';
-  assert.equal(n8nConfig({ N8N_WEBHOOK_AUTH_TOKEN: raw }).webhookAuthToken, raw);
-  assert.equal(n8nConfig({ RETELL_API_KEY: webhookAuthToken, SUPABASE_READ_KEY: webhookAuthToken }).webhookAuthToken, '');
+test('JWT uses exact HS256 compact encoding, second-based expiry and no identity or call data', async t => {
+  const milliseconds = 1_760_000_000_999, seconds = Math.floor(milliseconds / 1000);
+  const { store, requests, logs } = fixture(t, { now: () => milliseconds });
+  prepare(store); finish(store); await tick();
+  const request = requests[0], { jwt, claims } = readVerifiedJwt(request.init.headers.Authorization, webhookJwtSecret, seconds);
+  assert.equal(claims.iat, seconds); assert.equal(claims.exp, seconds + 60);
+  assert.deepEqual(readVerifiedJwt(request.init.headers.Authorization, webhookJwtSecret, seconds + 59).claims, claims);
+  assert.throws(() => readVerifiedJwt(request.init.headers.Authorization, webhookJwtSecret, seconds + 60), /JWT_EXPIRED/);
+  assert.throws(() => readVerifiedJwt(request.init.headers.Authorization, 'different_synthetic_signing_secret_00000000000000000000000000000000', seconds), /signature/);
+  const parts = jwt.split('.');
+  parts[1] = Buffer.from(JSON.stringify({ ...claims, exp: claims.exp + 1 })).toString('base64url');
+  assert.throws(() => readVerifiedJwt('Bearer ' + parts.join('.'), webhookJwtSecret, seconds), /signature/);
+  const visible = JSON.stringify(store.snapshot()) + JSON.stringify(logs);
+  assert.equal(JSON.stringify(request).includes(webhookJwtSecret), false);
+  assert.equal(visible.includes(webhookJwtSecret), false); assert.equal(visible.includes(jwt), false);
+  assert.deepEqual(JSON.parse(request.init.body), callResultPayload(getCall(store)));
 });
 
-test('missing auth token fails without HTTP, preserves final result and cannot retry after finalization', async t => {
-  const { store, requests, logs } = fixture(t, { webhookAuthToken: '' });
+test('each delivery gets a fresh JWT and random jti even for two calls finalized in the same second', async t => {
+  const seconds = 1_760_000_000, { store, requests } = fixture(t, { now: () => seconds * 1000 });
+  prepare(store); finish(store); await tick(); const first = getCall(store);
+  prepare(store, 'call_second'); finish(store, 'call_second'); await tick();
+  const tokens = requests.map(request => readVerifiedJwt(request.init.headers.Authorization, webhookJwtSecret, seconds));
+  assert.equal(tokens.length, 2); assert.notEqual(tokens[0].jwt, tokens[1].jwt);
+  assert.notEqual(tokens[0].claims.jti, tokens[1].claims.jti);
+  assert.equal(tokens[0].claims.iat, tokens[1].claims.iat);
+  assert.deepEqual(getCall(store), first);
+  store.ended('call_second'); store.audio('call_second', audio(2)); await tick();
+  assert.equal(requests.length, 2);
+});
+
+test('legacy bearer configuration cannot authenticate a delivery when the JWT secret is absent', async t => {
+  const legacy = n8nConfig({ N8N_WEBHOOK_URL: webhookUrl, N8N_WEBHOOK_AUTH_TOKEN: webhookJwtSecret });
+  const { store, requests } = fixture(t, legacy);
+  prepare(store); finish(store); await tick();
+  assert.equal(requests.length, 0); assert.equal(getCall(store).webhook_delivery.error, 'N8N_WEBHOOK_AUTH_MISSING');
+  assert.equal(getCall(store).final_result.risk_score, 40);
+});
+
+test('invalid or failing signing clock stops HTTP and only exposes the existing fixed error code', async t => {
+  for (const now of [() => NaN, () => Infinity, () => -1000, () => Number.MAX_VALUE,
+    () => { throw new Error('clock failed ' + webhookJwtSecret); }]) {
+    const { store, requests, logs } = fixture(t, { now });
+    prepare(store); finish(store); await tick();
+    assert.equal(requests.length, 0); assert.equal(getCall(store).webhook_delivery.error, 'NETWORK_ERROR');
+    assert.equal(getCall(store).final_result.risk_score, 40);
+    assert.deepEqual(logs, ['[n8n] delivery failed: call_test (NETWORK_ERROR)']);
+    assert.equal((JSON.stringify(store.snapshot()) + JSON.stringify(logs)).includes(webhookJwtSecret), false);
+  }
+});
+
+test('JWT configuration preserves the exact raw signing secret and never falls back to legacy tokens or other keys', () => {
+  const raw = ' ' + webhookJwtSecret + '\n';
+  assert.equal(n8nConfig({ N8N_WEBHOOK_JWT_SECRET: raw }).webhookJwtSecret, raw);
+  const oldConfig = n8nConfig({ N8N_WEBHOOK_AUTH_TOKEN: webhookJwtSecret,
+    RETELL_API_KEY: webhookJwtSecret, SUPABASE_READ_KEY: webhookJwtSecret });
+  assert.equal(oldConfig.webhookJwtSecret, '');
+  assert.equal('webhookAuthToken' in oldConfig, false);
+});
+
+test('missing JWT signing secret fails without HTTP, preserves final result and cannot retry after finalization', async t => {
+  const { store, requests, logs } = fixture(t, { webhookJwtSecret: '' });
   prepare(store); finish(store);
   const result = getCall(store).final_result;
   await tick();
@@ -371,11 +449,11 @@ test('missing auth token fails without HTTP, preserves final result and cannot r
   assert.deepEqual(logs, ['[n8n] delivery failed: call_test (N8N_WEBHOOK_AUTH_MISSING)']);
 });
 
-test('malformed auth tokens are rejected without normalization, network or secret disclosure', async t => {
-  for (const token of ['short', 'a'.repeat(31), 'a'.repeat(257), ' ' + webhookAuthToken, webhookAuthToken + ' ',
-    webhookAuthToken + '\n', webhookAuthToken + '\r\n', webhookAuthToken + '\r', 'Bearer ' + webhookAuthToken,
-    webhookAuthToken + '\t', webhookAuthToken + '\0', webhookAuthToken + '한', webhookAuthToken + '/']) {
-    const { store, requests, logs } = fixture(t, { webhookAuthToken: token });
+test('malformed JWT signing secrets are rejected without normalization, network or secret disclosure', async t => {
+  for (const token of ['short', 'a'.repeat(63), 'a'.repeat(257), ' ' + webhookJwtSecret, webhookJwtSecret + ' ',
+    webhookJwtSecret + '\n', webhookJwtSecret + '\r\n', webhookJwtSecret + '\r', 'Bearer ' + webhookJwtSecret,
+    webhookJwtSecret + '\t', webhookJwtSecret + '\0', webhookJwtSecret + '한', webhookJwtSecret + '/']) {
+    const { store, requests, logs } = fixture(t, { webhookJwtSecret: token });
     prepare(store); finish(store); await tick();
     assert.equal(requests.length, 0);
     assert.equal(getCall(store).webhook_delivery.error, 'N8N_WEBHOOK_AUTH_INVALID');
@@ -384,13 +462,14 @@ test('malformed auth tokens are rejected without normalization, network or secre
   }
 });
 
-test('valid token bounds and allowed characters are transmitted only in the Authorization header', async t => {
-  for (const token of ['A'.repeat(32), 'z'.repeat(256), 'Synthetic_Bare-Token_12345678901234567890']) {
-    const { store, requests, logs } = fixture(t, { webhookAuthToken: token });
+test('valid signing secret bounds and allowed characters produce JWTs without transmitting the signing secret', async t => {
+  for (const token of ['A'.repeat(64), 'z'.repeat(256), 'Synthetic_Raw-Secret_12345678901234567890123456789012345678901234567890']) {
+    const { store, requests, logs } = fixture(t, { webhookJwtSecret: token });
     prepare(store); finish(store); await tick();
     assert.equal(getCall(store).webhook_delivery.status, 'sent');
     assert.equal(requests.length, 1);
-    assert.equal(requests[0].init.headers.Authorization, 'Bearer ' + token);
+    readVerifiedJwt(requests[0].init.headers.Authorization, token);
+    assert.equal(JSON.stringify(requests[0]).includes(token), false);
     assert.equal(requests[0].url.includes(token), false);
     assert.equal(requests[0].init.body.includes(token), false);
     assert.equal((JSON.stringify(store.snapshot()) + JSON.stringify(logs)).includes(token), false);
@@ -399,25 +478,32 @@ test('valid token bounds and allowed characters are transmitted only in the Auth
 
 test('receiver auth rejection or redirect never retries, follows Location or discloses echoed credentials', async t => {
   for (const status of [401, 403, 302, 307, 308]) {
-    let count = 0;
+    let count = 0, sentJwt;
     const { store, logs } = fixture(t, { fetchImpl: async (_url, init) => {
       count++;
       assert.equal(init.redirect, 'manual');
-      assert.equal(init.headers.Authorization, 'Bearer ' + webhookAuthToken);
-      return new Response('echoed auth ' + webhookAuthToken, { status, headers: { Location: 'https://other.example.test/' + webhookAuthToken } });
+      sentJwt = readVerifiedJwt(init.headers.Authorization).jwt;
+      return new Response('echoed auth ' + sentJwt + ' ' + webhookJwtSecret,
+        { status, headers: { Location: 'https://other.example.test/' + sentJwt } });
     } });
     prepare(store); finish(store); const result = getCall(store).final_result; await tick();
     assert.equal(getCall(store).webhook_delivery.error, 'HTTP_' + status);
     store.ended('call_test'); store.audio('call_test', audio(2)); await tick();
     assert.equal(count, 1);
     assert.deepEqual(getCall(store).final_result, result);
-    assert.equal((JSON.stringify(store.snapshot()) + JSON.stringify(logs)).includes(webhookAuthToken), false);
+    assert.equal((JSON.stringify(store.snapshot()) + JSON.stringify(logs)).includes(webhookJwtSecret), false);
+    assert.equal((JSON.stringify(store.snapshot()) + JSON.stringify(logs)).includes(sentJwt), false);
   }
 });
 
-test('network exceptions containing auth token never reach SSE state or logs', async t => {
-  const { store, logs } = fixture(t, { fetchImpl: async () => { throw new Error('Authorization: Bearer ' + webhookAuthToken); } });
+test('network exceptions containing JWT or signing secret never reach SSE state or logs', async t => {
+  let sentJwt;
+  const { store, logs } = fixture(t, { fetchImpl: async (_url, init) => {
+    sentJwt = readVerifiedJwt(init.headers.Authorization).jwt;
+    throw new Error('Authorization: Bearer ' + sentJwt + ' ' + webhookJwtSecret);
+  } });
   prepare(store); finish(store); await tick();
   assert.equal(getCall(store).webhook_delivery.error, 'NETWORK_ERROR');
-  assert.equal((JSON.stringify(store.snapshot()) + JSON.stringify(logs)).includes(webhookAuthToken), false);
+  assert.equal((JSON.stringify(store.snapshot()) + JSON.stringify(logs)).includes(webhookJwtSecret), false);
+  assert.equal((JSON.stringify(store.snapshot()) + JSON.stringify(logs)).includes(sentJwt), false);
 });

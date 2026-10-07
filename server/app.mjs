@@ -32,12 +32,12 @@ async function readBody(request) {
  * @param {{ key: string, agentId: string, monitors: Pick<ReturnType<import('./monitor.mjs').createMonitorRegistry>, 'start' | 'close' | 'release'>,
  * fetchImpl?: typeof fetch, log?: (line: string) => void, liveCalls?: ReturnType<typeof createLiveCallStore>,
  * deployment?: import('./deployment.mjs').Deployment | null, demoCustomerId?: string | null, demoStoreId?: string | null,
- * webhookUrl?: string, webhookAuthToken?: string, webhookFetchImpl?: typeof fetch, inventoryBaseUrl?: string,
+ * webhookUrl?: string, webhookJwtSecret?: string, webhookFetchImpl?: typeof fetch, inventoryBaseUrl?: string,
  * supabaseUrl?: string, supabaseKey?: string, realDataProvider?: ReturnType<typeof createSupabaseReadProvider>,
  * publishableKey?: string, accountsJson?: string, staffAuthFetchImpl?: typeof fetch }} options
  */
 export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log = console.log, liveCalls = createLiveCallStore(), deployment = null,
-  demoCustomerId = null, demoStoreId = null, webhookUrl = '', webhookAuthToken = '', webhookFetchImpl = fetch, inventoryBaseUrl = '',
+  demoCustomerId = null, demoStoreId = null, webhookUrl = '', webhookJwtSecret = '', webhookFetchImpl = fetch, inventoryBaseUrl = '',
   supabaseUrl = '', supabaseKey = '', realDataProvider, publishableKey = '', accountsJson = '', staffAuthFetchImpl = fetch }) {
   const allowedOrigins = deployment ? new Set([deployment.origin]) : localOrigins;
   const publicHost = deployment ? new URL(deployment.origin).host : null;
@@ -45,7 +45,7 @@ export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log =
   const storedCustomerAccessRestricted = Boolean(deployment
     && !/^(?:localhost|127(?:\.\d{1,3}){3}|\[::1\])$/.test(new URL(deployment.origin).hostname));
   const liveEvents = createLiveEvents(liveCalls);
-  const delivery = createN8nDelivery({ liveCalls, webhookUrl, webhookAuthToken, fetchImpl: webhookFetchImpl, log });
+  const delivery = createN8nDelivery({ liveCalls, webhookUrl, webhookJwtSecret, fetchImpl: webhookFetchImpl, log });
   // Smart inventory goes through n8n (N8N_INVENTORY_BASE_URL); without it the routes answer 503.
   const inventoryDb = inventoryBaseUrl ? createInventoryDb({ baseUrl: inventoryBaseUrl, fetchImpl: webhookFetchImpl, log }) : null;
   const inventoryNotify = inventoryBaseUrl ? createInventoryNotifier({ baseUrl: inventoryBaseUrl, fetchImpl: webhookFetchImpl, log }) : null;

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { maskCustomerName, storedCustomerDisplayName } from '../src/lib/customerName.js';
+import { isDemoDisplayCustomer, liveCustomerDisplayName, maskCustomerName, storedCustomerDisplayName } from '../src/lib/customerName.js';
 import { callRiskLabel } from '../src/lib/callPresentation.js';
 import { createCallDemoState } from '../src/data/callMockData.js';
 import { callRisk, getCallMetrics } from '../src/lib/callRisk.js';
@@ -18,6 +18,38 @@ test('짧거나 누락된 이름과 유니코드 글자를 안전하게 표시�
   assert.equal(maskCustomerName('김'), '*');
   for (const name of ['', '  ', undefined, null]) assert.equal(maskCustomerName(name), '이름 미확인');
   assert.equal(maskCustomerName('𠮷田花'), '𠮷*花');
+});
+
+test('승인된 시연 고객의 DB 이름은 기존 마스킹으로 표시하고 다른 표시명은 덮지 않는다', () => {
+  assert.equal(maskCustomerName('정창민'), '정*민');
+  assert.equal(storedCustomerDisplayName(maskCustomerName('정창민'), 'customer_9999'), '정*민');
+  for (const name of ['김*연', '박*훈', '비공개 고객', '이름 미확인']) {
+    assert.equal(storedCustomerDisplayName(name, 'customer_9999'), name);
+  }
+});
+
+test('이름 없는 실시간 DTO에서 승인된 시연 ID 하나만 마스킹 이름으로 표시한다', () => {
+  assert.equal(liveCustomerDisplayName('customer_9999'), '정*민');
+  assert.equal(isDemoDisplayCustomer('customer_9999'), true);
+  for (const id of ['customer_001', 'customer_09999', 'customer_99999', 'customer_9999x', ' customer_9999', 'CUSTOMER-9999']) {
+    assert.equal(liveCustomerDisplayName(id), id);
+    assert.equal(isDemoDisplayCustomer(id), false);
+  }
+  for (const id of [null, undefined, '']) {
+    assert.equal(liveCustomerDisplayName(id), '고객 확인 전');
+    assert.equal(liveCustomerDisplayName(id, '미식별 고객'), '미식별 고객');
+    assert.equal(isDemoDisplayCustomer(id), false);
+  }
+});
+
+test('시연 표시는 원본 식별자·DTO·고객별 선택 값을 변경하지 않는다', () => {
+  const call = Object.freeze({ call_id: 'call_name_fixture', customer_id: 'customer_9999', consultation_id: 'consultation_1234' });
+  const before = structuredClone(call);
+  const selectedValue = 'customer:' + call.customer_id;
+  assert.equal(liveCustomerDisplayName(call.customer_id), '정*민');
+  assert.deepEqual(call, before);
+  assert.equal(selectedValue, 'customer:customer_9999');
+  assert.doesNotMatch(liveCustomerDisplayName(call.customer_id), /customer_|정창민/);
 });
 
 test('확인된 테스트고객 마스킹만 고객 ID 기반 중립 이름으로 표시한다', () => {
