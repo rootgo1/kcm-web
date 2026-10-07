@@ -1220,3 +1220,13 @@ npm.cmd run dev
 - 사용자가 새 JWT Credential과 Render 환경값을 직접 저장했고, n8n 목록의 새 JWT 인증정보·저장 버튼 비활성화·Passphrase/HS256과 Render의 새 키·환경값 업데이트 안내를 값 없이 확인했습니다. 실제 값은 출력/입력하지 않았습니다. 현재 n8n 발행본848f1052(14:56:54) 뒤 팀원 draft c60e2a81(15:01:12)가 있어 인증 외 함께 발행되는 범위 확인은 남습니다. Download/읽기전용 캔버스 Copy가 workflow JSON을 반환하지 않아 설정 비교를 완료하지 못했습니다. 공유 draft를 복구·덮어쓰거나 추가발행하지 않았습니다.
 - 코드 `f79cc3d`를 push하고 [PR5](https://github.com/rootgo1/kcm-web/pull/5)를 생성·이 작업에 연결했습니다. GitHub Actions 실행은 없으며 로컬 통합 검증과 독립 리뷰를 사용합니다. 발행/배포 직전 운영 SSE의 connecting/live/webhook_pending/ended_waiting_final_audio는 모두0이었습니다. 문서 리뷰에서 구 Header Auth 검사 수치와 JWT 검사 구분, Save only→JWT 발행→검증 커밋 배포 순서를 보완했습니다. 이후 문서 변경은 실행 코드를 바꾸지 않습니다.
 - 기존 운영 앱은 Header Auth 버전이며 새JWT 앱을 아직 배포하지 않았습니다. 기존 실행 기록·Credential을 삭제하지 않았고 실제SMS·자동대여·과거실패통화 재전송은 실행하지 않았습니다. 새 Credential입력 → 공유draft범위확인 → 통화없음확인 → JWT발행/배포 → 인증거부/새통화저장 검증까지 완료해야 운영보호와 촬영준비 완료로 보고합니다.
+
+## 2026-10-07 — 파괴·살해 위협 표현 탐지 범위 보강
+
+- 최신 origin/main `a3374e69c371e4ed33a86c901774c4bc64908509`에서 `fix/threat-expression-coverage`를 생성했습니다. 변경은 `server/text-risk.mjs`, 신규 `server/tests/threat-expression-coverage.test.mjs`, 기존 통합 테스트의 텍스트 규칙 버전 기대값, 이 상태 기록에 한정합니다. 기존 인증과 최신 체감가 변경을 보존합니다.
+- 텍스트 규칙을 `local-text-rules-v8`로 갱신했습니다. “다 뒤집어 엎는다”, “다 뒤엎는다”, “다 죽인다”, “다 죽여버릴 거야”, “매장 뒤집어엎을 테니까” 등 파괴·살해 의사의 띄어쓰기·복합 동사·미래형 및 다/전부/모두/모조리/몽땅/싹 변형을 보강했습니다. 짧게 나뉜 USER 발화는 기존 2개 턴·30초·문자 수 제한 안에서 이어 확인합니다.
+- USER만 집계, Agent 제외, 동일 발생 건 중복 방지, ASR 수정·전체 snapshot 재수신 시 재계산, 확정 결과 보존을 유지합니다. 인용·전언·부정 표현과 가까운 문맥의 벌레·프로세스 등 비인간 대상 및 통상적인 설계 변경 표현을 제외합니다. 일상 표현 “맛 죽인다”, “프로세스를 다 죽일 거야”, “설계를 다 뒤집어엎는다”를 폭력 위협으로 세지 않습니다.
+- 위험 계산 `call-risk-v5`는 변경하지 않습니다. 새로 인식된 명시적 파괴·살해 위협은 기존 신체 위해 보정에 따라 단독 1건도 최소60점/위험으로 처리합니다. 욕설·비난·선정 표현 규칙, Retell·Monitor·SSE·고성/RMS·최종화·n8n 전송·스마트재고·DB·접근 제한 코드는 변경하지 않습니다.
+- 신규100개 테스트를 포함해 전체 `npm.cmd run check` **1,122/1,122 통과**, 실패·skip·취소0입니다. 프런트 `tsc --noEmit`, 서버 `tsc -p tsconfig.server.json`, Vite production build 통과. 기존 Retell SDK chunk500kB 경고만 남습니다. 기존 테스트는 삭제·약화하지 않았으며 통합 테스트의 텍스트 규칙 버전 기대값만 v8로 맞췄습니다.
+- 독립 읽기 검토에서 추가 blocker를 발견하지 못했습니다. `npm.cmd run preview:standalone` 재생성 완료(기존 HTML과 내용 차이 없음), `git diff --check` 통과. 검증 로그는 Git 제외 `.cache/filming-readiness/threat-coverage-check.log`에 보관합니다.
+- 이번 검증은 격리 자동 테스트입니다. 실제 Retell 음성·Production 화면·외부 저장은 재검증하지 않았고 main 병합·Render 배포·환경변수·n8n workflow·DB 데이터 변경은 하지 않습니다. ASR이 발화를 다른 의미로 변환하거나 등록되지 않은 표현·기존 문맥 범위를 벗어난 분절은 여전히 놓칠 수 있으므로 배포 후 실제 음성 확인이 필요합니다.
