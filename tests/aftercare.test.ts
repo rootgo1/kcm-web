@@ -10,6 +10,7 @@ import { applyCallSupport } from '../src/lib/callSupport.js';
 import { getCallMetrics } from '../src/lib/callRisk.js';
 import { saveConsultation, startConsultation } from '../src/lib/consultation.js';
 import { getMetrics } from '../src/lib/domain.js';
+import { paginateCalls } from '../src/lib/callPagination.js';
 const at = '2026-10-05T01:00:00.000Z', later = '2026-10-05T01:05:00.000Z', actor = '데모 직원';
 const demo = () => createMockData('2026-10-05');
 function completedCall(id = 'C-003') {
@@ -123,4 +124,61 @@ test('지원 미완료 상담을 완료해 사후관리해도 지원·위험·�
   const acknowledged = applyCallSupport(withRequest.calls, 'C-003', { type: 'acknowledge', requestId: 'test-support', actor: '데모 관리자' }, later);
   assert.equal(acknowledged[2].supportRequests[0].status, 'in_progress'); assert.equal(acknowledged[2].scoreRecord, withRequest.calls[2].scoreRecord);
   assert.equal(acknowledged[2].completedAt, withRequest.calls[2].completedAt); assert.equal(acknowledged[2].result, withRequest.calls[2].result);
+});
+
+test('사후관리 12건을 페이지 이동해도 전체 집계와 상담별 처리 기록·원본을 보존한다', () => {
+  const base = completedCall().calls[2];
+  const calls = Array.from({ length: 12 }, (_, index) => ({ ...structuredClone(base), id: `PAGE-${index + 1}` }));
+  const snapshot = structuredClone(calls), items = aftercareItems([], calls, demoContactConsents);
+  const first = paginateCalls(items, 1), second = paginateCalls(items, 2), last = paginateCalls(items, 3);
+  assert.deepEqual([first.items.length, second.items.length, last.items.length], [5, 5, 2]);
+  assert.deepEqual([...first.items, ...second.items, ...last.items], items);
+  const target = second.items[0];
+  const records = sendAftercare(reviewAftercare({}, target, '두 번째 페이지 고객 후속 안내', at, actor), target, later, actor);
+  const recordSnapshot = structuredClone(records);
+  const back = paginateCalls(items, 1), again = paginateCalls(items, 2);
+  assert.equal(back.items.some(item => item.id === target.id), false);
+  assert.equal(again.items[0], target);
+  assert.equal(records[again.items[0].id].status, 'sent');
+  assert.equal(records[again.items[0].id].message, '두 번째 페이지 고객 후속 안내');
+  assert.equal(items.length, 12);
+  assert.equal(items.filter(item => records[item.id]?.status === 'sent').length, 1);
+  assert.equal(back.items.filter(item => records[item.id]?.status === 'sent').length, 0);
+  assert.deepEqual(records, recordSnapshot); assert.deepEqual(calls, snapshot);
+});
+
+test('사후관리 목록 축소는 마지막 유효 페이지로 보정하고 남은 항목의 처리 기록을 유지한다', () => {
+  const item = completedItem(), items = Array.from({ length: 12 }, (_, index) => ({ ...item, id: `call:SHRINK-${index + 1}`, sourceId: `SHRINK-${index + 1}` }));
+  const target = items[5], records = sendAftercare(reviewAftercare({}, target, '보존할 안내', at, actor), target, later, actor);
+  const recordSnapshot = structuredClone(records), reduced = items.slice(0, 6);
+  const corrected = paginateCalls(reduced, 3);
+  assert.equal(corrected.page, 2); assert.equal(corrected.totalPages, 2); assert.deepEqual(corrected.items, [target]);
+  assert.equal(records[corrected.items[0].id].sentAt, later);
+  assert.equal(reduced.filter(item => records[item.id]?.status === 'sent').length, 1);
+  const single = paginateCalls(reduced.slice(0, 5), corrected.page);
+  assert.equal(single.page, 1); assert.equal(single.totalPages, 1); assert.equal(single.items.length, 5);
+  assert.deepEqual(paginateCalls([], corrected.page), { page: 1, totalPages: 1, items: [] });
+  assert.deepEqual(records, recordSnapshot); assert.equal(items.length, 12);
+});
+
+test('두 번째 사후관리 페이지에서도 미동의·미확인 제한과 동의 변경 후 재확인 조건을 보존한다', () => {
+  const item = completedItem(), items = Array.from({ length: 7 }, (_, index) => ({ ...item, id: `call:CONSENT-${index + 1}`, sourceId: `CONSENT-${index + 1}` }));
+  items[5] = { ...items[5], consent: 'declined' }; items[6] = { ...items[6], consent: 'unknown' };
+  const snapshot = structuredClone(items), page = paginateCalls(items, 2), empty = {};
+  assert.equal(page.items.length, 2);
+  for (const blocked of page.items) {
+    assert.ok(aftercareBlocker(blocked));
+    assert.equal(reviewAftercare(empty, blocked, '안내', at, actor), empty);
+    const granted = { ...blocked, consent: 'granted' as const }, reviewed = reviewAftercare(empty, granted, '안내', at, actor);
+    assert.equal(aftercareReviewed(blocked, reviewed[blocked.id]), false);
+    assert.equal(sendAftercare(reviewed, blocked, later, actor), reviewed);
+  }
+  const reviewedItem = paginateCalls(items, 1).items[0], records = reviewAftercare(empty, reviewedItem, '기존 안내', at, actor);
+  const amended = { ...reviewedItem, summary: '수정된 상담 결과' };
+  const returned = paginateCalls([amended, ...items.slice(1)], 1).items[0];
+  assert.equal(aftercareReviewed(returned, records[returned.id]), false);
+  assert.equal(sendAftercare(records, returned, later, actor), records);
+  const rechecked = reviewAftercare(records, returned, '수정 결과 안내', later, actor);
+  assert.equal(sendAftercare(rechecked, returned, later, actor)[returned.id].status, 'sent');
+  assert.deepEqual(items, snapshot);
 });

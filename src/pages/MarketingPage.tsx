@@ -1,22 +1,26 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal } from '../components/Modal';
 import { Icon } from '../components/Icon';
 import { consultationTime, followUpLabels } from '../lib/consultation';
 import { maskCustomerName } from '../lib/customerName';
 import { aftercareBlocker, aftercareReviewed, consentLabels, recommendedAftercareMessage, type AftercareItem, type AftercareRecord, type AftercareState } from '../lib/aftercare';
 import { uiText } from '../lib/uiText';
+import { CALLS_PER_PAGE, paginateCalls } from '../lib/callPagination';
 
 type Props = { items: AftercareItem[]; records: AftercareState; store: string; onReview: (id: string, message: string) => void; onSend: (id: string) => void; onSupport: () => void };
 const recommendedMessage = (item: AftercareItem, store: string) => recommendedAftercareMessage({ ...item, inquiryType: uiText(item.inquiryType) }, store);
 export function MarketingPage({ items, records, store, onReview, onSend, onSupport }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const pagination = paginateCalls(items, page);
+  useEffect(() => { setPage(pagination.page); }, [pagination.page]);
   const selected = items.find(item => item.id === selectedId);
   return <>
     <div className="page-heading"><div><span className="eyebrow">매장관리</span><h1>마케팅</h1><p>완료 상담을 바탕으로 후속 안내 내용을 확인하고 처리 기록을 관리하세요.</p></div></div>
     <section className="card appointments-card aftercare-card" aria-label="상담 후 고객 사후관리">
       <div className="card-heading"><div className="title-with-icon"><span className="small-icon red"><Icon name="megaphone" size={18}/></span><h2>완료 상담 고객</h2></div><div className="support-actions"><span className="small-badge">전체 {items.length}건</span><span className="small-badge">처리 완료 {items.filter(item => records[item.id]?.status === 'sent').length}건</span></div></div>
       <div className="table-scroll" role="region" aria-label="사후관리 목록 · 좌우 스크롤" tabIndex={0}><table className="appointment-table aftercare-table"><thead><tr><th scope="col">고객 / 상담</th><th scope="col">상담 요약</th><th scope="col">상담 결과</th><th scope="col">연락·안내 동의</th><th scope="col">후속 안내</th><th scope="col">추천 후속 메시지</th><th scope="col">처리 상태</th><th scope="col">안내 확인</th></tr></thead><tbody>
-        {items.map(item => { const record = records[item.id], sent = record?.status === 'sent', blocker = aftercareBlocker(item); return <tr key={item.id}>
+        {pagination.items.map(item => { const record = records[item.id], sent = record?.status === 'sent', blocker = aftercareBlocker(item); return <tr key={item.id}>
           <td><strong>{maskCustomerName(item.customerName)}</strong><small className="muted-text">{item.sourceId} · {item.source}</small></td>
           <td><span className="aftercare-message-preview">{item.summary || '상담 결과 기록 없음'}</span><small className="muted-text">{uiText(item.inquiryType)}</small></td><td>{item.outcome}</td>
           <td><span className={`status-pill ${item.consent === 'granted' ? 'available' : 'neutral'}`}>{consentLabels[item.consent]}</span></td><td><span className="small-badge">{followUpLabels[item.followUp]}</span></td>
@@ -26,6 +30,12 @@ export function MarketingPage({ items, records, store, onReview, onSend, onSuppo
         </tr>; })}
       </tbody></table></div>
       {items.length === 0 && <div className="empty-search" role="status"><strong>완료된 상담이 없습니다.</strong><p>상담지원에서 상담을 시작하고 결과 기록을 완료해 주세요.</p><button className="button button-secondary" onClick={onSupport}>상담지원 보기</button></div>}
+      {pagination.totalPages > 1 && <nav className="call-pagination workflow-pagination" aria-label="사후관리 목록 페이지">
+        <span className="workflow-pagination-count">{(pagination.page - 1) * CALLS_PER_PAGE + 1}–{Math.min(pagination.page * CALLS_PER_PAGE, items.length)} / {items.length}건</span>
+        <button type="button" aria-label="이전 사후관리 페이지" disabled={pagination.page === 1} onClick={() => setPage(pagination.page - 1)}><Icon name="chevron" className="previous-chevron" size={16}/></button>
+        <span role="status" aria-live="polite" aria-atomic="true"><span className="sr-only">현재 페이지 </span>{pagination.page} / {pagination.totalPages}</span>
+        <button type="button" aria-label="다음 사후관리 페이지" disabled={pagination.page === pagination.totalPages} onClick={() => setPage(pagination.page + 1)}><Icon name="chevron" size={16}/></button>
+      </nav>}
       <div className="aftercare-notice"><Icon name="help" size={17}/><p>안내 내용과 처리 상태를 기록하는 기능이며 고객에게 문자를 보내지 않습니다. 처리 기록은 새로고침하면 초기화됩니다.</p></div>
     </section>
     {selected && <AftercareMessage key={selected.id} item={selected} record={records[selected.id]} store={store} onReview={message => onReview(selected.id, message)} onSend={() => onSend(selected.id)} onClose={() => setSelectedId(null)}/>}

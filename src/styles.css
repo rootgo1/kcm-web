@@ -1166,6 +1166,24 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
 .support-guide-grid .call-opening { padding: 12px 14px; margin-bottom: 12px; }
 .support-guide-grid .microcopy { margin-block: 12px; font-size: 10px; line-height: 1.6; }
 
+/* Keep workflow lists short without changing form state or business actions. */
+.support-list-card .card-heading, .aftercare-card .card-heading { padding-block: 10px; }
+.support-list-card .support-call-table td { padding-block: 8px; }
+.aftercare-card .aftercare-table td { padding-block: 8px; }
+.aftercare-card .aftercare-notice { padding-block: 8px; }
+.workflow-pagination { padding-block: 4px; }
+.workflow-pagination > .workflow-pagination-count { margin-right: auto; min-width: 0; text-align: left; font-size: 11px; }
+.support-guide-card { margin-top: 12px; }
+.support-guide-card > .card-heading { gap: 8px; padding-block: 10px; }
+.support-guide-card > .card-heading p { margin-top: 3px; }
+.support-guide-card > .card-heading .button { min-height: 36px; padding-block: 7px; }
+.support-guide-grid[hidden] { display: none; }
+.support-guide-chevron.is-open { transform: rotate(180deg); }
+@media (max-width: 650px) {
+  .support-guide-card > .card-heading > .support-actions { width: 100%; flex-wrap: wrap; }
+  .support-guide-card > .card-heading .button { min-height: 40px; }
+}
+
 .call-briefing { font-size: 13px; line-height: 1.65; }
 .call-briefing > section { margin-top: 18px; }
 .call-briefing .section-label { margin: 14px 0 8px; }

@@ -1166,6 +1166,24 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
 .support-guide-grid .call-opening { padding: 12px 14px; margin-bottom: 12px; }
 .support-guide-grid .microcopy { margin-block: 12px; font-size: 10px; line-height: 1.6; }
 
+/* Keep workflow lists short without changing form state or business actions. */
+.support-list-card .card-heading, .aftercare-card .card-heading { padding-block: 10px; }
+.support-list-card .support-call-table td { padding-block: 8px; }
+.aftercare-card .aftercare-table td { padding-block: 8px; }
+.aftercare-card .aftercare-notice { padding-block: 8px; }
+.workflow-pagination { padding-block: 4px; }
+.workflow-pagination > .workflow-pagination-count { margin-right: auto; min-width: 0; text-align: left; font-size: 11px; }
+.support-guide-card { margin-top: 12px; }
+.support-guide-card > .card-heading { gap: 8px; padding-block: 10px; }
+.support-guide-card > .card-heading p { margin-top: 3px; }
+.support-guide-card > .card-heading .button { min-height: 36px; padding-block: 7px; }
+.support-guide-grid[hidden] { display: none; }
+.support-guide-chevron.is-open { transform: rotate(180deg); }
+@media (max-width: 650px) {
+  .support-guide-card > .card-heading > .support-actions { width: 100%; flex-wrap: wrap; }
+  .support-guide-card > .card-heading .button { min-height: 40px; }
+}
+
 .call-briefing { font-size: 13px; line-height: 1.65; }
 .call-briefing > section { margin-top: 18px; }
 .call-briefing .section-label { margin: 14px 0 8px; }
@@ -6613,9 +6631,13 @@ const consultation_1 = require("../lib/consultation");
 const customerName_1 = require("../lib/customerName");
 const aftercare_1 = require("../lib/aftercare");
 const uiText_1 = require("../lib/uiText");
+const callPagination_1 = require("../lib/callPagination");
 const recommendedMessage = (item, store) => (0, aftercare_1.recommendedAftercareMessage)({ ...item, inquiryType: (0, uiText_1.uiText)(item.inquiryType) }, store);
 function MarketingPage({ items, records, store, onReview, onSend, onSupport }) {
     const [selectedId, setSelectedId] = (0, react_1.useState)(null);
+    const [page, setPage] = (0, react_1.useState)(1);
+    const pagination = (0, callPagination_1.paginateCalls)(items, page);
+    (0, react_1.useEffect)(() => { setPage(pagination.page); }, [pagination.page]);
     const selected = items.find(item => item.id === selectedId);
     return __React.createElement(__React.Fragment, null,
         __React.createElement("div", { className: "page-heading" },
@@ -6650,7 +6672,7 @@ function MarketingPage({ items, records, store, onReview, onSend, onSupport }) {
                             __React.createElement("th", { scope: "col" }, "\uCD94\uCC9C \uD6C4\uC18D \uBA54\uC2DC\uC9C0"),
                             __React.createElement("th", { scope: "col" }, "\uCC98\uB9AC \uC0C1\uD0DC"),
                             __React.createElement("th", { scope: "col" }, "\uC548\uB0B4 \uD655\uC778"))),
-                    __React.createElement("tbody", null, items.map(item => {
+                    __React.createElement("tbody", null, pagination.items.map(item => {
                         const record = records[item.id], sent = record?.status === 'sent', blocker = (0, aftercare_1.aftercareBlocker)(item);
                         return __React.createElement("tr", { key: item.id },
                             __React.createElement("td", null,
@@ -6682,6 +6704,23 @@ function MarketingPage({ items, records, store, onReview, onSend, onSupport }) {
                 __React.createElement("strong", null, "\uC644\uB8CC\uB41C \uC0C1\uB2F4\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."),
                 __React.createElement("p", null, "\uC0C1\uB2F4\uC9C0\uC6D0\uC5D0\uC11C \uC0C1\uB2F4\uC744 \uC2DC\uC791\uD558\uACE0 \uACB0\uACFC \uAE30\uB85D\uC744 \uC644\uB8CC\uD574 \uC8FC\uC138\uC694."),
                 __React.createElement("button", { className: "button button-secondary", onClick: onSupport }, "\uC0C1\uB2F4\uC9C0\uC6D0 \uBCF4\uAE30")),
+            pagination.totalPages > 1 && __React.createElement("nav", { className: "call-pagination workflow-pagination", "aria-label": "\uC0AC\uD6C4\uAD00\uB9AC \uBAA9\uB85D \uD398\uC774\uC9C0" },
+                __React.createElement("span", { className: "workflow-pagination-count" },
+                    (pagination.page - 1) * callPagination_1.CALLS_PER_PAGE + 1,
+                    "\u2013",
+                    Math.min(pagination.page * callPagination_1.CALLS_PER_PAGE, items.length),
+                    " / ",
+                    items.length,
+                    "\uAC74"),
+                __React.createElement("button", { type: "button", "aria-label": "\uC774\uC804 \uC0AC\uD6C4\uAD00\uB9AC \uD398\uC774\uC9C0", disabled: pagination.page === 1, onClick: () => setPage(pagination.page - 1) },
+                    __React.createElement(Icon_1.Icon, { name: "chevron", className: "previous-chevron", size: 16 })),
+                __React.createElement("span", { role: "status", "aria-live": "polite", "aria-atomic": "true" },
+                    __React.createElement("span", { className: "sr-only" }, "\uD604\uC7AC \uD398\uC774\uC9C0 "),
+                    pagination.page,
+                    " / ",
+                    pagination.totalPages),
+                __React.createElement("button", { type: "button", "aria-label": "\uB2E4\uC74C \uC0AC\uD6C4\uAD00\uB9AC \uD398\uC774\uC9C0", disabled: pagination.page === pagination.totalPages, onClick: () => setPage(pagination.page + 1) },
+                    __React.createElement(Icon_1.Icon, { name: "chevron", size: 16 }))),
             __React.createElement("div", { className: "aftercare-notice" },
                 __React.createElement(Icon_1.Icon, { name: "help", size: 17 }),
                 __React.createElement("p", null, "\uC548\uB0B4 \uB0B4\uC6A9\uACFC \uCC98\uB9AC \uC0C1\uD0DC\uB97C \uAE30\uB85D\uD558\uB294 \uAE30\uB2A5\uC774\uBA70 \uACE0\uAC1D\uC5D0\uAC8C \uBB38\uC790\uB97C \uBCF4\uB0B4\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uCC98\uB9AC \uAE30\uB85D\uC740 \uC0C8\uB85C\uACE0\uCE68\uD558\uBA74 \uCD08\uAE30\uD654\uB429\uB2C8\uB2E4."))),
@@ -7664,15 +7703,20 @@ const callSupport_1 = require("../lib/callSupport");
 const callWorkflow_1 = require("../lib/callWorkflow");
 const customerName_1 = require("../lib/customerName");
 const uiText_1 = require("../lib/uiText");
+const callPagination_1 = require("../lib/callPagination");
 function SupportPage({ state, onStart, onSupport, onDraft, onComplete, onNext }) {
     const [filter, setFilter] = (0, react_1.useState)('all');
     const [selectedId, setSelectedId] = (0, react_1.useState)(() => state.calls.find(call => call.supportRequests.some(callSupport_1.isOpenSupport))?.id ?? state.calls[0]?.id);
     const [detailId, setDetailId] = (0, react_1.useState)(null);
+    const [page, setPage] = (0, react_1.useState)(1);
+    const [guideOpen, setGuideOpen] = (0, react_1.useState)(false);
     const guideRef = (0, react_1.useRef)(null);
     const selected = state.calls.find(call => call.id === selectedId) ?? state.calls[0];
     const detail = state.calls.find(call => call.id === detailId);
     const calls = state.calls.filter(call => filter === 'all' || (filter === 'support' ? call.supportRequests.some(callSupport_1.isOpenSupport) : filter === 'recent' ? call.status === 'completed' || call.status === 'ended' : call.status !== 'completed' && call.status !== 'ended'));
-    const choose = (id) => { setSelectedId(id); guideRef.current?.focus(); };
+    const pagination = (0, callPagination_1.paginateCalls)(calls, page);
+    (0, react_1.useEffect)(() => { setPage(pagination.page); }, [pagination.page]);
+    const choose = (id) => { setSelectedId(id); setGuideOpen(true); guideRef.current?.focus(); };
     return __React.createElement(__React.Fragment, null,
         __React.createElement("div", { className: "page-heading" },
             __React.createElement("div", null,
@@ -7687,7 +7731,7 @@ function SupportPage({ state, onStart, onSupport, onDraft, onComplete, onNext })
                     __React.createElement("h2", null, "\uD604\uC7AC\u00B7\uCD5C\uADFC \uD1B5\uD654")),
                 __React.createElement("div", { className: "call-filters" },
                     __React.createElement("label", { htmlFor: "support-filter" }, "\uD1B5\uD654 \uBC94\uC704"),
-                    __React.createElement("select", { id: "support-filter", value: filter, onChange: event => setFilter(event.target.value) },
+                    __React.createElement("select", { id: "support-filter", value: filter, onChange: event => { setFilter(event.target.value); setPage(1); } },
                         __React.createElement("option", { value: "all" }, "\uC804\uCCB4 \uD1B5\uD654"),
                         __React.createElement("option", { value: "active" }, "\uD604\uC7AC \uD1B5\uD654"),
                         __React.createElement("option", { value: "recent" }, "\uC644\uB8CC\u00B7\uC885\uB8CC \uD1B5\uD654"),
@@ -7703,7 +7747,7 @@ function SupportPage({ state, onStart, onSupport, onDraft, onComplete, onNext })
                             __React.createElement("th", { scope: "col" }, "\uAC10\uC9C0 \uC2E0\uD638"),
                             __React.createElement("th", { scope: "col" }, "\uAD00\uB9AC\uC790 \uC9C0\uC6D0"),
                             __React.createElement("th", { scope: "col" }, "\uC0C1\uB2F4\u00B7\uC9C0\uC6D0"))),
-                    __React.createElement("tbody", null, calls.map(call => {
+                    __React.createElement("tbody", null, pagination.items.map(call => {
                         const risk = (0, callRisk_1.callRisk)(call), support = (0, callSupport_1.latestSupport)(call);
                         return __React.createElement("tr", { key: call.id, className: selected?.id === call.id ? 'is-selected' : '' },
                             __React.createElement("td", null,
@@ -7730,7 +7774,23 @@ function SupportPage({ state, onStart, onSupport, onDraft, onComplete, onNext })
                     })))),
             calls.length === 0 && __React.createElement("div", { className: "empty-search", role: "status" },
                 __React.createElement("strong", null, "\uC870\uAC74\uC5D0 \uB9DE\uB294 \uD1B5\uD654\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4."),
-                __React.createElement("button", { className: "text-button", onClick: () => setFilter('all') }, "\uC804\uCCB4 \uD1B5\uD654 \uBCF4\uAE30"))),
+                __React.createElement("button", { className: "text-button", onClick: () => { setFilter('all'); setPage(1); } }, "\uC804\uCCB4 \uD1B5\uD654 \uBCF4\uAE30")),
+            pagination.totalPages > 1 && __React.createElement("nav", { className: "call-pagination workflow-pagination", "aria-label": "\uC0C1\uB2F4\uC9C0\uC6D0 \uBAA9\uB85D \uD398\uC774\uC9C0" },
+                __React.createElement("span", { className: "workflow-pagination-count" },
+                    (pagination.page - 1) * callPagination_1.CALLS_PER_PAGE + 1,
+                    "\u2013",
+                    Math.min(pagination.page * callPagination_1.CALLS_PER_PAGE, calls.length),
+                    " / ",
+                    calls.length,
+                    "\uAC74"),
+                __React.createElement("button", { type: "button", "aria-label": "\uC774\uC804 \uC0C1\uB2F4\uC9C0\uC6D0 \uD398\uC774\uC9C0", disabled: pagination.page === 1, onClick: () => setPage(pagination.page - 1) },
+                    __React.createElement(Icon_1.Icon, { name: "chevron", className: "previous-chevron", size: 16 })),
+                __React.createElement("span", { role: "status", "aria-live": "polite", "aria-atomic": "true" },
+                    pagination.page,
+                    " / ",
+                    pagination.totalPages),
+                __React.createElement("button", { type: "button", "aria-label": "\uB2E4\uC74C \uC0C1\uB2F4\uC9C0\uC6D0 \uD398\uC774\uC9C0", disabled: pagination.page === pagination.totalPages, onClick: () => setPage(pagination.page + 1) },
+                    __React.createElement(Icon_1.Icon, { name: "chevron", size: 16 })))),
         selected && __React.createElement("section", { className: "card support-guide-card", ref: guideRef, tabIndex: -1, "aria-label": `${selected.id} 대응 가이드·관리자 지원` },
             __React.createElement("div", { className: "card-heading" },
                 __React.createElement("div", null,
@@ -7743,8 +7803,12 @@ function SupportPage({ state, onStart, onSupport, onDraft, onComplete, onNext })
                         (0, uiText_1.uiText)(selected.inquiryType),
                         " \u00B7 ",
                         callRisk_1.callStatusLabels[selected.status])),
-                __React.createElement("button", { className: "button button-secondary", onClick: () => setDetailId(selected.id) }, "\uC120\uD0DD \uD1B5\uD654 \uC0C1\uC138 \uBCF4\uAE30")),
-            __React.createElement("div", { className: "support-guide-grid" },
+                __React.createElement("div", { className: "support-actions" },
+                    __React.createElement("button", { type: "button", className: "button button-secondary", "aria-expanded": guideOpen, "aria-controls": "support-guide-content", onClick: () => setGuideOpen(open => !open) },
+                        guideOpen ? '가이드·지원 접기' : '가이드·지원 펼치기',
+                        __React.createElement(Icon_1.Icon, { name: "chevronDown", className: guideOpen ? 'support-guide-chevron is-open' : 'support-guide-chevron', size: 14 })),
+                    __React.createElement("button", { className: "button button-secondary", onClick: () => setDetailId(selected.id) }, "\uC120\uD0DD \uD1B5\uD654 \uC0C1\uC138 \uBCF4\uAE30"))),
+            __React.createElement("div", { id: "support-guide-content", className: "support-guide-grid", hidden: !guideOpen },
                 __React.createElement("section", { "aria-label": "AI \uAD8C\uC7A5 \uB300\uC751 \uAC00\uC774\uB4DC" },
                     __React.createElement("h3", { className: "section-label" }, "AI \uAD8C\uC7A5 \uB300\uC751 \uAC00\uC774\uB4DC"),
                     selected.analysis.status === 'completed' && selected.analysis.recommendedActions.length ? __React.createElement("ul", { className: "call-action-list" }, selected.analysis.recommendedActions.map(action => __React.createElement("li", { key: action }, action))) : __React.createElement("p", { className: "muted-text" },
