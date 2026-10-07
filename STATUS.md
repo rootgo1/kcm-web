@@ -6,7 +6,7 @@
 - 기존 구현은 `c838873` 커밋으로 보존한 뒤, 원격 최신 main `25adc7de401f2dfd3cd393a5a309581532a7402b`와 통합했습니다. 최신 홈 압축·고객 상담 모달·5행 페이지·최근 완료 위험도 UI 및 고객 표시 테스트를 보존했습니다. 충돌3소스파일은 인증 wrapper/event/test import를 결합했으며 생성 HTML은 통합 소스로 재생성했습니다.
 - 통합 `npm run check`: **966/966 성공**, 실패/skip0, 프런트·서버 타입 검사와 production build 성공. 인증 관련 Auth34/HTTP7/프런트23개를 포함합니다. 새로운 dependency는 없습니다. 기존 SDK 청크 경고는 유지합니다. `npm run preview:standalone` 성공했습니다.
 - 올바른 KT Project를 명시한 Supabase MCP 읽기전용 확인으로 store_005=KT플라자 동성로점과 직원 필수 컬럼을 확인했습니다. 기존 RLS가 활성화되어 있고 대상 테이블에 anon/authenticated SELECT 허용 정책이 없으며 기존 kcm_test/kcm_writer 범위만 있음을 확인했습니다. DB rows/schema/RLS/권한은 변경하지 않았습니다. 기존 공개 Auth 키는 값 출력 없이 준비했고 실제 계정 매핑·키는 Git 제외 `.cache/staff-read/render-config.json`에만 있습니다.
-- Render kcm 서비스는 main25adc7d Live이며 기존 설정을 비공개 상태로 확인했습니다. 신규 Auth 설정2항목은 현재 없고 저장·재배포·운영조회 권한 적용 전입니다. 생성된 계정에 store_005 고객·상담 요약 두 GET만 부여하는 운영 적용을 준비 중입니다. 실제 계정 로그인은 비밀번호를 사용자가 직접 입력한 뒤 확인해야 합니다.
+- 사용자 운영 적용 승인 후 Render에 `SUPABASE_AUTH_PUBLISHABLE_KEY`와 `STAFF_READ_ACCOUNTS_JSON` 두 환경값을 저장하고 검증 버전 `f39a438`을 배포했습니다. 배포 `dep-db2s8dgm7kps73c4jea0`의 Live와 운영 조회 로그인 화면을 확인했습니다. `/health`200, `/api/staff-read/session`200(required/configured=true, authenticated=false, STAFF_LOGIN_REQUIRED), 로그인 전 `/api/data/customers`401 STAFF_LOGIN_REQUIRED 및 Cache-Control:no-store를 확인했습니다. 사용자 직접 로그인 후 운영 화면에서 조회 전용 계정 표시, 실제 저장 고객 20명(5행·4페이지), 당일 테스트 상담의 저장 상세·요약 및 AI 응대 정상0점을 확인했습니다. 실제 로그인→저장 고객 목록→해당 상담 요약 표시 확인을 완료했으며 운영 DB 스키마/RLS/테이블 권한은 변경하지 않았습니다. 비밀번호·토큰·원문은 읽지 않았고 실제 고객·상담·통화 식별번호나 상세 고객 내용은 기록하지 않습니다.
 
 - 사용자가 운영용 직원 로그인 후 매장 고객 조회를 선택하여 `fix/staff-customer-read` 작업을 진행했습니다. 기준은 `858cfd7b67544bbf9c1764719f661e4c00c37f0a`이며 기존 작업 폴더의 STATUS/n8n 수정자료는 별도 worktree에 보존했습니다.
 - `server/staff-read-auth.mjs`에 Supabase Auth 비밀번호 로그인→매 조회 `/user` 검증→서버 승인 UUID/employee/store 매핑→실제 직원 소속 검증을 구현했습니다. metadata·클라이언트 매장은 권한 근거로 사용하지 않습니다. 무작위32byte 세션/메모리 hash, 운영 __Host/Secure/HttpOnly/Strict 쿠키, 최대30분/토큰 만료, 서버 재시작·로그아웃 폐기, 속도제한·세션 상한500·5초 timeout·응답 최소화를 적용했습니다. 확인된 MFA 계정은 추가 인증 지원 전까지 로그인·조회에서 거부합니다.
@@ -14,7 +14,7 @@
 - `StaffReadGate.tsx`, `staff-read.css`, `staffReadApi.ts` 및 StoredCustomers 래핑을 추가했습니다. 로그인·만료·권한 실패·logout·숨김/재활성화 시 고객 자료를 해제하고 진행 중/늦은 응답·이전 계정 자료 복원을 차단합니다. 비밀번호는 제출 즉시 제거하고 브라우저 저장소를 사용하지 않습니다. 기존 샘플 프로필과 조회 인증 직원은 구분합니다. ProductsPage는 운영 staff 모드에서 고객 목록을 읽지 않고 고객 없는 계산을 유지합니다.
 - 신규 테스트는 Auth25/HTTP6/프런트19, 총50개입니다. 최종 `npm run check`에서 전체 **943/943**, 실패·skip0, 프런트/서버 타입 검사와 production build 통과했습니다. 기존 Retell SDK 큰 청크 경고는 유지됩니다. `npm run preview:standalone`으로 독립 HTML을 갱신했습니다.
 - Chrome의 격리 production dist+합성 Auth/DB 화면에서 로그인 전 차단→로그인→마스킹 고객 목록→저장 요약 및0점정상→미동의 고객 요약 차단→로그아웃 자료 제거를 확인했습니다. 합성 fixture/캡처/로그는 Git 제외 `.cache/staff-read/`에만 저장했습니다. 직접 독립 HTML 실행·모든 viewport 검증은 수행하지 않았습니다.
-- 독립 소스 보안 검토에서 로그인 JSON null 오류와 상품 화면 자료 범위를 수정한 뒤 현재 blocker 없음으로 확인했습니다. 실제 직원 계정·환경값·외부 DB·운영 사이트는 변경하지 않았습니다. 직원 이메일/Auth UUID/기존 employee ID·store_005 소속 확인과 운영 접근 권한 적용 확인을 요청했습니다. 실제 계정 설정·로그인·운영 배포 및 실제 저장 이력 조회는 아직 미검증입니다.
+- 초기 구현의 독립 소스 보안 검토에서 로그인 JSON null 오류와 상품 화면 자료 범위를 수정한 뒤 blocker 없음으로 확인했습니다. 그 초기 검증 시점에는 실제 직원 계정·환경값·외부 DB·운영 사이트를 변경하지 않았습니다. 이후 사용자 승인으로 조회 계정 매핑·Auth 공개 키 환경값과 `f39a438` 운영 배포를 적용했고, 사용자 직접 로그인 후 운영 저장 고객 목록과 당일 테스트 상담의 저장 상세·요약 표시까지 확인했습니다.
 - 설정·운영 확인 절차는 `docs/STAFF_CUSTOMER_READ.md`와 빈 `.env.example` 항목에 기록했습니다. 실제 키·비밀번호는 소스/대화에 넣지 않습니다. n8n 웹훅 인증은 이번 조회 기능 이후 별도 작업입니다.
 - 사용자가 직원 계정이 없을 것으로 답하여 연결된 KT Project의 Authentication→Users를 읽기 전용 확인했습니다. 목록은 `No users in your project`와0개 데이터행을 표시하며 별도 estimated10 문구가 있어 정확한 전체 계정 수는 단정하지 않았습니다. `Add user→Create new user`의 빈 생성 폼을 열어 사용자 직접 입력을 위한 handoff로 유지했습니다. 이메일/비밀번호 입력·Create user 제출·권한/환경값 변경은 하지 않았습니다. 로컬 합성 검증 서버와 탭은 정리했습니다.
 - 사용자가 직접 생성한 계정의 캡처를 제공한 뒤, KT Project Auth 사용자 상세에서 생성 시각과 Confirmed at(11:38 KST)을 읽기 전용 확인했습니다. Auth UUID/이메일은 운영 소스·문서에 기록하지 않았습니다. 같은 매장(store_005)의 직원 id/name/store_id 3개 컬럼만 SELECT하여 등록직원4명을 확인했고, 연결할 직원 및 해당 계정의 조회 권한 부여 확인을 요청했습니다. 코드 변경/테스트 재실행·실제 계정 로그인·DB 쓰기·환경값·운영 배포 변경은 하지 않았습니다. 계정 생성 완료와 운영 조회권한 적용 완료는 구분했습니다.
@@ -1134,10 +1134,11 @@ npm.cmd run dev
 - 이번 수정은 작업 브랜치 로컬 커밋에 보관하며 main 병합/GitHub push/Render 배포는 수행하지 않습니다. 공개 고객관리 화면은 아직 이전 버전입니다.
 - 실제 직원 인증과 허가된 저장 자료 조회 연결은 별도 범위입니다. 공개 조회 제한은 유지하며 이번 UI 변경만으로 저장 고객·예약이 Production에서 조회된다고 보고하지 않습니다. 실제 음성 통화·n8n/DB 저장 E2E도 이번에 실행하지 않았습니다.
 
-## 2026-10-07 — 저장 고객 조회 로그인 운영 적용 준비
+## 2026-10-07 — 저장 고객 조회 로그인 운영 적용
 
 - `fix/staff-customer-read`의 인증 구현과 최신 main `25adc7d` 고객 화면을 통합한 검증 버전은 `f39a438`입니다. 고객 목록·상담 요약 조회 두 GET에만 계정·매장 검증을 추가했고 DB 스키마·RLS·테이블 권한은 변경하지 않았습니다.
 - 전체 검사 966/966 통과, 프런트·서버 타입 검사 및 production build 통과, 독립 HTML 재생성 완료. 외부 연결 없는 합성 데이터 브라우저에서 별도 조회 계정 표시, 고객 목록, 상담 상세, 세션 만료 시 자료 해제, 재로그인, 로그아웃 시 자료 해제를 확인했습니다. 운영 계정 로그인·실제 고객 조회 성공을 의미하지 않습니다.
 - 작업 브랜치를 GitHub에 push하고 draft PR https://github.com/rootgo1/kcm-web/pull/3 을 생성·현재 작업에 연결했습니다. 최신 고객 화면을 유지하고 별도 조회 계정에는 직원 개인정보나 기존 직원 ID를 부여하지 않았습니다.
-- Render 운영 서버의 새 인증 환경값 두 개와 특정 버전 배포 후보 `f39a438`을 준비했습니다. 기존 환경값은 표시·변경하지 않았고 새 값은 저장 전입니다. 운영 Live 버전은 `25adc7d`이며 아직 권한 적용·설정 저장·운영 배포를 수행하지 않았습니다.
-- 생성된 Auth 계정에 현재 매장의 `customers:read` 권한을 새로 부여하는 적용 단계는 브라우저의 적용 직전 확인 규칙에 따라 사용자 확인을 요청했습니다. 실제 계정 식별정보·키·브라우저 캡처는 Git 제외 로컬 `.cache/staff-read/`에만 보관했습니다. 합성 데이터 검증 서버는 종료했습니다.
+- 사용자 승인 후 Render 운영 서버의 새 인증 환경값 두 개를 저장하고 특정 검증 버전 `f39a438`을 배포했습니다. 기존 환경값은 표시·변경하지 않았습니다. 배포 `dep-db2s8dgm7kps73c4jea0`의 Live와 운영 고객관리 조회 로그인 화면을 확인했습니다. 계정에는 현재 매장의 고객 목록·고객별 상담 요약 두 GET용 `customers:read` 매핑만 적용했으며 운영 DB 스키마/RLS/테이블 권한은 변경하지 않았습니다.
+- 운영 `/health` HTTP200, `/api/staff-read/session` HTTP200(required/configured=true, authenticated=false, errorCode=STAFF_LOGIN_REQUIRED), 로그인 전 `/api/data/customers` HTTP401 STAFF_LOGIN_REQUIRED와 Cache-Control:no-store를 확인했습니다. 사용자가 직접 비밀번호를 입력하여 로그인한 뒤 운영 화면에서 조회 전용 계정 표시, 실제 저장 고객 20명(5행·4페이지), 당일 테스트 상담의 저장 상세·요약 및 AI 응대 정상0점을 확인했습니다. 실제 로그인→저장 고객 목록→해당 상담 요약 표시 확인을 완료했습니다. 실제 이메일/Auth UUID/키/비밀번호·고객/상담/call ID·상세 고객 내용은 문서에 기록하지 않습니다. 비밀번호·토큰·원문을 읽지 않았습니다.
+- 실행 코드의 운영 기준은 `f39a438`입니다. 후속 적용 상태 갱신은 `docs/STAFF_CUSTOMER_READ.md`, `docs/RENDER_DEPLOYMENT.md`, `STATUS.md` 문서만 수정하며 코드·외부 설정·Git 커밋은 변경하지 않았습니다. 합성 데이터 검증 서버는 종료 상태입니다.
