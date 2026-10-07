@@ -16,8 +16,9 @@ export interface ProductCatalog {
   bundles: CatalogBundle[]; benefits: CatalogBenefit[];
 }
 export interface EffectivePriceInput {
-  plan_id: string; product_id?: string; bundle_id?: string; customer_id?: string;
+  plan_id: string; product_id?: string; bundle_id?: string | null; customer_id?: string;
   family?: boolean; internet?: boolean; mobile_lines?: number;
+  installment_months?: 1 | 24; contract_months?: 24; discount_type?: 'DEVICE_DISCOUNT' | 'PLAN_DISCOUNT';
 }
 export type DiscountStatus = 'not_selected' | 'not_applicable' | 'needs_confirmation' | 'applied';
 export type PriceRowKey = 'plan_fee' | 'bundle_discount' | 'benefit_value' | 'contract_discount' | 'monthly_subtotal' | 'device_cash' | 'device_installment';
@@ -33,6 +34,37 @@ export interface EffectivePriceResult {
   monthlySubtotal: number | null; productCashPrice: number | null; monthlyInstallment: null;
   finalMonthlyTotal: number | null; quoteScope: 'communication_only' | 'partial'; breakdown: PriceBreakdown[]; warnings: string[];
 }
+export interface EffectivePriceQuoteResult {
+  policyVersion: 'n8n-quote-v2';
+  quote: {
+    currency: 'KRW'; quote_type: 'pure_calculation';
+    product_id: string; product_name: string | null; plan_id: string; plan_name: string | null;
+    bundle_id: string | null; bundle_name: string | null;
+    calculation_basis: {
+      installment_months: 1 | 24; contract_months: 24; discount_type: 'DEVICE_DISCOUNT' | 'PLAN_DISCOUNT';
+      quote_is_estimate: boolean; bundle_eligibility_fully_verified: boolean;
+      eligibility_source: 'DEMO_ASSUMPTIONS' | 'REQUEST';
+      device_discount_policy_notes: string[]; bundle_validation_notes: string[];
+    };
+    result: {
+      '계산 설명': string; '계산 유의사항': string[]; '예상 납부금액': string;
+      '금액 구성': { '월 단말 할부금'?: string; '일시불 단말금'?: string; '할인 후 월 통신요금': string };
+      '적용 할인': { '할인 방식': '요금할인' | '단말할인'; '단말 할인 총액': string; '선택약정 월 할인': string; '모바일 결합 월 할인': string };
+      '고객 체감가': { '체감가 안내': string; '약정기간 총 할인 혜택': string; '단말 할부수수료 총액': string; '약정기간 총 체감가': string; '월평균 체감가': string };
+      '다음 달부터 예상 납부금액'?: string;
+    };
+    raw_result: Record<QuoteRawKey, number>;
+    breakdown: Record<QuoteBreakdownKey, number>;
+  };
+}
+export type EffectivePriceResponse = EffectivePriceResult | EffectivePriceQuoteResult;
+type QuoteRawKey = 'monthly_payment_during_installment' | 'last_installment_month_payment' | 'monthly_payment_after_installment'
+  | 'average_monthly_effective_price' | 'total_effective_cost' | 'total_contract_discount_benefit';
+type QuoteBreakdownKey = 'product_price' | 'common_device_discount' | 'additional_device_discount' | 'total_device_discount'
+  | 'financed_principal' | 'installment_interest_total' | 'installment_repayment_total' | 'monthly_device_installment'
+  | 'last_month_device_installment' | 'plan_monthly_fee' | 'selection_agreement_discount' | 'selection_agreement_discount_contract_total'
+  | 'target_mobile_bundle_discount_before_youth' | 'premium_youth_additional_discount' | 'bundle_mobile_discount_applied'
+  | 'bundle_mobile_discount_contract_total' | 'group_internet_discount_reference' | 'plan_fee_after_discount';
 
 const errorMessages = {
   NETWORK: '상품 정보를 조회하지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.',
@@ -46,6 +78,7 @@ const errorMessages = {
   CUSTOMER_PRIVACY_RESTRICTED: '개인정보 동의를 확인하기 전에는 고객의 현재 요금제를 비교할 수 없습니다.',
   HOME_STORE_NOT_CONFIGURED: '현재 매장 설정을 확인한 뒤 고객 요금제를 비교해 주세요.',
   PRICE_DATA_INVALID: '등록된 가격 또는 조건을 확인할 수 없어 계산하지 않았습니다.',
+  PRICE_POLICY_UNAVAILABLE: '선택한 단말기의 시연 할인표가 아직 등록되지 않았습니다. 다른 단말기를 선택해 주세요.',
   REAL_DATA_NOT_CONFIGURED: '저장된 상품 조회가 아직 준비되지 않았습니다.',
   REAL_DATA_CONFIG_INVALID: '저장된 상품 조회 설정을 확인해야 합니다.',
   REAL_DATA_ACCESS_DENIED: '저장된 상품 조회 권한을 확인해야 합니다.',
@@ -119,7 +152,85 @@ export function parseProductCatalog(value: unknown): ProductCatalog {
 const rowKeys: readonly PriceRowKey[] = ['plan_fee', 'bundle_discount', 'benefit_value', 'contract_discount', 'monthly_subtotal', 'device_cash', 'device_installment'];
 const rowStatuses: readonly string[] = ['not_selected', 'not_applicable', 'needs_confirmation', 'applied', 'recorded', 'calculated'];
 const discountStatuses: readonly DiscountStatus[] = ['not_selected', 'not_applicable', 'needs_confirmation', 'applied'];
-export function parseEffectivePrice(value: unknown, expected?: EffectivePriceInput): EffectivePriceResult {
+const quoteRawKeys: readonly QuoteRawKey[] = ['monthly_payment_during_installment', 'last_installment_month_payment', 'monthly_payment_after_installment',
+  'average_monthly_effective_price', 'total_effective_cost', 'total_contract_discount_benefit'];
+const quoteBreakdownKeys: readonly QuoteBreakdownKey[] = ['product_price', 'common_device_discount', 'additional_device_discount', 'total_device_discount',
+  'financed_principal', 'installment_interest_total', 'installment_repayment_total', 'monthly_device_installment', 'last_month_device_installment',
+  'plan_monthly_fee', 'selection_agreement_discount', 'selection_agreement_discount_contract_total', 'target_mobile_bundle_discount_before_youth',
+  'premium_youth_additional_discount', 'bundle_mobile_discount_applied', 'bundle_mobile_discount_contract_total', 'group_internet_discount_reference', 'plan_fee_after_discount'];
+const quoteText = (value: unknown): value is string => nonempty(value) && value.length <= 10000;
+function quoteNotes(value: unknown): string[] {
+  if (!Array.isArray(value) || value.length > 100 || !value.every(quoteText)) return invalid();
+  return [...value];
+}
+function quoteAmounts<T extends string>(value: unknown, keys: readonly T[]): Record<T, number> {
+  if (!record(value) || !keys.every(key => money(value[key]))) return invalid();
+  return Object.fromEntries(keys.map(key => [key, value[key]])) as Record<T, number>;
+}
+const newQuoteInput = (value: EffectivePriceInput) => value.installment_months !== undefined || value.contract_months !== undefined || value.discount_type !== undefined;
+function parseQuote(value: Record<string, unknown>, expected?: EffectivePriceInput): EffectivePriceQuoteResult {
+  const q = value.quote;
+  if (!record(q) || q.currency !== 'KRW' || q.quote_type !== 'pure_calculation'
+    || !id('product', q.product_id) || !(q.product_name === null || quoteText(q.product_name))
+    || !id('plan', q.plan_id) || !(q.plan_name === null || quoteText(q.plan_name))
+    || !(q.bundle_id === null || id('bundle', q.bundle_id)) || !(q.bundle_name === null || quoteText(q.bundle_name))
+    || (q.bundle_id === null) !== (q.bundle_name === null)) return invalid();
+  const basis = q.calculation_basis;
+  if (!record(basis) || ![1, 24].includes(basis.installment_months as number) || basis.contract_months !== 24
+    || !['DEVICE_DISCOUNT', 'PLAN_DISCOUNT'].includes(basis.discount_type as string)
+    || typeof basis.quote_is_estimate !== 'boolean' || typeof basis.bundle_eligibility_fully_verified !== 'boolean'
+    || !['DEMO_ASSUMPTIONS', 'REQUEST'].includes(basis.eligibility_source as string)) return invalid();
+  if (expected && (!newQuoteInput(expected) || q.product_id !== expected.product_id || q.plan_id !== expected.plan_id
+    || (q.bundle_id ?? undefined) !== (expected.bundle_id ?? undefined) || basis.installment_months !== expected.installment_months
+    || basis.contract_months !== expected.contract_months || basis.discount_type !== expected.discount_type)) return invalid();
+  const raw = quoteAmounts(q.raw_result, quoteRawKeys); const amounts = quoteAmounts(q.breakdown, quoteBreakdownKeys);
+  const result = q.result;
+  if (!record(result) || !quoteText(result['계산 설명']) || !quoteText(result['예상 납부금액'])
+    || !record(result['금액 구성']) || !record(result['적용 할인']) || !record(result['고객 체감가'])) return invalid();
+  const composition = result['금액 구성']; const discounts = result['적용 할인']; const effective = result['고객 체감가'];
+  const cash = basis.installment_months === 1; const deviceLabel = cash ? '일시불 단말금' : '월 단말 할부금';
+  const display = (amount: number, monthly = false, discount = false) => `${monthly ? '월 ' : ''}${discount && amount > 0 ? '-' : ''}${amount.toLocaleString('ko-KR')}원`;
+  // Amounts are calculated by the server. Check that displayed strings describe its returned amounts.
+  if (result['예상 납부금액'] !== `${cash ? '첫 달 ' : ''}${display(raw.monthly_payment_during_installment, !cash)}`
+    || composition[deviceLabel] !== display(amounts.monthly_device_installment, !cash)
+    || composition['할인 후 월 통신요금'] !== display(amounts.plan_fee_after_discount, true)
+    || discounts['할인 방식'] !== (basis.discount_type === 'PLAN_DISCOUNT' ? '요금할인' : '단말할인')
+    || discounts['단말 할인 총액'] !== display(amounts.total_device_discount, false, true)
+    || discounts['선택약정 월 할인'] !== display(amounts.selection_agreement_discount, false, true)
+    || discounts['모바일 결합 월 할인'] !== display(amounts.bundle_mobile_discount_applied, false, true)
+    || !quoteText(effective['체감가 안내'])
+    || effective['약정기간 총 할인 혜택'] !== display(raw.total_contract_discount_benefit)
+    || effective['단말 할부수수료 총액'] !== display(amounts.installment_interest_total)
+    || effective['약정기간 총 체감가'] !== display(raw.total_effective_cost)
+    || effective['월평균 체감가'] !== display(raw.average_monthly_effective_price, true)
+    || cash && result['다음 달부터 예상 납부금액'] !== display(amounts.plan_fee_after_discount, true)) return invalid();
+  const notes = quoteNotes(result['계산 유의사항']);
+  const deviceNotes = quoteNotes(basis.device_discount_policy_notes); const bundleNotes = quoteNotes(basis.bundle_validation_notes);
+  if ([...deviceNotes, ...bundleNotes].some(note => !notes.includes(note))) return invalid();
+  return { policyVersion: 'n8n-quote-v2', quote: {
+    currency: 'KRW', quote_type: 'pure_calculation', product_id: q.product_id, product_name: q.product_name,
+    plan_id: q.plan_id, plan_name: q.plan_name, bundle_id: q.bundle_id, bundle_name: q.bundle_name,
+    calculation_basis: { installment_months: basis.installment_months as 1 | 24, contract_months: 24,
+      discount_type: basis.discount_type as 'DEVICE_DISCOUNT' | 'PLAN_DISCOUNT', quote_is_estimate: basis.quote_is_estimate,
+      bundle_eligibility_fully_verified: basis.bundle_eligibility_fully_verified, eligibility_source: basis.eligibility_source as 'DEMO_ASSUMPTIONS' | 'REQUEST',
+      device_discount_policy_notes: deviceNotes, bundle_validation_notes: bundleNotes },
+    result: { '계산 설명': result['계산 설명'], '계산 유의사항': notes, '예상 납부금액': result['예상 납부금액'],
+      '금액 구성': { [deviceLabel]: composition[deviceLabel] as string, '할인 후 월 통신요금': composition['할인 후 월 통신요금'] as string },
+      '적용 할인': { '할인 방식': discounts['할인 방식'] as '요금할인' | '단말할인', '단말 할인 총액': discounts['단말 할인 총액'] as string,
+        '선택약정 월 할인': discounts['선택약정 월 할인'] as string, '모바일 결합 월 할인': discounts['모바일 결합 월 할인'] as string },
+      '고객 체감가': { '체감가 안내': effective['체감가 안내'], '약정기간 총 할인 혜택': effective['약정기간 총 할인 혜택'] as string,
+        '단말 할부수수료 총액': effective['단말 할부수수료 총액'] as string, '약정기간 총 체감가': effective['약정기간 총 체감가'] as string,
+        '월평균 체감가': effective['월평균 체감가'] as string },
+      ...(cash ? { '다음 달부터 예상 납부금액': result['다음 달부터 예상 납부금액'] as string } : {}) },
+    raw_result: raw, breakdown: amounts,
+  } };
+}
+export function parseEffectivePrice(value: EffectivePriceResult, expected?: EffectivePriceInput): EffectivePriceResult;
+export function parseEffectivePrice(value: EffectivePriceQuoteResult, expected?: EffectivePriceInput): EffectivePriceQuoteResult;
+export function parseEffectivePrice(value: unknown, expected?: EffectivePriceInput): EffectivePriceResponse;
+export function parseEffectivePrice(value: unknown, expected?: EffectivePriceInput): EffectivePriceResponse {
+  if (record(value) && value.policyVersion === 'n8n-quote-v2') return parseQuote(value, expected);
+  if (expected && newQuoteInput(expected)) return invalid();
   if (!record(value) || value.source !== 'supabase' || value.policyVersion !== 'db-fixed-mobile-v1') return invalid();
   const selectedPlan = pricePlan(value.plan); const selectedProduct = value.product === null ? null : product(value.product);
   const currentPlan = value.currentPlan === null ? null : pricePlan(value.currentPlan);
@@ -166,11 +277,14 @@ export function parseEffectivePrice(value: unknown, expected?: EffectivePriceInp
     breakdown: rows, warnings: [...value.warnings] };
 }
 function validInput(value: EffectivePriceInput): boolean {
-  return record(value) && Object.keys(value).every(key => ['plan_id', 'product_id', 'bundle_id', 'customer_id', 'family', 'internet', 'mobile_lines'].includes(key))
+  return record(value) && Object.keys(value).every(key => ['plan_id', 'product_id', 'bundle_id', 'customer_id', 'family', 'internet', 'mobile_lines', 'installment_months', 'contract_months', 'discount_type'].includes(key))
     && id('plan', value.plan_id) && (value.product_id === undefined || id('product', value.product_id))
-    && (value.bundle_id === undefined || id('bundle', value.bundle_id)) && (value.customer_id === undefined || id('customer', value.customer_id))
+    && (value.bundle_id === undefined || newQuoteInput(value) && value.bundle_id === null || id('bundle', value.bundle_id)) && (value.customer_id === undefined || id('customer', value.customer_id))
     && (value.family === undefined || typeof value.family === 'boolean') && (value.internet === undefined || typeof value.internet === 'boolean')
-    && (value.mobile_lines === undefined || money(value.mobile_lines) && value.mobile_lines >= 1);
+    && (value.mobile_lines === undefined || money(value.mobile_lines) && value.mobile_lines >= 1)
+    && (!newQuoteInput(value) || id('product', value.product_id) && [1, 24].includes(value.installment_months as number)
+      && value.contract_months === 24 && ['DEVICE_DISCOUNT', 'PLAN_DISCOUNT'].includes(value.discount_type as string)
+      && value.family === undefined && value.internet === undefined && value.mobile_lines === undefined);
 }
 async function request<T>(path: string, parse: (value: unknown) => T, signal?: AbortSignal, input?: EffectivePriceInput): Promise<T> {
   let response: Response;
@@ -184,13 +298,33 @@ async function request<T>(path: string, parse: (value: unknown) => T, signal?: A
   return parse(body);
 }
 export const loadProductCatalog = (signal?: AbortSignal): Promise<ProductCatalog> => request('/api/products/catalog', parseProductCatalog, signal);
-export function calculateEffectivePrice(input: EffectivePriceInput, signal?: AbortSignal): Promise<EffectivePriceResult> {
+export function calculateEffectivePrice(input: EffectivePriceInput, signal?: AbortSignal): Promise<EffectivePriceResponse> {
   if (!validInput(input)) return Promise.reject(new EffectivePriceApiError('INVALID_PRICE_REQUEST'));
   return request('/api/effective-price', value => parseEffectivePrice(value, input), signal, input);
 }
 
 export const storedProductNote = '저장된 상품 정보입니다. 가입·구매 전 최신 요금·조건·사양을 별도로 확인하세요.';
 export const formatEffectivePrice = (value: number): string => `${value.toLocaleString('ko-KR')}원`;
+/** Friendly display only; the original quotation notes remain in the parsed response. */
+export function effectivePriceNoteMessage(note: string): string {
+  if (note.includes('family_relation이 없어')) return '실제 가족관계를 확인해야 결합 가입 자격을 확정할 수 있습니다.';
+  if (note.startsWith('상위상품 직접 선택:')) return '선택한 가족결합의 모바일 할인은 준비된 시연 기준으로 계산했습니다.';
+  const internet = note.match(/^(?:internet_line_count|household_group_internet_line_count)가 없어 인터넷 회선 최대 (\d+)회선 조건을 확인할 수 없습니다\./);
+  if (internet) return `인터넷 회선 수가 확인되지 않아 최대 ${internet[1]}회선 조건은 추가 확인이 필요합니다.`;
+  const tv = note.match(/^(?:tv_line_count|household_group_tv_line_count)가 없어 TV 회선 최대 (\d+)회선 조건을 확인할 수 없습니다\./);
+  if (tv) return `TV 회선 수가 확인되지 않아 최대 ${tv[1]}회선 조건은 추가 확인이 필요합니다.`;
+  if (note.startsWith('프리미엄 싱글 규칙 ') && note.includes('customer_condition')) {
+    return '프리미엄 싱글결합의 추가 가입 조건은 확인하지 않았습니다. 시연에서는 준비된 회선·요금제·인터넷 조건으로 계산했습니다.';
+  }
+  if (note.startsWith('프리미엄 가족 추가회선 규칙 ') && note.includes('customer_condition')) {
+    return '프리미엄 가족결합의 추가 회선 가입 조건은 확인하지 않았습니다. 시연에서는 준비된 요금제·회선 조건으로 계산했습니다.';
+  }
+  if (note.startsWith('프리미엄 가족결합의 인터넷 할인 규칙이 없습니다.')) {
+    return '프리미엄 가족결합의 인터넷 할인 기준이 확인되지 않아 참고용 인터넷 할인은 0원으로 계산했습니다.';
+  }
+  if (/[a-z]+_[a-z_]+|\b(?:DB|SQL)\b|코드의/i.test(note)) return '결합 가입 조건을 추가로 확인해야 합니다.';
+  return note;
+}
 const allowance = (unlimited: boolean, value: number | null, unit: string) => unlimited ? '무제한' : value === null ? '제공량 확인 필요' : `${value.toLocaleString('ko-KR')}${unit}`;
 /** Keeps the existing four tabs and comparison contract without adding reference prices. */
 export function toCatalogItems(catalog: ProductCatalog): CatalogItem[] {

@@ -200,3 +200,50 @@ test('loopback deployments retain stored-data and customer-price QA paths', asyn
   assert.ok(queried.includes('consultations'));
   assert.ok(queried.includes('customers'));
 });
+
+test('public v2 quotation remains nonpersonal and customer/origin/JSON gates run before catalog reads', async t => {
+  const queried = [];
+  const provider = {
+    configured: true, configError: null,
+    async read() { throw new Error('No bundle was selected'); },
+    async readOne(table, query) {
+      queried.push({ table, query });
+      if (table === 'own_plans') return { ok: true, data: { id: 'own_plan_001', name: '검증 90 요금제', monthly_fee: 90000 } };
+      if (table === 'products') return { ok: true, data: { id: 'product_001', name: 'Galaxy S26', maker: 'Samsung',
+        storage_gb: 256, color: '블랙', price: 1254000 } };
+      throw new Error('Personal table must not be queried');
+    },
+    close() {},
+  };
+  const url = await serverFor(t, { deployment: { origin: 'https://public.example.test', staticDir: '.' },
+    demoStoreId: 'store_005', realDataProvider: provider });
+  const headers = { Host: 'public.example.test', Origin: 'https://public.example.test', 'Content-Type': 'application/json' };
+  const input = { product_id: 'product_001', plan_id: 'own_plan_001', installment_months: 24,
+    contract_months: 24, discount_type: 'PLAN_DISCOUNT' };
+  for (const customer_id of ['customer_001', null]) {
+    const blocked = await localRequest(url + '/api/effective-price', {
+      method: 'POST', headers, body: JSON.stringify({ ...input, customer_id }),
+    });
+    assert.equal(blocked.status, 503);
+    assert.deepEqual(await blocked.json(), { errorCode: 'REAL_DATA_ACCESS_RESTRICTED' });
+  }
+  const wrongOrigin = await localRequest(url + '/api/effective-price', {
+    method: 'POST', headers: { ...headers, Origin: 'https://untrusted.example.test' }, body: JSON.stringify(input),
+  });
+  assert.equal(wrongOrigin.status, 403);
+  const wrongType = await localRequest(url + '/api/effective-price', {
+    method: 'POST', headers: { ...headers, 'Content-Type': 'text/plain' }, body: JSON.stringify(input),
+  });
+  assert.equal(wrongType.status, 415);
+  assert.deepEqual(queried, []);
+  const response = await localRequest(url + '/api/effective-price?customer_id=customer_001', {
+    method: 'POST', headers, body: JSON.stringify(input),
+  });
+  assert.equal(response.status, 200);
+  const calculated = await response.json();
+  assert.equal(calculated.policyVersion, 'n8n-quote-v2');
+  assert.equal(calculated.quote.breakdown.plan_fee_after_discount, 67500);
+  assert.equal(calculated.quote.excluded.customer_lookup, true);
+  assert.equal(JSON.stringify(calculated).includes('customer_001'), false);
+  assert.deepEqual(queried.map(row => row.table), ['own_plans', 'products']);
+});

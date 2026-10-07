@@ -1,5 +1,17 @@
 # KCM 작업 상태 — v0.3 / 2026-10-07
 
+## 체감가 6조건 입력·준비된 n8n 견적 출력 연결 / 2026-10-07
+
+- 사용자가 DB 컬럼6개 입력과 n8n 출력 이미지를 제공하고 서비스 계산을 동일하게 수정하도록 요청했습니다. 원격 main `95ca28045edef1aa0b5cccfd8e73bd3e72a281cc`에서 격리 worktree `_worktrees/effective-price-output` / `fix/effective-price-output`을 생성했습니다. 기존 작업 폴더와 다른 worktree의 팀원 수정·운영 기록은 보존했습니다. 최종 fetch에서도 원격 main은 같은 버전입니다.
+- n8n 화면의 `Price Calculation`을 읽고 현재 워크플로우 JSON을 내려받아 계산 코드만 추출했습니다. 원본 정책 해시와 범위는 `docs/EFFECTIVE_PRICE_QUOTE.md`에 기록했습니다. `server/effective-price-policy.mjs`로 원본 JavaScript 계산을 정적 이식했으며 입력/반환 wrapper·주석·미등록 모델 안전 오류 외 수학·결합 정책은 유지했습니다. 이 복사본은 정적 타입 검사 제외 대상으로 명시했고 API 경계 검증과 정책 테스트로 확인합니다. n8n 전체 JSON·자격증명·실제 키는 Git에 포함하지 않습니다.
+- 서버는6조건이 있는 요청에 `n8n-quote-v2` 견적을 추가하고 기존 `db-fixed-mobile-v1`을 유지했습니다. DB 단말 가격/월정액·선택 결합/부모/규칙은 명시 컬럼만 SELECT하며 잘못된 값·다른ID·중복 규칙·임의 금액/할인/수수료 입력을 차단합니다. 기존 고객 매장 연결·동의·현재 요금 검증 및 공개 고객 지정 계산 제한을 유지했습니다. 정책 미등록은422 `PRICE_POLICY_UNAVAILABLE`, 잘못된 DB 값은 기존502 오류입니다.
+- UI는 단말기→요금제→결합→할부개월→약정개월→할인종류 순서이며24/24/요금할인 기본값, 일시불·기기할인·결합 선택 안함을 지원합니다. 결과4그룹·체감가 안내·약정 혜택/수수료/총액/월평균을 표시하며 입력 변경/응답 지연/자료 변경 시 이전 견적을 제거합니다. 원본 결합 가정과 가입 자격 미확인은 유지하고 개발 필드명·규칙ID는 쉬운 말로 표시합니다. 실제 고객을 계산 요청에 포함하지 않습니다.
+- 사용자 예시를 실제 catalog 읽기 snapshot으로 계산하여 월112,036원=단말51,536원+통신60,500원, 단말90,000원/선택약정월22,500원/결합월7,000원 할인, 혜택798,000원·수수료72,871원·약정 총2,688,871원·월평균112,036원 전체 일치를 확인했습니다. 마지막 회차112,043원으로7원을 정산하며 총액을 월 표시액×24로 역산하지 않습니다.
+- 결합7,000원은 `bundle_001`의 모바일 DB 규칙에서 읽은 값이 아니라 원본의 시연 정액 정책입니다. 가족2회선·500M 인터넷 등의 가정을 결과에 명시하며 공식 현재 통신사 가격/실제 가입 자격으로 주장하지 않습니다. 실제 catalog12단말×51요금×5결합×2할인종류6,120조합 중5,100계산 성공, 원본 할인표가 없는 iPhone18/18Plus의1,020조합은 견적 중단입니다. DB 쓰기·실제 상담/고객 초기화·스키마/RLS·통화·웹훅 인증·문자·n8n 운영 발행은 변경하지 않았습니다.
+- 의존성 변경 없이 `npm.cmd ci --ignore-scripts --offline --no-audit --no-fund` 성공. 최종 `npm.cmd run check` 전체 **1,022/1,022 성공**, 실패/skip0(기존985+신규37); 프런트/서버 타입 검사와 production build 성공. 기존 Retell SDK 청크 경고만 유지합니다. `npm.cmd run preview:standalone`으로 HTML을 갱신했고 `git diff --check` 통과했습니다. 신규 검증은 목표 전체 금액·원 단위 정산·일시불·할인 전환·가정 안내·정책 미등록·변형 DB·금액 주입·고객/Origin/JSON 보호 및 프런트 응답 검증입니다.
+- 로컬 production build+격리 catalog snapshot 서버(외부 서비스/키 없음)에서6선택→계산, 목표 전체 금액, 기기할인 전환·일시불 첫달/다음달, 기본 화면 및390×844 입력 세로 배치·가로 넘침 없음, 모달 스크롤/결과 표시를 확인했습니다. 최종 탭 console error/warn0이며 viewport는 복원했습니다. 캡처·fixture·검증 로그는 Git 제외 `.cache/price-policy/`에 보관합니다. 독립 HTML 직접 실행과 운영 사이트 새 계산 배포는 아직 수행하지 않았습니다.
+- 변경 파일: `server/effective-price-policy.mjs`, `server/effective-price.mjs`, 서버 테스트3개, `src/components/EffectivePricePanel.tsx`, `src/services/effectivePriceApi.ts`, `tests/effectivePrice.test.ts`, `docs/EFFECTIVE_PRICE_QUOTE.md`, `STATUS.md`, `00_KCM_미리보기.html`. 기존 운영 auth/name 수정과 별개 계산 변경이며 운영 병합/배포는 준비된 결과를 확인한 사용자 승인 뒤 진행합니다.
+
 ## 직원 로그인 후 매장 고객·상담 요약 조회 / 2026-10-07
 
 - 사용자가 생성한 계정 기준으로 진행을 요청하여 매장별 조회 전용 계정을 지원했습니다. 실제 employees 테이블은 이름 외 성별/직급/전화/휴무도 NOT NULL이므로 임의 직원/개인정보를 만들지 않았습니다. 정확한 `{authUserId,storeId,scope:'customers:read'}` 서버 승인 형태를 추가하고 매 Auth `/user` 검증 후 실제 stores(id,name) 존재를 확인합니다. 기존 직원형은 원래 employees 소속 검증을 유지하며 조회계정으로 fallback하지 않습니다. 직원 ID 없이 ‘매장 고객 자료 조회 계정’ / ‘store_005 · 조회 전용’으로 표시합니다.
