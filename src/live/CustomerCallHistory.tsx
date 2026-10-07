@@ -6,6 +6,7 @@ import { customerCallHistory, type CustomerHistoryStatus } from './customerHisto
 import { liveStatusLabels } from './liveCalls';
 import { deliveryLabel } from './livePresentation';
 import type { LiveCall } from './types';
+import { isDemoDisplayCustomer, liveCustomerDisplayName } from '../lib/customerName';
 
 function endedTime(at: string | null) {
   if (!at) return null;
@@ -28,7 +29,7 @@ export function CustomerCallHistory({ calls, onSelect }: { calls: readonly LiveC
     <div className="customer-history-filters">
       <label><span>고객 선택</span><select value={customerKey} onChange={event => { setCustomerKey(event.target.value); setPage(1); }}>
         <option value="">전체 고객</option>
-        {groups.map(group => <option value={group.key} key={group.key}>{group.customerId || `미식별 통화 · ${group.calls[0].call_id}`}</option>)}
+        {groups.map(group => <option value={group.key} key={group.key}>{liveCustomerDisplayName(group.customerId, `미식별 통화 · ${group.calls[0].call_id}`)}</option>)}
       </select></label>
       <label><span>상담 상태</span><select value={status} onChange={event => { setStatus(event.target.value as CustomerHistoryStatus); setPage(1); }}>
         <option value="all">전체 상태</option>
@@ -43,7 +44,10 @@ export function CustomerCallHistory({ calls, onSelect }: { calls: readonly LiveC
     {filtered.length > 0 ? <div className="customer-history-scroll" role="region" aria-label="고객별 통화 목록 · 좌우 스크롤" tabIndex={0}>
       <table className="customer-history-table"><thead><tr><th scope="col">고객 / 식별 정보</th><th scope="col">상담 상태</th><th scope="col">이번 통화 위험도</th><th scope="col">종료 시각</th><th scope="col">전송 상태</th><th scope="col">기록</th></tr></thead><tbody>
         {pagination.items.map(call => { const ended = endedTime(call.ended_at); return <tr key={call.call_id}>
-          <td className="customer-history-identifiers"><span title={call.customer_id || '미식별'}>{call.customer_id || '미식별 고객'}</span><span title={call.call_id}>통화: {call.call_id}</span><span className="sr-only">상담: {call.consultation_id || '확인 필요'}</span></td>
+          <td className="customer-history-identifiers"><span title={liveCustomerDisplayName(call.customer_id, '미식별')}>{liveCustomerDisplayName(call.customer_id, '미식별 고객')}</span>
+            {isDemoDisplayCustomer(call.customer_id) ? <details className="live-call-id"><summary>통화 식별 정보</summary><code>통화: {call.call_id}</code><code>상담: {call.consultation_id || '확인 필요'}</code><code>고객: {call.customer_id}</code></details>
+              : <><span title={call.call_id}>통화: {call.call_id}</span><span className="sr-only">상담: {call.consultation_id || '확인 필요'}</span></>}
+          </td>
           <td><span className={`live-badge ${call.status}`}>{liveStatusLabels[call.status]}</span></td>
           <td className="customer-history-score">{call.final_result ? <strong>{formatRiskScore(call.final_result.risk_score)}</strong> : <span>{call.status === 'ended' ? '최종 위험도 확정 보류' : '종료 후 위험도 확정'}</span>}</td>
           <td className="customer-history-time">{ended ? <time dateTime={call.ended_at!}><span>{ended.date}</span><span>{ended.time}</span></time> : <span>{call.status === 'live' ? '진행 중' : call.status === 'error' || call.status === 'ended' ? '종료 확인 필요' : '종료 전'}</span>}</td>

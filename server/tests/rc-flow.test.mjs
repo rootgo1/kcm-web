@@ -18,7 +18,7 @@ function fixture(t, micReady = true) {
     assert.ok(parsed); browserCalls = applyLiveEvent(browserCalls,parsed);
   });
   const delivery = createN8nDelivery({liveCalls:store,webhookUrl:'https://workflow.example.test/rc',log:()=>{},
-    webhookAuthToken:'synthetic_rc_webhook_token_000000000000',
+    webhookJwtSecret:'synthetic_rc_webhook_jwt_secret_for_isolated_tests_only_00000000000000',
     fetchImpl:async (_url,init)=>{sent.push(JSON.parse(init.body));return new Response(null,{status:200});}});
   const reporter = createLiveAudioReporter(()=>{},async(id,value)=>{
     audioEvents.push({id,...value});

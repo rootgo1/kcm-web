@@ -13,3 +13,13 @@ export function storedCustomerDisplayName(nameMasked: string, customerId: string
   const id = /^customer_([0-9]{3,})$/.exec(customerId);
   return id ? `고객 ${id[1]}` : nameMasked;
 }
+
+/** 승인된 시연 고객 1명의 화면 표시만 구분합니다. 식별·조회·권한 판단에는 사용하지 않습니다. */
+export function isDemoDisplayCustomer(customerId: string | null | undefined): boolean {
+  return customerId === 'customer_9999';
+}
+
+/** 이름 없는 실시간 DTO의 시연 고객만 마스킹 표시합니다. 나머지 고객 식별자는 보존합니다. */
+export function liveCustomerDisplayName(customerId: string | null | undefined, fallback = '고객 확인 전'): string {
+  return isDemoDisplayCustomer(customerId) ? '정*민' : customerId || fallback;
+}
