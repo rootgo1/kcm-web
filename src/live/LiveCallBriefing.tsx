@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createLiveBriefingController, liveBriefingErrorMessage, type LiveBriefingState } from '../services/liveBriefingApi';
 import { formatRealDataDate } from '../services/realDataApi';
+import { storedCustomerDisplayName } from '../lib/customerName';
 
 const stageLabels = { AI: 'AI 상담', PHONE: '전화 상담', VISIT: '방문 상담' } as const;
 const countLabels = [
@@ -31,7 +32,7 @@ export function LiveCallBriefing({ callId, customerId }: { callId: string; custo
     {state.status === 'loading' && <p className="live-briefing-state" role="status">사전 브리핑을 불러오는 중입니다.</p>}
     {state.status === 'error' && <div className="live-briefing-state" role="status"><strong>사전 브리핑을 불러오지 못했습니다.</strong><p>{liveBriefingErrorMessage(state.errorCode)}</p></div>}
     {data && <>
-      <div className="live-briefing-customer"><strong>{data.customer.nameMasked}</strong><span className="live-identifier">{data.customer.id}</span></div>
+      <div className="live-briefing-customer"><strong>{storedCustomerDisplayName(data.customer.nameMasked, data.customer.id)}</strong><span className="live-identifier">{data.customer.id}</span></div>
       {!data.privacyConsent ? <p className="live-briefing-state" role="status">고객 개인정보 동의 확인이 필요합니다.</p> : <>
         <dl className="live-briefing-products">
           <div><dt>현재 상품</dt><dd>{data.currentProduct ? <>{data.currentProduct.name}<small>{data.currentProduct.storageGb}GB · {data.currentProduct.color}</small></> : '등록된 상품이 없습니다.'}</dd></div>

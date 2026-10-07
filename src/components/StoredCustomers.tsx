@@ -5,6 +5,7 @@ import { Icon } from './Icon';
 import { Modal } from './Modal';
 import { paginateCalls } from '../lib/callPagination';
 import { latestCompletedStoredConsultation } from '../lib/storedCustomerPresentation';
+import { storedCustomerDisplayName } from '../lib/customerName';
 
 const stageLabels = { AI: 'AI 응대', PHONE: '전화', VISIT: '방문' } as const;
 const codeOf = (error: unknown) => error instanceof RealDataApiError ? error.code : 'UNKNOWN_ERROR';
@@ -111,7 +112,7 @@ export function StoredCustomers({ onAvailability }: { onAvailability?: (state: R
 
   const filtered = useMemo(() => {
     const search = query.trim().toLocaleLowerCase('ko-KR');
-    return items.filter(item => `${item.id} ${item.nameMasked} ${item.phoneMasked} ${item.latestPurpose}`.toLocaleLowerCase('ko-KR').includes(search));
+    return items.filter(item => `${item.id} ${item.nameMasked} ${storedCustomerDisplayName(item.nameMasked, item.id)} ${item.phoneMasked} ${item.latestPurpose}`.toLocaleLowerCase('ko-KR').includes(search));
   }, [items, query]);
   const pagination = paginateCalls(filtered, page);
   useEffect(() => { setPage(pagination.page); }, [pagination.page]);
@@ -130,13 +131,13 @@ export function StoredCustomers({ onAvailability }: { onAvailability?: (state: R
       : <>
         <div className="real-data-grid">
           <div className="real-data-list"><div className="table-scroll real-data-table-scroll" role="region" tabIndex={0} aria-label="저장된 고객 목록"><table className="appointment-table real-data-table"><thead><tr><th scope="col">고객</th><th scope="col">최근 상담</th><th scope="col">상태</th></tr></thead><tbody>{visible.map(item => <tr key={item.id} className={selectedId === item.id ? 'selected-row' : ''}>
-            <td><button className="customer-select" onClick={() => choose(item.id)} aria-pressed={selectedId === item.id}><strong>{item.nameMasked}</strong><span className="sr-only">{item.phoneMasked || '연락처 미확인'}</span></button><span className="real-data-id">{item.id}</span></td>
+            <td><button className="customer-select" onClick={() => choose(item.id)} aria-pressed={selectedId === item.id}><strong>{storedCustomerDisplayName(item.nameMasked, item.id)}</strong><span className="sr-only">{item.phoneMasked || '연락처 미확인'}</span></button><span className="real-data-id">{item.id}</span></td>
             <td><strong title={item.latestPurpose || '상담 목적 미기록'}>{item.latestPurpose || '상담 목적 미기록'}</strong><small className="real-data-meta">{formatRealDataDate(item.latestConsultationAt)}</small></td><td><span className="status-pill">{item.latestStatus}</span></td>
           </tr>)}</tbody></table>{filtered.length === 0 && <p className="real-data-empty">검색 조건에 맞는 고객이 없습니다.</p>}</div>
           {pages > 1 && <nav className="call-pagination" aria-label="저장된 고객 목록 페이지"><button type="button" aria-label="이전 저장 고객 페이지" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}><Icon name="chevron" className="previous-chevron" size={16}/></button><span role="status" aria-live="polite">{currentPage} / {pages}</span><button type="button" aria-label="다음 저장 고객 페이지" disabled={currentPage === pages} onClick={() => setPage(currentPage + 1)}><Icon name="chevron" size={16}/></button></nav>}</div>
           <div className="real-data-detail" aria-label="선택한 고객의 저장 상담 이력">
             {!selected ? <p className="real-data-empty">고객을 선택하면 저장된 상담 이력을 확인할 수 있습니다.</p> : <>
-              <div className="real-data-history-heading"><div><h3>{selected.nameMasked} · 저장 상담 이력</h3><p className="real-data-id">{selected.id} · {selected.phoneMasked || '연락처 미확인'}</p></div>{selected.privacyConsent && <button className="button button-secondary" onClick={() => setHistoryKey(key => key + 1)}>다시 조회</button>}</div>
+              <div className="real-data-history-heading"><div><h3>{storedCustomerDisplayName(selected.nameMasked, selected.id)} · 저장 상담 이력</h3><p className="real-data-id">{selected.id} · {selected.phoneMasked || '연락처 미확인'}</p></div>{selected.privacyConsent && <button className="button button-secondary" onClick={() => setHistoryKey(key => key + 1)}>다시 조회</button>}</div>
               {selected.privacyConsent && <details className="stored-customer-product"><summary>이용 상품·요금제</summary><div className="briefing-facts real-data-facts" aria-label="현재 이용 상품과 요금제">
                 <div><span>현재 이용 상품</span><strong>{selected.currentProduct ? `${selected.currentProduct.name} · ${selected.currentProduct.storageGb}GB · ${selected.currentProduct.color}` : '미기록'}</strong></div>
                 <div><span>현재 이용 요금제</span><strong>{selected.currentPlan ? `${selected.currentPlan.name} · 월 ${selected.currentPlan.monthlyFee.toLocaleString('ko-KR')}원` : '미기록'}</strong></div>

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { maskCustomerName } from '../src/lib/customerName.js';
+import { maskCustomerName, storedCustomerDisplayName } from '../src/lib/customerName.js';
 import { callRiskLabel } from '../src/lib/callPresentation.js';
 import { createCallDemoState } from '../src/data/callMockData.js';
 import { callRisk, getCallMetrics } from '../src/lib/callRisk.js';
@@ -18,6 +18,34 @@ test('짧거나 누락된 이름과 유니코드 글자를 안전하게 표시�
   assert.equal(maskCustomerName('김'), '*');
   for (const name of ['', '  ', undefined, null]) assert.equal(maskCustomerName(name), '이름 미확인');
   assert.equal(maskCustomerName('𠮷田花'), '𠮷*花');
+});
+
+test('확인된 테스트고객 마스킹만 고객 ID 기반 중립 이름으로 표시한다', () => {
+  assert.equal(storedCustomerDisplayName('테***객', 'customer_9999'), '고객 9999');
+  for (const name of ['김*연', '박*훈', '남**수', '*', '비공개 고객', '이름 미확인', '테**객', '테****객', '테스트고객', '테*트']) {
+    assert.equal(storedCustomerDisplayName(name, 'customer_9999'), name);
+  }
+  for (const id of ['', 'customer_99', 'customer_9999x', 'CUSTOMER-9999', 'employee_9999']) {
+    assert.equal(storedCustomerDisplayName('테***객', id), '테***객');
+  }
+});
+
+test('중립 표시 후에도 원본 DTO·마스킹·고객별 선택 ID와 검색 원문을 보존한다', () => {
+  const customer = Object.freeze({ id: 'customer_9999', nameMasked: '테***객', phoneMasked: '***-****-9999', privacyConsent: true });
+  const original = structuredClone(customer);
+  const searchText = `${customer.id} ${customer.nameMasked} ${customer.phoneMasked}`;
+  assert.equal(storedCustomerDisplayName(customer.nameMasked, customer.id), '고객 9999');
+  assert.deepEqual(customer, original);
+  assert.equal(`${customer.id} ${customer.nameMasked} ${customer.phoneMasked}`, searchText);
+  assert.equal(maskCustomerName('테스트고객'), '테***객');
+});
+
+test('동일한 테스트 이름도 고객 식별 번호와 앞자리 0을 유지해 서로 구분한다', () => {
+  const ids = ['customer_9999', 'customer_10000', 'customer_001', 'customer_0001'];
+  const labels = ids.map(id => storedCustomerDisplayName('테***객', id));
+  assert.deepEqual(labels, ['고객 9999', '고객 10000', '고객 001', '고객 0001']);
+  assert.equal(new Set(labels).size, ids.length);
+  assert.deepEqual(ids, ['customer_9999', 'customer_10000', 'customer_001', 'customer_0001']);
 });
 
 test('통화 이름 표시로 원본 이름·고객 ID·통화 ID·점수와 집계가 바뀌지 않는다', () => {

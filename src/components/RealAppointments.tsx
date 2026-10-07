@@ -3,6 +3,7 @@ import { formatRealDataDate, realDataApi, realDataAvailability, realDataErrorMes
   type RealAppointment, type RealBriefing, type RealDataAvailability, type ReservationStatus } from '../services/realDataApi.js';
 import { Icon } from './Icon';
 import { StoredConsultationList } from './StoredCustomers';
+import { storedCustomerDisplayName } from '../lib/customerName';
 
 const statuses: ReservationStatus[] = ['예약 확정', '방문 완료', '취소', '노쇼'];
 const codeOf = (error: unknown) => error instanceof RealDataApiError ? error.code : 'UNKNOWN_ERROR';
@@ -27,7 +28,7 @@ export function RealBriefingPanel({ appointment }: { appointment?: RealAppointme
   return <section className="card real-data-detail real-data-briefing" aria-label="선택한 예약의 저장 사전 브리핑">
     <div className="card-heading real-data-header"><div><h2>사전 브리핑</h2><p className="real-data-notice">저장된 AI 요약과 예약 정보를 확인합니다.</p></div>{appointment && <button className="button button-secondary" onClick={() => setReloadKey(key => key + 1)}>다시 조회</button>}</div>
     {!appointment ? <p className="real-data-empty">예약을 선택하면 저장된 브리핑을 확인할 수 있습니다.</p> : <>
-      <div className="real-data-history-heading"><strong>{appointment.customerNameMasked}</strong><span className="status-pill">{appointment.status}</span></div><p className="real-data-meta">{appointment.phoneMasked || '연락처 미확인'} · 방문 {formatRealDataDate(appointment.visitAt)}</p><p className="real-data-id">{appointment.id}</p>
+      <div className="real-data-history-heading"><strong>{storedCustomerDisplayName(appointment.customerNameMasked, appointment.customerId)}</strong><span className="status-pill">{appointment.status}</span></div><p className="real-data-meta">{appointment.phoneMasked || '연락처 미확인'} · 방문 {formatRealDataDate(appointment.visitAt)}</p><p className="real-data-id">{appointment.id}</p>
       {state.reservationId !== reservationId || state.status === 'loading' ? <p className="real-data-empty" role="status">저장된 브리핑을 불러오는 중입니다.</p>
         : state.status === 'error' ? <div className="real-data-error" role="status"><p>{realDataErrorMessage(state.code)}</p><button className="button button-secondary" onClick={() => setReloadKey(key => key + 1)}>다시 시도</button></div>
         : data && <>
@@ -78,7 +79,7 @@ export function RealAppointments({ compact = false, onAvailability, onAll }: {
   const filtered = useMemo(() => {
     const search = query.trim().toLocaleLowerCase('ko-KR');
     return items.filter(item => (filter === 'all' || item.status === filter)
-      && `${item.id} ${item.customerNameMasked} ${item.purpose} ${item.employeeName}`.toLocaleLowerCase('ko-KR').includes(search));
+      && `${item.id} ${item.customerNameMasked} ${storedCustomerDisplayName(item.customerNameMasked, item.customerId)} ${item.purpose} ${item.employeeName}`.toLocaleLowerCase('ko-KR').includes(search));
   }, [items, filter, query]);
   const pages = Math.max(1, Math.ceil(filtered.length / 5)); const currentPage = Math.min(page, pages);
   const visible = filtered.slice((currentPage - 1) * 5, currentPage * 5);
@@ -93,7 +94,7 @@ export function RealAppointments({ compact = false, onAvailability, onAll }: {
           : items.length === 0 ? <p className="real-data-empty">현재 매장에 저장된 예약이 없습니다.</p>
           : <><div className="real-data-tools"><label>예약 상태<select value={filter} onChange={event => { setFilter(event.target.value as 'all' | ReservationStatus); setPage(1); setSelectedId(''); }} aria-label="저장 예약 상태 필터"><option value="all">전체</option>{statuses.map(status => <option key={status} value={status}>{status}</option>)}</select></label><label className="search-field"><Icon name="search" size={15}/><input type="search" value={query} placeholder="고객·목적·직원 검색" aria-label="저장된 예약 검색" onChange={event => { setQuery(event.target.value); setPage(1); setSelectedId(''); }}/></label></div>
             <div className="table-scroll real-data-table-scroll" role="region" tabIndex={0} aria-label="저장된 예약 목록"><table className="appointment-table real-data-table"><thead><tr><th scope="col">방문 예정</th><th scope="col">고객 / 상담 목적</th><th scope="col">담당 / 상태</th></tr></thead><tbody>{visible.map(item => <tr key={item.id} className={selectedId === item.id ? 'selected-row' : ''}>
-              <td className="real-data-meta">{formatRealDataDate(item.visitAt)}</td><td><button className="customer-select" onClick={() => setSelectedId(item.id)} aria-pressed={selectedId === item.id} aria-label={`${item.customerNameMasked} 예약 선택`}><span><strong>{item.customerNameMasked}</strong><small>{item.purpose || '상담 목적 미기록'}</small></span></button><span className="real-data-id">{item.id}</span></td>
+              <td className="real-data-meta">{formatRealDataDate(item.visitAt)}</td><td><button className="customer-select" onClick={() => setSelectedId(item.id)} aria-pressed={selectedId === item.id} aria-label={`${storedCustomerDisplayName(item.customerNameMasked, item.customerId)} 예약 선택`}><span><strong>{storedCustomerDisplayName(item.customerNameMasked, item.customerId)}</strong><small>{item.purpose || '상담 목적 미기록'}</small></span></button><span className="real-data-id">{item.id}</span></td>
               <td><span className="employee-name">{item.employeeName || '담당 미확인'}</span><span className="status-pill">{item.status}</span><small className="real-data-meta">{item.summaryStatus === 'available' ? '저장 요약 있음' : item.summaryStatus === 'restricted' ? '개인정보 동의 확인 필요' : '저장 요약 없음'}</small></td>
             </tr>)}</tbody></table>{filtered.length === 0 && <p className="real-data-empty">검색 조건에 맞는 예약이 없습니다.</p>}</div>
             {pages > 1 && <div className="real-data-pagination" aria-label="저장된 예약 목록 페이지"><button className="button button-secondary" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>이전</button><span>{currentPage} / {pages}</span><button className="button button-secondary" disabled={currentPage === pages} onClick={() => setPage(currentPage + 1)}>다음</button></div>}

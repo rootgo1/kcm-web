@@ -2954,6 +2954,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EffectivePricePanel = EffectivePricePanel;
 const react_1 = require("react");
 const effectivePriceApi_1 = require("../services/effectivePriceApi");
+const customerName_1 = require("../lib/customerName");
 function amountLabel(row) {
     if (row.amount !== null)
         return (0, effectivePriceApi_1.formatEffectivePrice)(row.amount);
@@ -3064,7 +3065,7 @@ function EffectivePricePanel({ catalog, customers, customersError, initialPlanId
                     __React.createElement("select", { id: `${elementId}-customer`, value: choices.customerId, onChange: event => change('customerId', event.target.value) },
                         __React.createElement("option", { value: "" }, "\uACE0\uAC1D \uC815\uBCF4 \uC5C6\uC774 \uACC4\uC0B0"),
                         customers?.filter(customer => customer.privacyConsent).map(customer => __React.createElement("option", { key: customer.id, value: customer.id },
-                            customer.nameMasked,
+                            (0, customerName_1.storedCustomerDisplayName)(customer.nameMasked, customer.id),
                             " \u00B7 ",
                             customer.phoneMasked))),
                     __React.createElement("p", { className: "real-data-notice" }, "\uD604\uC7AC \uB9E4\uC7A5\uC758 \uCD5C\uADFC \uC0C1\uB2F4 \uACE0\uAC1D \uCD5C\uB300 20\uBA85 \uC911 \uB3D9\uC758\uAC00 \uD655\uC778\uB41C \uACE0\uAC1D\uC744 \uBE44\uAD50\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."),
@@ -3513,6 +3514,7 @@ const react_1 = require("react");
 const realDataApi_js_1 = require("../services/realDataApi.js");
 const Icon_1 = require("./Icon");
 const StoredCustomers_1 = require("./StoredCustomers");
+const customerName_1 = require("../lib/customerName");
 const statuses = ['예약 확정', '방문 완료', '취소', '노쇼'];
 const codeOf = (error) => error instanceof realDataApi_js_1.RealDataApiError ? error.code : 'UNKNOWN_ERROR';
 function RealBriefingPanel({ appointment }) {
@@ -3545,7 +3547,7 @@ function RealBriefingPanel({ appointment }) {
             appointment && __React.createElement("button", { className: "button button-secondary", onClick: () => setReloadKey(key => key + 1) }, "\uB2E4\uC2DC \uC870\uD68C")),
         !appointment ? __React.createElement("p", { className: "real-data-empty" }, "\uC608\uC57D\uC744 \uC120\uD0DD\uD558\uBA74 \uC800\uC7A5\uB41C \uBE0C\uB9AC\uD551\uC744 \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.") : __React.createElement(__React.Fragment, null,
             __React.createElement("div", { className: "real-data-history-heading" },
-                __React.createElement("strong", null, appointment.customerNameMasked),
+                __React.createElement("strong", null, (0, customerName_1.storedCustomerDisplayName)(appointment.customerNameMasked, appointment.customerId)),
                 __React.createElement("span", { className: "status-pill" }, appointment.status)),
             __React.createElement("p", { className: "real-data-meta" },
                 appointment.phoneMasked || '연락처 미확인',
@@ -3647,7 +3649,7 @@ function RealAppointments({ compact = false, onAvailability, onAll }) {
     const filtered = (0, react_1.useMemo)(() => {
         const search = query.trim().toLocaleLowerCase('ko-KR');
         return items.filter(item => (filter === 'all' || item.status === filter)
-            && `${item.id} ${item.customerNameMasked} ${item.purpose} ${item.employeeName}`.toLocaleLowerCase('ko-KR').includes(search));
+            && `${item.id} ${item.customerNameMasked} ${(0, customerName_1.storedCustomerDisplayName)(item.customerNameMasked, item.customerId)} ${item.purpose} ${item.employeeName}`.toLocaleLowerCase('ko-KR').includes(search));
     }, [items, filter, query]);
     const pages = Math.max(1, Math.ceil(filtered.length / 5));
     const currentPage = Math.min(page, pages);
@@ -3692,9 +3694,9 @@ function RealAppointments({ compact = false, onAvailability, onAll }) {
                                         __React.createElement("tbody", null, visible.map(item => __React.createElement("tr", { key: item.id, className: selectedId === item.id ? 'selected-row' : '' },
                                             __React.createElement("td", { className: "real-data-meta" }, (0, realDataApi_js_1.formatRealDataDate)(item.visitAt)),
                                             __React.createElement("td", null,
-                                                __React.createElement("button", { className: "customer-select", onClick: () => setSelectedId(item.id), "aria-pressed": selectedId === item.id, "aria-label": `${item.customerNameMasked} 예약 선택` },
+                                                __React.createElement("button", { className: "customer-select", onClick: () => setSelectedId(item.id), "aria-pressed": selectedId === item.id, "aria-label": `${(0, customerName_1.storedCustomerDisplayName)(item.customerNameMasked, item.customerId)} 예약 선택` },
                                                     __React.createElement("span", null,
-                                                        __React.createElement("strong", null, item.customerNameMasked),
+                                                        __React.createElement("strong", null, (0, customerName_1.storedCustomerDisplayName)(item.customerNameMasked, item.customerId)),
                                                         __React.createElement("small", null, item.purpose || '상담 목적 미기록'))),
                                                 __React.createElement("span", { className: "real-data-id" }, item.id)),
                                             __React.createElement("td", null,
@@ -3730,6 +3732,7 @@ const Icon_1 = require("./Icon");
 const Modal_1 = require("./Modal");
 const callPagination_1 = require("../lib/callPagination");
 const storedCustomerPresentation_1 = require("../lib/storedCustomerPresentation");
+const customerName_1 = require("../lib/customerName");
 const stageLabels = { AI: 'AI 응대', PHONE: '전화', VISIT: '방문' };
 const codeOf = (error) => error instanceof realDataApi_js_1.RealDataApiError ? error.code : 'UNKNOWN_ERROR';
 /** Saved records only; each stage's score is displayed without recalculating or combining calls. */
@@ -3887,7 +3890,7 @@ function StoredCustomers({ onAvailability }) {
     }, [selectedId, selected?.privacyConsent, limit, historyKey]);
     const filtered = (0, react_1.useMemo)(() => {
         const search = query.trim().toLocaleLowerCase('ko-KR');
-        return items.filter(item => `${item.id} ${item.nameMasked} ${item.phoneMasked} ${item.latestPurpose}`.toLocaleLowerCase('ko-KR').includes(search));
+        return items.filter(item => `${item.id} ${item.nameMasked} ${(0, customerName_1.storedCustomerDisplayName)(item.nameMasked, item.id)} ${item.phoneMasked} ${item.latestPurpose}`.toLocaleLowerCase('ko-KR').includes(search));
     }, [items, query]);
     const pagination = (0, callPagination_1.paginateCalls)(filtered, page);
     (0, react_1.useEffect)(() => { setPage(pagination.page); }, [pagination.page]);
@@ -3924,7 +3927,7 @@ function StoredCustomers({ onAvailability }) {
                                         __React.createElement("tbody", null, visible.map(item => __React.createElement("tr", { key: item.id, className: selectedId === item.id ? 'selected-row' : '' },
                                             __React.createElement("td", null,
                                                 __React.createElement("button", { className: "customer-select", onClick: () => choose(item.id), "aria-pressed": selectedId === item.id },
-                                                    __React.createElement("strong", null, item.nameMasked),
+                                                    __React.createElement("strong", null, (0, customerName_1.storedCustomerDisplayName)(item.nameMasked, item.id)),
                                                     __React.createElement("span", { className: "sr-only" }, item.phoneMasked || '연락처 미확인')),
                                                 __React.createElement("span", { className: "real-data-id" }, item.id)),
                                             __React.createElement("td", null,
@@ -3946,7 +3949,7 @@ function StoredCustomers({ onAvailability }) {
                                 __React.createElement("div", { className: "real-data-history-heading" },
                                     __React.createElement("div", null,
                                         __React.createElement("h3", null,
-                                            selected.nameMasked,
+                                            (0, customerName_1.storedCustomerDisplayName)(selected.nameMasked, selected.id),
                                             " \u00B7 \uC800\uC7A5 \uC0C1\uB2F4 \uC774\uB825"),
                                         __React.createElement("p", { className: "real-data-id" },
                                             selected.id,
@@ -4184,6 +4187,18 @@ function createMockData(date = new Intl.DateTimeFormat('en-CA', {
         { id: 'DEMO-R007', customerId: 'DEMO-C007', customerName: '윤서진', phoneMasked: '010-****-1007', time: '16:30', purpose: '요금제 변경', device: '기존 단말기 유지', budget: '월 7만 원 이내', employee: '한지호', status: 'reserved', reviewed: false, briefing: { ...makeBriefing('요금제 변경', '확인 필요', '기존 단말기 유지'), status: 'failed', summary: '', checklist: [], transcript: [] } },
         { id: 'DEMO-R008', customerId: 'DEMO-C008', customerName: '한시우', phoneMasked: '010-****-1008', time: '17:00', purpose: '신규 개통', device: '보급형 스마트폰', budget: '월 4만 원 이내', employee: workspaceMockData_js_1.workspaceMock.employee.name, status: 'reserved', reviewed: true, briefing: makeBriefing('신규 개통', '이용 방법을 상세하게 안내', '보급형 스마트폰') },
     ];
+    // Handwritten fictional screen fixture, not an AI-generated summary or a saved DB consultation.
+    const completedResult = {
+        summary: '월 데이터 사용량에 맞는 요금제 변경 조건과 예상 월 요금을 비교 안내했습니다.',
+        outcome: 'needs_check', followUp: 'required',
+        followUpMemo: '요금제 적용 가능 여부와 변경 시점을 확인해 다시 안내드리겠습니다.',
+    };
+    const completedAt = `${date}T10:50:00+09:00`;
+    appointments[0].consultation = {
+        startedAt: `${date}T10:30:00+09:00`, completedAt, result: completedResult,
+        history: [{ id: 'DEMO-R001-1', kind: 'completed', before: null, after: { ...completedResult },
+                actor: { id: 'DEMO-E002', name: '이지은', position: '상담 직원' }, at: completedAt }],
+    };
     appointments[1].briefing.summary = '현재 사용하는 휴대전화의 교체를 희망합니다. 월 8만 원 이내의 부담 금액을 우선 고려하며, 가족결합 적용 가능 여부를 함께 확인하고 싶어 합니다.';
     appointments[1].briefing.checklist = ['Galaxy S 시리즈 재고·색상 확인', '가족결합 적용 가능 여부 확인', '단말기 비용과 통신요금을 구분해 안내'];
     return {
@@ -5808,6 +5823,7 @@ function consultationTime(at) {
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.maskCustomerName = maskCustomerName;
+exports.storedCustomerDisplayName = storedCustomerDisplayName;
 /** 원본 이름을 변경하지 않는 화면 표시용 마스킹입니다. */
 function maskCustomerName(name) {
     const letters = Array.from(name?.trim() ?? '');
@@ -5818,6 +5834,13 @@ function maskCustomerName(name) {
     if (letters.length === 2)
         return `${letters[0]}*`;
     return `${letters[0]}${'*'.repeat(letters.length - 2)}${letters[letters.length - 1]}`;
+}
+/** 확인된 테스트고객 마스킹만 중립 표시합니다. DTO·원본 이름·고객 ID는 변경하지 않습니다. */
+function storedCustomerDisplayName(nameMasked, customerId) {
+    if (nameMasked !== '테***객')
+        return nameMasked;
+    const id = /^customer_([0-9]{3,})$/.exec(customerId);
+    return id ? `고객 ${id[1]}` : nameMasked;
 }
 
 },
@@ -6367,6 +6390,7 @@ exports.LiveCallBriefing = LiveCallBriefing;
 const react_1 = require("react");
 const liveBriefingApi_1 = require("../services/liveBriefingApi");
 const realDataApi_1 = require("../services/realDataApi");
+const customerName_1 = require("../lib/customerName");
 const stageLabels = { AI: 'AI 상담', PHONE: '전화 상담', VISIT: '방문 상담' };
 const countLabels = [
     ['profanityCount', '욕설'], ['threatCount', '위협'], ['blameCount', '비난'],
@@ -6402,7 +6426,7 @@ function LiveCallBriefing({ callId, customerId }) {
             __React.createElement("p", null, (0, liveBriefingApi_1.liveBriefingErrorMessage)(state.errorCode))),
         data && __React.createElement(__React.Fragment, null,
             __React.createElement("div", { className: "live-briefing-customer" },
-                __React.createElement("strong", null, data.customer.nameMasked),
+                __React.createElement("strong", null, (0, customerName_1.storedCustomerDisplayName)(data.customer.nameMasked, data.customer.id)),
                 __React.createElement("span", { className: "live-identifier" }, data.customer.id)),
             !data.privacyConsent ? __React.createElement("p", { className: "live-briefing-state", role: "status" }, "\uACE0\uAC1D \uAC1C\uC778\uC815\uBCF4 \uB3D9\uC758 \uD655\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.") : __React.createElement(__React.Fragment, null,
                 __React.createElement("dl", { className: "live-briefing-products" },
@@ -6967,7 +6991,7 @@ function MarketingPage({ items, records, store, onReview, onSend, onSupport }) {
                             __React.createElement("td", null,
                                 __React.createElement("span", { className: "small-badge" }, consultation_1.followUpLabels[item.followUp])),
                             __React.createElement("td", null,
-                                __React.createElement("span", { className: "aftercare-message-preview" }, sent ? record.message : recommendedMessage(item, store) || '—')),
+                                __React.createElement("span", { className: "aftercare-message-preview" }, record && (sent || (0, aftercare_1.aftercareReviewed)(item, record)) ? record.message : recommendedMessage(item, store) || '—')),
                             __React.createElement("td", null,
                                 __React.createElement("span", { className: `status-pill ${sent ? 'available' : 'neutral'}` }, sent ? '처리 완료' : blocker ? '확인 필요' : '처리 대기'),
                                 !sent && (0, aftercare_1.aftercareReviewed)(item, record) && __React.createElement("small", { className: "muted-text" }, "\uC548\uB0B4 \uB0B4\uC6A9 \uD655\uC778\uB428")),
@@ -7000,7 +7024,7 @@ function MarketingPage({ items, records, store, onReview, onSend, onSupport }) {
                     __React.createElement(Icon_1.Icon, { name: "chevron", size: 16 }))),
             __React.createElement("div", { className: "aftercare-notice" },
                 __React.createElement(Icon_1.Icon, { name: "help", size: 17 }),
-                __React.createElement("p", null, "\uC548\uB0B4 \uB0B4\uC6A9\uACFC \uCC98\uB9AC \uC0C1\uD0DC\uB97C \uAE30\uB85D\uD558\uB294 \uAE30\uB2A5\uC774\uBA70 \uACE0\uAC1D\uC5D0\uAC8C \uBB38\uC790\uB97C \uBCF4\uB0B4\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uCC98\uB9AC \uAE30\uB85D\uC740 \uC0C8\uB85C\uACE0\uCE68\uD558\uBA74 \uCD08\uAE30\uD654\uB429\uB2C8\uB2E4."))),
+                __React.createElement("p", null, "\uD654\uBA74\uC6A9 \uC608\uC2DC \uC0C1\uB2F4\uC758 \uC644\uB8CC \uACB0\uACFC\uB97C \uAE30\uC900\uC73C\uB85C \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uACE0\uAC1D\uC5D0\uAC8C \uBB38\uC790\uB97C \uBCF4\uB0B4\uC9C0 \uC54A\uC73C\uBA70, \uCC98\uB9AC \uAE30\uB85D\uC740 \uC0C8\uB85C\uACE0\uCE68\uD558\uBA74 \uCD08\uAE30\uD654\uB429\uB2C8\uB2E4."))),
         selected && __React.createElement(AftercareMessage, { key: selected.id, item: selected, record: records[selected.id], store: store, onReview: message => onReview(selected.id, message), onSend: () => onSend(selected.id), onClose: () => setSelectedId(null) }));
 }
 function AftercareMessage({ item, record, store, onReview, onSend, onClose }) {

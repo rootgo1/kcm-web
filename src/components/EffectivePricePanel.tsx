@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { calculateEffectivePrice, effectivePriceErrorMessage, formatEffectivePrice, type EffectivePriceInput, type EffectivePriceResult, type PriceBreakdown, type ProductCatalog } from '../services/effectivePriceApi';
 import type { StoredCustomer } from '../services/realDataApi';
+import { storedCustomerDisplayName } from '../lib/customerName';
 
 interface PriceChoices { planId: string; productId: string; bundleId: string; customerId: string; family: string; internet: string; mobileLines: string }
 export interface EffectivePricePanelProps {
@@ -78,7 +79,7 @@ export function EffectivePricePanel({ catalog, customers, customersError, initia
       <div className="effective-price-form">
         <div className="consultation-field"><label htmlFor={`${elementId}-customer`}>고객 <span>선택</span></label>
           <select id={`${elementId}-customer`} value={choices.customerId} onChange={event => change('customerId', event.target.value)}>
-            <option value="">고객 정보 없이 계산</option>{customers?.filter(customer => customer.privacyConsent).map(customer => <option key={customer.id} value={customer.id}>{customer.nameMasked} · {customer.phoneMasked}</option>)}
+            <option value="">고객 정보 없이 계산</option>{customers?.filter(customer => customer.privacyConsent).map(customer => <option key={customer.id} value={customer.id}>{storedCustomerDisplayName(customer.nameMasked, customer.id)} · {customer.phoneMasked}</option>)}
           </select><p className="real-data-notice">현재 매장의 최근 상담 고객 최대 20명 중 동의가 확인된 고객을 비교할 수 있습니다.</p>
           {customersError && <p className="real-data-notice" role="status">{customersError} 고객 정보 없이 계산할 수 있습니다.</p>}
           {choices.customerId && !selectedCustomer?.currentPlan && <p className="real-data-notice">현재 요금제 기록이 없으면 요금 차이는 확인 필요로 표시됩니다.</p>}

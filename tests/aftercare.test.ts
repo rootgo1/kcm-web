@@ -24,13 +24,58 @@ function completedCall(id = 'C-003') {
 const completedItem = () => aftercareItems([], completedCall().calls, demoContactConsents)[0];
 const reviewedState = () => { const item = completedItem(); return reviewAftercare({}, item, recommendedAftercareMessage(item, '테스트 매장'), at, actor); };
 
-test('사후관리에는 실제 완료 상담만 투영하고 결과 없는 완료 샘플을 꾸며내지 않는다', () => {
-  const appointments = demo().appointments, state = createCallDemoState(), snapshot = structuredClone({ appointments, state });
+test('사후관리에는 완료 상담만 투영하고 명시적인 결과 누락 fixture를 꾸며내지 않는다', () => {
+  const appointments = demo().appointments, state = createCallDemoState();
+  delete appointments[0].consultation;
+  const snapshot = structuredClone({ appointments, state });
   const items = aftercareItems(appointments, state.calls, demoContactConsents);
   assert.equal(items.length, 1); assert.equal(items[0].sourceId, 'DEMO-R001');
   assert.equal(items[0].hasResult, false); assert.equal(items[0].summary, ''); assert.equal(items[0].completedAt, null);
   assert.equal(items[0].outcome, '결과 기록 없음'); assert.equal(recommendedAftercareMessage(items[0], '테스트'), '');
   assert.match(aftercareBlocker(items[0]), /결과 기록/); assert.deepEqual({ appointments, state }, snapshot);
+});
+test('기본 가상 완료 예약은 요약·후속 안내·동의·날짜에 맞는 최초 이력을 준비하고 기존 상태와 집계를 유지한다', () => {
+  const data = demo(), calls = createCallDemoState().calls, snapshot = structuredClone({ data, calls });
+  const item = aftercareItems(data.appointments, calls, demoContactConsents)[0], record = data.appointments[0].consultation!;
+  assert.equal(data.mode, 'mock'); assert.equal(item.sourceId, 'DEMO-R001'); assert.equal(item.customerId, 'DEMO-C001');
+  assert.equal(item.hasResult, true); assert.ok(item.summary.trim()); assert.equal(item.followUp, 'required'); assert.ok(item.followUpMemo.trim());
+  assert.equal(item.consent, 'granted'); assert.equal(aftercareBlocker(item), '');
+  const message = recommendedAftercareMessage(item, data.store);
+  assert.ok(message.includes(data.store)); assert.ok(message.includes(item.followUpMemo));
+  assert.equal(record.startedAt, `${data.date}T10:30:00+09:00`); assert.equal(record.completedAt, `${data.date}T10:50:00+09:00`);
+  assert.equal(record.history.length, 1); assert.equal(record.history[0].kind, 'completed'); assert.equal(record.history[0].before, null);
+  assert.equal(record.history[0].at, record.completedAt); assert.deepEqual(record.history[0].after, record.result);
+  assert.deepEqual(record.history[0].actor, { id: 'DEMO-E002', name: data.appointments[0].employee, position: '상담 직원' });
+  assert.deepEqual(data.appointments.map(appointment => [appointment.id, appointment.status]), [
+    ['DEMO-R001', 'completed'], ['DEMO-R002', 'reserved'], ['DEMO-R003', 'in_progress'], ['DEMO-R004', 'reserved'],
+    ['DEMO-R005', 'reserved'], ['DEMO-R006', 'reserved'], ['DEMO-R007', 'reserved'], ['DEMO-R008', 'reserved'],
+  ]);
+  assert.equal(getMetrics(data).completed, 1); assert.ok(data.appointments.slice(1).every(appointment => !appointment.consultation));
+  assert.deepEqual({ data, calls }, snapshot);
+});
+test('기본 가상 완료 예약의 수정 메시지 확인·안내 처리는 원본 상담과 최초 완료 기록을 보존한다', () => {
+  const data = demo(), calls = createCallDemoState().calls, snapshot = structuredClone({ data, calls });
+  const item = aftercareItems(data.appointments, calls, demoContactConsents)[0], empty = {}, message = '변경 가능 여부를 확인한 뒤 안내드리겠습니다.';
+  assert.equal(sendAftercare(empty, item, later, actor), empty);
+  const reviewed = reviewAftercare(empty, item, message, at, actor);
+  assert.equal(aftercareReviewed(item, reviewed[item.id]), true); assert.equal(reviewed[item.id].message, message);
+  const sent = sendAftercare(reviewed, item, later, actor);
+  assert.equal(sent[item.id].status, 'sent'); assert.equal(sent[item.id].message, message);
+  assert.equal(sent[item.id].reviewedAt, at); assert.equal(sent[item.id].sentAt, later);
+  assert.equal(sendAftercare(sent, item, '2026-10-05T02:00:00Z', '다른 직원'), sent);
+  assert.equal(reviewAftercare(sent, item, '다른 메시지', later, actor), sent);
+  assert.deepEqual({ data, calls }, snapshot);
+});
+test('가상 완료 결과·완료 이력은 실행 간 독립적이며 지정한 날짜를 사용한다', () => {
+  const first = demo(), second = demo(), nextDay = createMockData('2026-10-06'), snapshot = structuredClone(second);
+  const record = first.appointments[0].consultation!;
+  record.result!.summary = '화면에서 수정한 가상 결과';
+  assert.notEqual(record.history[0].after.summary, record.result!.summary);
+  record.history[0].after.summary = '첫 실행의 이력만 수정'; record.history[0].actor.name = '첫 실행의 작성자';
+  assert.deepEqual(second, snapshot);
+  assert.equal(nextDay.appointments[0].consultation!.startedAt, '2026-10-06T10:30:00+09:00');
+  assert.equal(nextDay.appointments[0].consultation!.completedAt, '2026-10-06T10:50:00+09:00');
+  assert.equal(nextDay.appointments[0].consultation!.history[0].at, '2026-10-06T10:50:00+09:00');
 });
 test('통화 완료 결과·고객 ID·후속 메모를 읽고 원본 통화와 지원·위험값을 보존한다', () => {
   const state = completedCall(), snapshot = structuredClone(state), item = aftercareItems([], state.calls, demoContactConsents)[0];

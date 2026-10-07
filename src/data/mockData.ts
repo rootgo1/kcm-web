@@ -1,4 +1,4 @@
-import type { Appointment, DashboardData } from '../types.js';
+import type { Appointment, ConsultationResult, DashboardData } from '../types.js';
 import { workspaceMock } from './workspaceMockData.js';
 
 const makeBriefing = (purpose: string, preference: string, device: string): Appointment['briefing'] => ({
@@ -28,6 +28,18 @@ export function createMockData(date = new Intl.DateTimeFormat('en-CA', {
     { id: 'DEMO-R007', customerId: 'DEMO-C007', customerName: '윤서진', phoneMasked: '010-****-1007', time: '16:30', purpose: '요금제 변경', device: '기존 단말기 유지', budget: '월 7만 원 이내', employee: '한지호', status: 'reserved', reviewed: false, briefing: { ...makeBriefing('요금제 변경', '확인 필요', '기존 단말기 유지'), status: 'failed', summary: '', checklist: [], transcript: [] } },
     { id: 'DEMO-R008', customerId: 'DEMO-C008', customerName: '한시우', phoneMasked: '010-****-1008', time: '17:00', purpose: '신규 개통', device: '보급형 스마트폰', budget: '월 4만 원 이내', employee: workspaceMock.employee.name, status: 'reserved', reviewed: true, briefing: makeBriefing('신규 개통', '이용 방법을 상세하게 안내', '보급형 스마트폰') },
   ];
+  // Handwritten fictional screen fixture, not an AI-generated summary or a saved DB consultation.
+  const completedResult: ConsultationResult = {
+    summary: '월 데이터 사용량에 맞는 요금제 변경 조건과 예상 월 요금을 비교 안내했습니다.',
+    outcome: 'needs_check', followUp: 'required',
+    followUpMemo: '요금제 적용 가능 여부와 변경 시점을 확인해 다시 안내드리겠습니다.',
+  };
+  const completedAt = `${date}T10:50:00+09:00`;
+  appointments[0].consultation = {
+    startedAt: `${date}T10:30:00+09:00`, completedAt, result: completedResult,
+    history: [{ id: 'DEMO-R001-1', kind: 'completed', before: null, after: { ...completedResult },
+      actor: { id: 'DEMO-E002', name: '이지은', position: '상담 직원' }, at: completedAt }],
+  };
   appointments[1].briefing.summary = '현재 사용하는 휴대전화의 교체를 희망합니다. 월 8만 원 이내의 부담 금액을 우선 고려하며, 가족결합 적용 가능 여부를 함께 확인하고 싶어 합니다.';
   appointments[1].briefing.checklist = ['Galaxy S 시리즈 재고·색상 확인', '가족결합 적용 가능 여부 확인', '단말기 비용과 통신요금을 구분해 안내'];
   return {

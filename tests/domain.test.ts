@@ -233,11 +233,14 @@ test('변경 없는 수정·공백 정리·동일 수정 재전송은 이력을 
   assert.equal(saveConsultation(next, consultationId, input, 'amend', editAt).data, next);
 });
 test('기록 없는 기존 완료 샘플은 과거 시각을 만들지 않고 최초 입력 이력을 남긴다', () => {
-  const data = demo(); const next = saveConsultation(data, 'DEMO-R001', validResult(), 'amend', editAt).data;
+  const data = demo(); delete data.appointments[0].consultation;
+  const snapshot = structuredClone(data), next = saveConsultation(data, 'DEMO-R001', validResult(), 'amend', editAt).data;
   const record = appointmentOf(next, 'DEMO-R001').consultation!;
   assert.equal(record.completedAt, null); assert.equal(record.startedAt, null); assert.equal(record.history[0].before, null);
   assert.equal(record.history[0].kind, 'amended'); assert.equal(record.history[0].at, editAt);
   assert.equal(consultationTime(record.completedAt), '기록 없음'); assert.deepEqual(getMetrics(next), getMetrics(data));
+  assert.deepEqual(data, snapshot); assert.equal(next.appointments[0].status, 'completed');
+  assert.deepEqual(next.appointments.slice(1), data.appointments.slice(1));
 });
 test('입력 객체와 현재 결과·사용자 변경이 보존된 이력을 바꾸지 않는다', () => {
   const input = validResult(); const data = saveConsultation(inProgress(), consultationId, input, 'complete', completeAt).data;
@@ -262,9 +265,14 @@ test('상태 필터는 시작·완료 결과에 따라 해당 예약을 제외�
   assert.ok(!filterAppointments(finished().appointments, 'in_progress', '').some(a => a.id === consultationId));
   assert.equal(filterAppointments(finished().appointments, 'in_progress', '김서연').length, 0);
 });
-test('새 샘플 로드·초기화는 상담 결과와 이력을 유지하지 않는다', () => {
-  finished(); const fresh = demo();
-  assert.ok(fresh.appointments.every(a => a.consultation === undefined));
+test('새 샘플 로드·초기화는 기본 가상 완료 기록을 준비하고 사용자 결과·수정 이력을 초기화한다', () => {
+  const baseline = demo(), completed = finished();
+  const amended = saveConsultation(completed, 'DEMO-R001', { ...validResult(), summary: '화면에서 수정한 결과' }, 'amend', editAt).data;
+  assert.equal(appointmentOf(amended, 'DEMO-R001').consultation!.history.length, 2);
+  assert.equal(appointmentOf(amended).status, 'completed'); assert.equal(getMetrics(amended).completed, 2);
+  const fresh = demo();
+  assert.deepEqual(fresh, baseline); assert.deepEqual(fresh.appointments[0].consultation, baseline.appointments[0].consultation);
+  assert.ok(fresh.appointments.slice(1).every(a => a.consultation === undefined));
   assert.equal(appointmentOf(fresh).status, 'reserved'); assert.equal(getMetrics(fresh).completed, 1);
 });
 

@@ -24,7 +24,7 @@ export function MarketingPage({ items, records, store, onReview, onSend, onSuppo
           <td><strong>{maskCustomerName(item.customerName)}</strong><small className="muted-text">{item.sourceId} · {item.source}</small></td>
           <td><span className="aftercare-message-preview">{item.summary || '상담 결과 기록 없음'}</span><small className="muted-text">{uiText(item.inquiryType)}</small></td><td>{item.outcome}</td>
           <td><span className={`status-pill ${item.consent === 'granted' ? 'available' : 'neutral'}`}>{consentLabels[item.consent]}</span></td><td><span className="small-badge">{followUpLabels[item.followUp]}</span></td>
-          <td><span className="aftercare-message-preview">{sent ? record.message : recommendedMessage(item, store) || '—'}</span></td>
+          <td><span className="aftercare-message-preview">{record && (sent || aftercareReviewed(item, record)) ? record.message : recommendedMessage(item, store) || '—'}</span></td>
           <td><span className={`status-pill ${sent ? 'available' : 'neutral'}`}>{sent ? '처리 완료' : blocker ? '확인 필요' : '처리 대기'}</span>{!sent && aftercareReviewed(item, record) && <small className="muted-text">안내 내용 확인됨</small>}</td>
           <td><button className="text-button" aria-label={`${item.sourceId} ${sent ? '처리 기록 보기' : '후속 안내 확인'}`} onClick={() => setSelectedId(item.id)}>{sent ? '처리 기록' : '후속 안내 확인'}<Icon name="chevron" size={13}/></button>{!sent && blocker && <small className="aftercare-blocker">{blocker}</small>}</td>
         </tr>; })}
@@ -36,7 +36,7 @@ export function MarketingPage({ items, records, store, onReview, onSend, onSuppo
         <span role="status" aria-live="polite" aria-atomic="true"><span className="sr-only">현재 페이지 </span>{pagination.page} / {pagination.totalPages}</span>
         <button type="button" aria-label="다음 사후관리 페이지" disabled={pagination.page === pagination.totalPages} onClick={() => setPage(pagination.page + 1)}><Icon name="chevron" size={16}/></button>
       </nav>}
-      <div className="aftercare-notice"><Icon name="help" size={17}/><p>안내 내용과 처리 상태를 기록하는 기능이며 고객에게 문자를 보내지 않습니다. 처리 기록은 새로고침하면 초기화됩니다.</p></div>
+      <div className="aftercare-notice"><Icon name="help" size={17}/><p>화면용 예시 상담의 완료 결과를 기준으로 표시합니다. 고객에게 문자를 보내지 않으며, 처리 기록은 새로고침하면 초기화됩니다.</p></div>
     </section>
     {selected && <AftercareMessage key={selected.id} item={selected} record={records[selected.id]} store={store} onReview={message => onReview(selected.id, message)} onSend={() => onSend(selected.id)} onClose={() => setSelectedId(null)}/>}
   </>;
