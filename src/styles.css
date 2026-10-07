@@ -1446,3 +1446,27 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
   .effective-price-form, .effective-price-current-plan, .effective-price-breakdown { grid-template-columns: minmax(0, 1fr); }
   .effective-price-form select, .effective-price-form input, .effective-price-actions .button { min-height: 40px; }
 }
+
+/* Home prioritizes current calls; dedicated menus retain their full layouts. */
+.home-dashboard > .page-heading { margin-bottom: 12px; }
+.home-dashboard > .stats-grid { margin-bottom: 12px; }
+.home-dashboard > .call-overview { margin-bottom: 12px; }
+.home-dashboard > .live-intake { margin-bottom: 0; }
+@media (min-width: 1101px) {
+  .main-content:has(> .home-dashboard) { padding-block: 16px 6px; }
+  .main-content:has(> .home-dashboard) + .app-footer { padding-bottom: 0; }
+  .home-dashboard > .page-heading { margin-bottom: 10px; }
+  .home-dashboard > .real-data-notice { margin-block: 4px 8px; }
+  .home-dashboard .stat-card { padding: 14px 16px 10px; }
+  .home-dashboard .stat-top { padding-right: 42px; min-height: 18px; }
+  .home-dashboard .stat-top .small-icon { position: absolute; top: 14px; right: 16px; }
+  .home-dashboard .call-overview .card-heading { padding-block: 8px; }
+  .home-dashboard .call-overview .call-table td { height: 44px; padding-block: 6px; }
+  .home-dashboard .call-overview .call-criteria { padding-block: 6px; }
+  .home-dashboard > .live-intake { display: grid; grid-template-columns: 168px repeat(2, minmax(0, 1fr)); align-items: center; }
+  .home-dashboard > .live-intake:not(:has(> .live-intake-row:nth-of-type(3))) { grid-template-columns: 168px minmax(0, 1fr); }
+  .home-dashboard .live-intake > .card-heading { margin: 0; padding: 12px; }
+  .home-dashboard .live-intake > .live-intake-row { margin: 0; padding: 10px 16px; border-top: 0; border-left: 1px solid var(--line); gap: 8px; }
+  .home-dashboard .live-intake > .live-intake-row:nth-of-type(n + 4) { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line); }
+  .home-dashboard .live-intake > .live-call-id { grid-column: 1 / -1; margin: 0 16px; }
+}

@@ -1446,6 +1446,30 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
   .effective-price-form, .effective-price-current-plan, .effective-price-breakdown { grid-template-columns: minmax(0, 1fr); }
   .effective-price-form select, .effective-price-form input, .effective-price-actions .button { min-height: 40px; }
 }
+
+/* Home prioritizes current calls; dedicated menus retain their full layouts. */
+.home-dashboard > .page-heading { margin-bottom: 12px; }
+.home-dashboard > .stats-grid { margin-bottom: 12px; }
+.home-dashboard > .call-overview { margin-bottom: 12px; }
+.home-dashboard > .live-intake { margin-bottom: 0; }
+@media (min-width: 1101px) {
+  .main-content:has(> .home-dashboard) { padding-block: 16px 6px; }
+  .main-content:has(> .home-dashboard) + .app-footer { padding-bottom: 0; }
+  .home-dashboard > .page-heading { margin-bottom: 10px; }
+  .home-dashboard > .real-data-notice { margin-block: 4px 8px; }
+  .home-dashboard .stat-card { padding: 14px 16px 10px; }
+  .home-dashboard .stat-top { padding-right: 42px; min-height: 18px; }
+  .home-dashboard .stat-top .small-icon { position: absolute; top: 14px; right: 16px; }
+  .home-dashboard .call-overview .card-heading { padding-block: 8px; }
+  .home-dashboard .call-overview .call-table td { height: 44px; padding-block: 6px; }
+  .home-dashboard .call-overview .call-criteria { padding-block: 6px; }
+  .home-dashboard > .live-intake { display: grid; grid-template-columns: 168px repeat(2, minmax(0, 1fr)); align-items: center; }
+  .home-dashboard > .live-intake:not(:has(> .live-intake-row:nth-of-type(3))) { grid-template-columns: 168px minmax(0, 1fr); }
+  .home-dashboard .live-intake > .card-heading { margin: 0; padding: 12px; }
+  .home-dashboard .live-intake > .live-intake-row { margin: 0; padding: 10px 16px; border-top: 0; border-left: 1px solid var(--line); gap: 8px; }
+  .home-dashboard .live-intake > .live-intake-row:nth-of-type(n + 4) { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line); }
+  .home-dashboard .live-intake > .live-call-id { grid-column: 1 / -1; margin: 0 16px; }
+}
 </style></head><body><div id="root"></div><!-- Generated from src/. React/ReactDOM/Scheduler: Copyright Meta Platforms, Inc. and affiliates, MIT License. See THIRD_PARTY_NOTICES.txt. No font files are embedded. --><script>(function(){'use strict';
 const process={env:{NODE_ENV:'production'}};
 const modules={"react":function(module,exports,require){
@@ -1839,7 +1863,6 @@ const Icon_1 = require("./components/Icon");
 const Layout_1 = require("./components/Layout");
 const AppointmentList_1 = require("./components/AppointmentList");
 const BriefingPanel_1 = require("./components/BriefingPanel");
-const InventoryPanel_1 = require("./components/InventoryPanel");
 const Modal_1 = require("./components/Modal");
 const SecondaryPages_1 = require("./pages/SecondaryPages");
 const ConsultationPanel_1 = require("./components/ConsultationPanel");
@@ -1964,7 +1987,6 @@ function App() {
         commitData(saved.data);
         setToast(!saved.changed ? '변경 사항이 없어 기존 기록과 이력을 유지했습니다.' : mode === 'amend' ? '수정 내용과 이력을 반영했습니다. 최초 완료 시각과 완료 건수는 유지됩니다.' : mode === 'complete' ? '상담을 완료했습니다. 예약 상태와 홈 집계에 반영했습니다.' : '결과를 반영했습니다. 상담 중 상태를 유지합니다.');
     };
-    const metrics = data ? (0, domain_1.getMetrics)(data) : null;
     const callMetrics = (0, callRisk_1.getCallMetrics)(calls);
     const aftercareList = (0, aftercare_1.aftercareItems)(data?.appointments ?? [], calls, aftercareMockData_1.demoContactConsents);
     const aftercareActor = data ? `${data.employee.name} (데모 직원)` : '데모 직원';
@@ -1996,7 +2018,7 @@ function App() {
             __React.createElement(Icon_1.Icon, { name: "alert", size: 32 }),
             __React.createElement("h1", null, "\uB370\uC774\uD130\uB97C \uD655\uC778\uD574 \uC8FC\uC138\uC694"),
             __React.createElement("p", null, error),
-            __React.createElement("button", { className: "button button-primary", onClick: () => setLoadKey(key => key + 1) }, "\uB2E4\uC2DC \uC2DC\uB3C4")) : page === 'home' ? __React.createElement(__React.Fragment, null,
+            __React.createElement("button", { className: "button button-primary", onClick: () => setLoadKey(key => key + 1) }, "\uB2E4\uC2DC \uC2DC\uB3C4")) : page === 'home' ? __React.createElement("div", { className: "home-dashboard" },
             __React.createElement("div", { className: "page-heading" },
                 __React.createElement("div", null,
                     __React.createElement("h1", null,
@@ -2021,46 +2043,7 @@ function App() {
                     __React.createElement("span", null, item.unit)),
                 __React.createElement("p", null, item.caption)))),
             __React.createElement(CallOverview_1.CallOverview, { key: loadKey, state: callState, onStart: onStartCall, onSupport: onSupport, onDraft: onCallDraft, onComplete: onCallComplete, onNext: id => setCallState(current => (0, callWorkflow_1.createNextDemoCall)(current, id)) }),
-            __React.createElement(LiveConsultations_1.LiveConsultations, null),
-            __React.createElement(RealAppointments_1.RealAppointments, { compact: true, onAll: () => navigate('appointments') }),
-            __React.createElement("details", { className: "reference-data-details" },
-                __React.createElement("summary", null, "\uBCC4\uB3C4 \uCC38\uACE0 \uC790\uB8CC \u00B7 \uD654\uBA74 \uC0C1\uB2F4"),
-                __React.createElement("p", { className: "panel-note" }, "\uC544\uB798 \uC608\uC57D\uACFC \uC0C1\uB2F4 \uCC98\uB9AC\uB294 \uAE30\uC874 \uD654\uBA74 \uCC38\uACE0 \uC790\uB8CC\uC785\uB2C8\uB2E4. \uC800\uC7A5\uB41C DB \uC608\uC57D\uACFC \uBCC4\uAC1C\uC774\uBA70 DB\uC5D0 \uAE30\uB85D\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
-                __React.createElement("div", { className: "appointment-overview-heading" },
-                    __React.createElement("h2", null, "\uD654\uBA74 \uC608\uC57D\u00B7\uC0C1\uB2F4 \uD604\uD669"),
-                    metrics && __React.createElement("p", { "aria-label": "\uC608\uC57D \uC0C1\uB2F4 \uC9D1\uACC4" },
-                        "\uC804\uCCB4 ",
-                        metrics.reservations,
-                        "\uAC74 \u00B7 \uBC29\uBB38 \uC608\uC815 ",
-                        metrics.upcoming,
-                        " \u00B7 \uC0C1\uB2F4 \uC911 ",
-                        metrics.inProgress,
-                        " \u00B7 \uC644\uB8CC ",
-                        metrics.completed,
-                        " \u00B7 \uBE0C\uB9AC\uD551 \uBBF8\uD655\uC778 ",
-                        metrics.unreviewed)),
-                __React.createElement("div", { className: "dashboard-grid" },
-                    table,
-                    briefing)),
-            __React.createElement("div", { className: "bottom-grid" },
-                __React.createElement(InventoryPanel_1.InventoryPanel, { data: data, onOpen: () => navigate('inventory') }),
-                __React.createElement("section", { className: "card activity-card" },
-                    __React.createElement("div", { className: "card-heading" },
-                        __React.createElement("div", { className: "title-with-icon" },
-                            __React.createElement("span", { className: "small-icon gray" },
-                                __React.createElement(Icon_1.Icon, { name: "activity", size: 18 })),
-                            __React.createElement("h2", null, "\uCD5C\uADFC \uC5C5\uBB34 \uD750\uB984"))),
-                    __React.createElement("div", { className: "activity-timeline" }, data.activities.map(item => __React.createElement("div", { className: "activity-item", key: item.id },
-                        __React.createElement("span", { className: `activity-dot ${item.kind}` }),
-                        __React.createElement("div", null,
-                            __React.createElement("strong", null, item.label),
-                            __React.createElement("p", null, item.description)),
-                        __React.createElement("time", null, item.time)))),
-                    __React.createElement("div", { className: "workflow-note" },
-                        __React.createElement(Icon_1.Icon, { name: "sparkles", size: 17 }),
-                        __React.createElement("span", null, "\uC0C1\uB2F4 \uACB0\uACFC\uAC00 \uC9C1\uC6D0\uC758 \uC900\uBE44\uB85C \uC774\uC5B4\uC9D1\uB2C8\uB2E4."),
-                        __React.createElement("button", { className: "text-button", onClick: () => setModal('help'), "aria-label": "KCM \uC774\uC6A9 \uC548\uB0B4 \uBCF4\uAE30" },
-                            __React.createElement(Icon_1.Icon, { name: "arrow", size: 16 })))))) : page === 'appointments' ? __React.createElement(__React.Fragment, null,
+            __React.createElement(LiveConsultations_1.LiveConsultations, null)) : page === 'appointments' ? __React.createElement(__React.Fragment, null,
             __React.createElement("div", { className: "page-heading" },
                 __React.createElement("div", null,
                     __React.createElement("span", { className: "eyebrow" }, "\uACE0\uAC1D\uAD00\uB9AC"),
