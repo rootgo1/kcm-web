@@ -1,0 +1,18 @@
+.staff-read-gate { margin-block: 16px; min-width: 0; }
+.staff-read-gate .card-heading { padding: 16px; }
+.staff-read-gate h2 { font-size: 15px; }
+.staff-read-content { padding: 0 16px 18px; }
+.staff-read-description, .staff-read-status { color: var(--muted); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.staff-read-status { margin: 0 0 14px; }
+.staff-read-form { display: grid; gap: 8px; width: min(100%, 360px); margin-block: 16px; }
+.staff-read-form label { color: var(--ink); font-size: 12px; font-weight: 600; }
+.staff-read-form input { min-width: 0; width: 100%; min-height: 40px; padding: 10px 12px; border: 1px solid var(--line, #e6e8ed); border-radius: 7px; background: #fff; color: var(--ink); font: inherit; font-size: 13px; box-sizing: border-box; }
+.staff-read-form input:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+.staff-read-form label:not(:first-child) { margin-top: 8px; }
+.staff-read-form .button { justify-self: start; margin-top: 8px; min-height: 40px; }
+.staff-read-error { color: var(--red-dark); font-size: 12px; line-height: 1.7; margin: 4px 0 0; overflow-wrap: anywhere; }
+.staff-read-identity { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 16px; margin-block: 16px 0; border: 1px solid var(--line, #e6e8ed); border-radius: 10px; background: #fff; }
+.staff-read-identity strong { color: var(--ink); font-size: 12px; }
+.staff-read-identity p { color: var(--muted); font-size: 11px; margin: 5px 0 0; overflow-wrap: anywhere; }
+.staff-read-identity .button { min-height: 36px; font-size: 11px; }
+@media (max-width: 480px) { .staff-read-identity .button { min-height: 40px; } .staff-read-form { width: 100%; } }

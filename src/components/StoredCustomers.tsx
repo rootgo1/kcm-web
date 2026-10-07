@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatRealDataDate, realDataApi, realDataAvailability, realDataErrorMessage, RealDataApiError,
   type RealDataAvailability, type StoredConsultation, type StoredCustomer } from '../services/realDataApi.js';
 import { Icon } from './Icon';
+import { StaffReadGate } from './StaffReadGate';
 import { Modal } from './Modal';
 import { paginateCalls } from '../lib/callPagination';
 import { latestCompletedStoredConsultation } from '../lib/storedCustomerPresentation';
@@ -66,6 +67,10 @@ function StoredCustomerHistory({ items, customerId }: { items: StoredConsultatio
 }
 
 export function StoredCustomers({ onAvailability }: { onAvailability?: (state: RealDataAvailability) => void }) {
+  return <StaffReadGate><StoredCustomersBody onAvailability={onAvailability}/></StaffReadGate>;
+}
+
+function StoredCustomersBody({ onAvailability }: { onAvailability?: (state: RealDataAvailability) => void }) {
   const [items, setItems] = useState<StoredCustomer[]>([]);
   const [availability, setAvailability] = useState<RealDataAvailability>('loading');
   const [errorCode, setErrorCode] = useState('');
