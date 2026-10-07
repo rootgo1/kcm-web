@@ -1177,3 +1177,21 @@ npm.cmd run dev
 - 통합 후 전체 **972/972 테스트 통과**, 실패·skip 0, 프런트·백엔드 타입 검사 및 production build 통과. 독립 미리보기도 통합 코드로 재생성했습니다. 기존 Retell SDK chunk500kB 경고만 남습니다.
 - 앞선 촬영 점검의 공개 저장 고객 조회 제한 설명은 당시 상태입니다. 현재 저장 고객·상담 요약은 별도 조회 계정 로그인 후 허용 범위에서 조회하며, 저장 예약 등 나머지 접근 제한은 유지합니다. 이번 작업에서 인증 설정·환경변수·실제 DB·외부 workflow를 변경하지 않습니다.
 - 검증된 통합본을 main에 반영하고 기존 Render 서비스에 배포하는 단계입니다. 실제 음성 통화·SMS·자동 대여·DB 저장 E2E는 이번 통합 검사에 포함되지 않습니다.
+
+## 2026-10-07 — 웹훅 인증 발행·Live 배포 및 실제 통화 저장 검증
+
+- 최신 main `e18f8c1`을 기준으로 `fix/n8n-webhook-auth`에서 작업했습니다. 저장 고객 조회 로그인과 최신 촬영·화면 변경을 보존합니다. 변경 파일은 `.env.example`, `server/app.mjs`, `server/n8n-delivery.mjs`, 전달·통화 흐름 테스트 3개, `docs/N8N_DELIVERY.md`, `docs/N8N_WEBHOOK_AUTH.md`, `STATUS.md`입니다. 독립 HTML을 재생성했으며 내용 차이는 없습니다.
+- 서버 전용 `N8N_WEBHOOK_AUTH_TOKEN`을 추가해 최종 결과 POST의 `Authorization` 헤더로만 전달합니다. 32~256자의 영문·숫자·밑줄·하이픈 전체 일치를 요구하며 공백·줄바꿈을 보정하지 않습니다. 누락·형식 오류는 외부 POST 없이 고정 실패 코드로 차단합니다. 응답 본문·네트워크 오류의 비밀값은 로그·SSE·상태에 전달하지 않습니다.
+- 기존 본문·확정 점수·종료 시각·최종화 조건·통화당 1회 시도·자동 재시도 없음·redirect 차단을 보존합니다. n8n의 기존 원자 저장 후 HTTP 200/요약 대기 응답과 후속 요약 생성·검증·업데이트 흐름을 문서에 구분했습니다. 다른 송신자의 Webhook에는 이 인증을 일괄 적용하지 않습니다.
+- 전체 `npm run check` **978/978 통과**, 실패·건너뜀·취소 0, 프런트·서버 타입 검사와 production build 통과. `npm run preview:standalone` 및 `git diff --check` 통과. 기존 Retell SDK chunk500kB 경고만 남습니다. 독립 코드 검토에서 차단할 문제를 발견하지 못했습니다. 합성 토큰만 테스트에 사용했으며 실제 인증값은 생성·열람·입력·Git 기록하지 않았습니다.
+- 이전 발행본 `792cbd1b`(10:52 발행)과 draft 비교에서 인증 변경 외 팀원 문자 변경을 확인했습니다. `Text message1`→비활성 `Send Text Message` 대신 `Contract_End Message`→활성 `Low Stock SMS2`, `Text message`→비활성 `Send Text Message1` 대신 `Promotion Message`→활성 `Low Stock SMS1` 연결이 함께 포함되어 있었습니다. 승인 전에는 발행·배포를 보류했고 팀원 노드 삭제·복구·초기화는 하지 않았습니다.
+- 사용자가 **“인증과 문자 변경을 함께 발행·배포”**하도록 명시 승인했습니다. 발행 직전 SSE의 connecting/live/webhook_pending/ended_waiting_final_audio 집계가 모두 0임을 확인했습니다. 최신 draft `0f2498d9`(13:40:39 팀원 수정), 발행 대화상자 Version `e92763b2`, 연결 비교 차이 0과 Start Header Auth 및 Credential 유지를 확인한 뒤 **“KCM 웹훅 인증 및 팀원 문자 발송 변경”**으로 publish했습니다. 초록색 Published 상태를 확인했습니다.
+- 최초 코드 `6f1be81` 배포 `dep-db2svks9v7es73a5lk40`의 13:52:24 Live를 확인했습니다. 이후 13:54 사용자 테스트는 앱 `final_result` 완료 후 `failed / HTTP_403`으로 전송이 실패했습니다. 해당 테스트에 한정한 읽기 전용 DB 조회에서 상담 0건·요약이 있는 상담 0건을 확인했습니다. 분석 완료를 저장 성공으로 판단하지 않으며 실제 통화·고객·상담 식별자는 기록하지 않습니다.
+- 최초 발행 후 Production Webhook에 인증 없는 빈 JSON과 잘못된 Bearer 인증의 빈 JSON을 순서대로 각각 1회 보내 두 요청 모두 HTTP 403임을 확인했습니다. 리디렉션을 허용하지 않았고 응답 본문은 읽지 않았습니다. 이 거부 확인만으로 실제 통화의 인증 성공을 단정하지 않습니다.
+- n8n About 화면에서 실제 버전 `2.43.0`을 확인했습니다. 해당 버전 소스·실행 인증 헤더 보관 동작은 아직 미검증이며 최신 master 구현만으로 미보관을 단정하지 않습니다. 우리 발행 직후 팀원 편집과 draft의 `Promotion Message SMS` 라벨을 확인했으며 해당 후속 변경을 우리가 추가 publish하거나 팀원 노드를 수정하지 않았습니다.
+- 읽기 전용 확인에서 Render `N8N_WEBHOOK_AUTH_TOKEN` 키 존재와 Start Header Auth, `KCM call-result webhook auth` Credential 연결 및 Name `Authorization`을 확인했습니다. 사용자는 새 인증값을 직접 생성해 Render에는 접두어 없이 `Save only`, n8n Credential Value에는 `Bearer `와 같은 원문 토큰을 넣어 Save했다고 회신했습니다. 실제 값은 열람하거나 직접 비교하지 않았습니다.
+- 인증값 재저장 후 기존 코드 `6f1be81`의 재배포 `dep-db2tap2jnfac73fv7s10`가 **14:16:11(Asia/Seoul) Live**로 완료됐습니다. 배포 직전 connecting/live/webhook_pending/ended_waiting_final_audio 집계는 모두 0이었습니다. 재배포 후 `/health` HTTP 200/ok, `/api/staff-read/session` HTTP 200(required/configured=true, authenticated=false), 로그인 전 `/api/data/customers` HTTP 401 `STAFF_LOGIN_REQUIRED` 및 `Cache-Control: no-store`를 확인했습니다.
+- **14:18~14:19(Asia/Seoul) 새 사용자 통화의 인증·전송·실제 DB 상담 및 요약 저장을 확인했습니다.** 앱 ended, finalized=true, webhook sent/error=null이었으며 해당 통화에 한정한 읽기 전용 DB 조회는 상담 1건(중복 없음), 매장 매핑 일치, 상태 완료와 상담 목적·요약(299자)·전문·위험분석 기록 존재를 확인했습니다. 과거 실패 통화는 재전송하지 않았고 실제 식별자나 저장 내용은 기록하지 않습니다.
+- n8n [실행 1791](https://rootgo.app.n8n.cloud/workflow/GvZZqJGAAH9EpHuY/executions/1791)의 10월 7일 14:19:34 Succeeded/21.613초를 확인했습니다. `KCM Normalize`·`KCM Payload Check`·`KCM Atomic Save`·`KCM Save Success`·`KCM Call Summary`·`KCM Summary Check`·`KCM Update Summary` 7개 노드 모두 성공 상태였고 마지막 노드의 요약 저장 성공 출력 1건과 통화·상담 연결이 DB 조회 결과와 일치했습니다. 실제 문자 전달·설치 버전 인증 헤더 보관은 미검증으로 유지합니다.
+- 운영 실행 코드는 `6f1be81`이며 변경과 검증 결과는 [PR #4](https://github.com/rootgo1/kcm-web/pull/4)로 추적합니다. 실제 인증값·계정 UID·고객 내용은 기록하지 않습니다. 설정 준비 화면과 검증 로그는 Git 제외 `.cache/webhook-auth/`에 보관합니다.
+- 승인 대기 중 사용자의 요청으로 약 30분 뒤 한 번 확인하는 후속 알림을 등록했으며, 이번 발행·배포 범위 승인 후 해당 자동화 `n8n`을 PAUSED로 전환했습니다. 반복 알림은 만들지 않았습니다.
