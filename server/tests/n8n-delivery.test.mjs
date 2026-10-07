@@ -10,6 +10,7 @@ import { createMonitorRegistry } from '../monitor.mjs';
 
 // Synthetic fixtures only: never the user's production webhook/customer/credentials.
 const webhookUrl = 'https://workflow.example.test/webhook/synthetic-private-path';
+const webhookAuthToken = 'synthetic_n8n_auth_token_for_isolated_tests_only_1234567890';
 const customerId = 'customer_unit_fixture';
 const storeId = 'store_unit_fixture';
 const audio = (sequence = 1, closed = true) => ({ sequence, shouting_count: 2, is_shouting: false, available: true, coverage_complete: true, closed });
@@ -22,7 +23,7 @@ function prepare(store, id = 'call_test', customer = customerId, demoStore = sto
 function finish(store, id = 'call_test') { store.audio(id, audio()); store.ended(id); }
 function fixture(t, overrides = {}) {
   const store = createLiveCallStore(), requests = [], logs = [];
-  const delivery = createN8nDelivery({ liveCalls: store, webhookUrl,
+  const delivery = createN8nDelivery({ liveCalls: store, webhookUrl, webhookAuthToken,
     fetchImpl: async (url, init) => { requests.push({ url, init }); return new Response('ok'); },
     log: line => logs.push(line), ...overrides });
   t.after(() => delivery.close());
@@ -38,9 +39,9 @@ test('consultation IDs are numeric, unique in the same millisecond and survive a
 });
 
 test('server config has no implicit demo customer/store or URL; configured values are trimmed', () => {
-  assert.deepEqual(n8nConfig({}), { webhookUrl: '', demoCustomerId: null, demoStoreId: null });
+  assert.deepEqual(n8nConfig({}), { webhookUrl: '', webhookAuthToken: '', demoCustomerId: null, demoStoreId: null });
   assert.deepEqual(n8nConfig({ N8N_WEBHOOK_URL: ` ${webhookUrl} `, KCM_DEMO_CUSTOMER_ID: ` ${customerId} `, KCM_DEMO_STORE_ID: ` ${storeId} ` }),
-    { webhookUrl, demoCustomerId: customerId, demoStoreId: storeId });
+    { webhookUrl, webhookAuthToken: '', demoCustomerId: customerId, demoStoreId: storeId });
   assert.equal(n8nConfig({ KCM_DEMO_STORE_ID: '  ' }).demoStoreId, null);
 });
 
@@ -57,7 +58,7 @@ test('final audio before end never posts early; finalized JSON matches the exact
   assert.equal(requests.length, 1);
   const { url, init } = requests[0];
   assert.equal(url, webhookUrl); assert.equal(init.method, 'POST');
-  assert.deepEqual(init.headers, { 'Content-Type': 'application/json' });
+  assert.deepEqual(init.headers, { 'Content-Type': 'application/json', Authorization: 'Bearer ' + webhookAuthToken });
   assert.equal(init.redirect, 'manual');
   const payload = JSON.parse(init.body);
   assert.deepEqual(payload, {
@@ -274,7 +275,7 @@ test('finalized risk with no Monitor start time becomes failed, preserving the o
 
 test('two delivery subscribers still share the same atomic per-call claim', async t => {
   const a = fixture(t), otherPosts = [];
-  const second = createN8nDelivery({ liveCalls: a.store, webhookUrl, fetchImpl: async () => { otherPosts.push(1); return new Response(); }, log() {} });
+  const second = createN8nDelivery({ liveCalls: a.store, webhookUrl, webhookAuthToken, fetchImpl: async () => { otherPosts.push(1); return new Response(); }, log() {} });
   t.after(() => second.close());
   prepare(a.store); finish(a.store); await tick();
   assert.equal(a.requests.length + otherPosts.length, 1);
@@ -288,6 +289,7 @@ test('HTTP create + actual Monitor SDK frames + final audio automatically POST t
   t.after(() => { globalThis.WebSocket = original; });
   const receiver = createServer(async (req, res) => {
     let text = ''; for await (const part of req) text += part;
+    assert.equal(req.headers.authorization, 'Bearer ' + webhookAuthToken);
     received.push({ method: req.method, type: req.headers['content-type'], body: JSON.parse(text) });
     res.writeHead(200); res.end('received');
   });
@@ -298,14 +300,15 @@ test('HTTP create + actual Monitor SDK frames + final audio automatically POST t
   let createIndex = 0;
   const identities = [];
   const server = createBackend({ key: 'synthetic-retell-key', agentId: 'agent_fixture', liveCalls: store,
-    monitors, ...n8nConfig({ N8N_WEBHOOK_URL: webhookUrl, KCM_DEMO_CUSTOMER_ID: customerId, KCM_DEMO_STORE_ID: storeId }), log: line => logs.push(line),
+    monitors, ...n8nConfig({ N8N_WEBHOOK_URL: webhookUrl, N8N_WEBHOOK_AUTH_TOKEN: webhookAuthToken,
+      KCM_DEMO_CUSTOMER_ID: customerId, KCM_DEMO_STORE_ID: storeId }), log: line => logs.push(line),
     fetchImpl: async (_url, init) => {
       assert.equal(init.headers.Authorization, 'Bearer synthetic-retell-key');
       assert.deepEqual(JSON.parse(init.body), { agent_id: 'agent_fixture' });
       return Response.json({ call_id: `call_http_${++createIndex}`, access_token: 'synthetic-access-token' });
     },
     webhookFetchImpl: (url, init) => {
-      assert.equal(url, webhookUrl); assert.equal(init.headers.Authorization, undefined);
+      assert.equal(url, webhookUrl); assert.equal(init.headers.Authorization, 'Bearer ' + webhookAuthToken);
       return fetch(`http://127.0.0.1:${receiver.address().port}/receive`, init);
     },
   });
@@ -320,6 +323,7 @@ test('HTTP create + actual Monitor SDK frames + final audio automatically POST t
     const data = await response.json(); await tick();
     assert.equal(response.status, 200);
     assert.doesNotMatch(JSON.stringify(data), /webhook|customer|consultation|store_id|synthetic-retell-key/);
+    assert.equal(JSON.stringify(data).includes(webhookAuthToken), false);
     const before = getCall(store, data.call_id);
     identities.push(before.consultation_id);
     assert.match(before.consultation_id, /^consultation_\d+$/); assert.equal(before.customer_id, customerId);
@@ -344,4 +348,76 @@ test('HTTP create + actual Monitor SDK frames + final audio automatically POST t
   await reader.cancel();
   assert.match(snapshot, /call_http_1/); assert.match(snapshot, /call_http_2/); assert.match(snapshot, /"status":"sent"/);
   assert.doesNotMatch(snapshot + JSON.stringify(logs), /https:|synthetic-private-path|synthetic-retell-key|synthetic-access-token/);
+  assert.equal((snapshot + JSON.stringify(logs)).includes(webhookAuthToken), false);
+});
+
+test('auth configuration preserves the exact bare token and never falls back to other keys', () => {
+  const raw = ' ' + webhookAuthToken + '\n';
+  assert.equal(n8nConfig({ N8N_WEBHOOK_AUTH_TOKEN: raw }).webhookAuthToken, raw);
+  assert.equal(n8nConfig({ RETELL_API_KEY: webhookAuthToken, SUPABASE_READ_KEY: webhookAuthToken }).webhookAuthToken, '');
+});
+
+test('missing auth token fails without HTTP, preserves final result and cannot retry after finalization', async t => {
+  const { store, requests, logs } = fixture(t, { webhookAuthToken: '' });
+  prepare(store); finish(store);
+  const result = getCall(store).final_result;
+  await tick();
+  assert.equal(requests.length, 0);
+  assert.equal(getCall(store).webhook_delivery.status, 'failed');
+  assert.equal(getCall(store).webhook_delivery.error, 'N8N_WEBHOOK_AUTH_MISSING');
+  store.ended('call_test'); store.audio('call_test', audio(2));
+  assert.equal(store.claimWebhookDelivery('call_test'), null);
+  assert.deepEqual(getCall(store).final_result, result);
+  assert.deepEqual(logs, ['[n8n] delivery failed: call_test (N8N_WEBHOOK_AUTH_MISSING)']);
+});
+
+test('malformed auth tokens are rejected without normalization, network or secret disclosure', async t => {
+  for (const token of ['short', 'a'.repeat(31), 'a'.repeat(257), ' ' + webhookAuthToken, webhookAuthToken + ' ',
+    webhookAuthToken + '\n', webhookAuthToken + '\r\n', webhookAuthToken + '\r', 'Bearer ' + webhookAuthToken,
+    webhookAuthToken + '\t', webhookAuthToken + '\0', webhookAuthToken + '한', webhookAuthToken + '/']) {
+    const { store, requests, logs } = fixture(t, { webhookAuthToken: token });
+    prepare(store); finish(store); await tick();
+    assert.equal(requests.length, 0);
+    assert.equal(getCall(store).webhook_delivery.error, 'N8N_WEBHOOK_AUTH_INVALID');
+    assert.equal(getCall(store).final_result.risk_score, 40);
+    assert.equal((JSON.stringify(store.snapshot()) + JSON.stringify(logs)).includes(token), false);
+  }
+});
+
+test('valid token bounds and allowed characters are transmitted only in the Authorization header', async t => {
+  for (const token of ['A'.repeat(32), 'z'.repeat(256), 'Synthetic_Bare-Token_12345678901234567890']) {
+    const { store, requests, logs } = fixture(t, { webhookAuthToken: token });
+    prepare(store); finish(store); await tick();
+    assert.equal(getCall(store).webhook_delivery.status, 'sent');
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].init.headers.Authorization, 'Bearer ' + token);
+    assert.equal(requests[0].url.includes(token), false);
+    assert.equal(requests[0].init.body.includes(token), false);
+    assert.equal((JSON.stringify(store.snapshot()) + JSON.stringify(logs)).includes(token), false);
+  }
+});
+
+test('receiver auth rejection or redirect never retries, follows Location or discloses echoed credentials', async t => {
+  for (const status of [401, 403, 302, 307, 308]) {
+    let count = 0;
+    const { store, logs } = fixture(t, { fetchImpl: async (_url, init) => {
+      count++;
+      assert.equal(init.redirect, 'manual');
+      assert.equal(init.headers.Authorization, 'Bearer ' + webhookAuthToken);
+      return new Response('echoed auth ' + webhookAuthToken, { status, headers: { Location: 'https://other.example.test/' + webhookAuthToken } });
+    } });
+    prepare(store); finish(store); const result = getCall(store).final_result; await tick();
+    assert.equal(getCall(store).webhook_delivery.error, 'HTTP_' + status);
+    store.ended('call_test'); store.audio('call_test', audio(2)); await tick();
+    assert.equal(count, 1);
+    assert.deepEqual(getCall(store).final_result, result);
+    assert.equal((JSON.stringify(store.snapshot()) + JSON.stringify(logs)).includes(webhookAuthToken), false);
+  }
+});
+
+test('network exceptions containing auth token never reach SSE state or logs', async t => {
+  const { store, logs } = fixture(t, { fetchImpl: async () => { throw new Error('Authorization: Bearer ' + webhookAuthToken); } });
+  prepare(store); finish(store); await tick();
+  assert.equal(getCall(store).webhook_delivery.error, 'NETWORK_ERROR');
+  assert.equal((JSON.stringify(store.snapshot()) + JSON.stringify(logs)).includes(webhookAuthToken), false);
 });

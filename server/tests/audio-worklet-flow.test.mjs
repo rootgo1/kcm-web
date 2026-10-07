@@ -10,6 +10,7 @@ const tick = () => new Promise(resolve => setImmediate(resolve));
 function measuredCall(t) {
   const store = createLiveCallStore(), posts = [], samples = [];
   const delivery = createN8nDelivery({ liveCalls: store, webhookUrl: 'https://workflow.example.test/audio-regression',
+    webhookAuthToken: 'synthetic_audio_webhook_token_000000000000',
     log: () => {}, fetchImpl: async (_url, init) => { posts.push(JSON.parse(init.body)); return new Response(null, { status: 200 }); } });
   const reporter = createLiveAudioReporter(() => {}, async (id, value) => { store.audio(id, value); });
   let Processor;

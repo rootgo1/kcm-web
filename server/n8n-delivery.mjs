@@ -2,6 +2,8 @@
 export function n8nConfig(/** @type {NodeJS.ProcessEnv} */ env = process.env) {
   return {
     webhookUrl: env.N8N_WEBHOOK_URL?.trim() ?? '',
+    // Do not silently repair whitespace or control characters in a shared secret.
+    webhookAuthToken: env.N8N_WEBHOOK_AUTH_TOKEN ?? '',
     demoCustomerId: env.KCM_DEMO_CUSTOMER_ID?.trim() || null,
     demoStoreId: env.KCM_DEMO_STORE_ID?.trim() || null,
   };
@@ -60,10 +62,10 @@ export function callResultPayload(/** @type {import('../src/live/types.js').Live
 /**
  * One attempt per call in this server process. No persistent queue or implicit retry:
  * after a lost response we cannot know whether the receiving workflow already ran.
- * @param {{liveCalls: ReturnType<import('./live-calls.mjs').createLiveCallStore>, webhookUrl: string,
+ * @param {{liveCalls: ReturnType<import('./live-calls.mjs').createLiveCallStore>, webhookUrl: string, webhookAuthToken?: string,
  * fetchImpl?: typeof fetch, log?: (line: string) => void, timeoutMs?: number}} options
  */
-export function createN8nDelivery({ liveCalls, webhookUrl, fetchImpl = fetch, log = console.log, timeoutMs = 10_000 }) {
+export function createN8nDelivery({ liveCalls, webhookUrl, webhookAuthToken = '', fetchImpl = fetch, log = console.log, timeoutMs = 10_000 }) {
   const controllers = new Set();
   let closed = false;
   const report = (/** @type {string} */ message) => { try { log(message); } catch { /* logging must not affect a call */ } };
@@ -81,6 +83,11 @@ export function createN8nDelivery({ liveCalls, webhookUrl, fetchImpl = fetch, lo
       failure = 'N8N_WEBHOOK_URL_INVALID';
       const url = new URL(webhookUrl);
       if (url.protocol !== 'https:' || url.username || url.password || url.hash) throw new Error();
+      failure = 'N8N_WEBHOOK_AUTH_MISSING';
+      if (!webhookAuthToken) throw new Error();
+      failure = 'N8N_WEBHOOK_AUTH_INVALID';
+      // JavaScript's $ anchor also matches before a final newline; compare the whole match.
+      if (typeof webhookAuthToken !== 'string' || /^[A-Za-z0-9_-]{32,256}$/.exec(webhookAuthToken)?.[0] !== webhookAuthToken) throw new Error();
       failure = 'CUSTOMER_ID_MISSING';
       if (!call.customer_id) throw new Error();
       failure = 'RESULT_INVALID';
@@ -89,7 +96,7 @@ export function createN8nDelivery({ liveCalls, webhookUrl, fetchImpl = fetch, lo
       const payload = callResultPayload(call);
       failure = 'NETWORK_ERROR';
       const response = await fetchImpl(webhookUrl, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + webhookAuthToken },
         body: JSON.stringify(payload), redirect: 'manual',
         signal: AbortSignal.any([controller.signal, AbortSignal.timeout(timeoutMs)]),
       });
