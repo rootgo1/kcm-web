@@ -2,7 +2,9 @@
 
 기존 Retell Web Call·Monitor·SSE·신호 분석·점수 정책을 유지합니다. 전송은 Node 백엔드만 수행하며 직원 화면과 브라우저는 Webhook을 호출하지 않습니다. KCM은 DB에 직접 저장하지 않습니다.
 
-2026-10-07 인증 변경의 `npm run check`는 **978/978 테스트 통과**, 실패·건너뜀·취소 0이며 프런트·서버 타입 검사와 production build도 통과했습니다. `npm run preview:standalone`과 `git diff --check`도 통과했습니다. 서버 전송용 인증값과 n8n `Start` Webhook의 Header Auth를 함께 적용하는 운영 절차는 [웹훅 인증 안내](N8N_WEBHOOK_AUTH.md)를 참조하세요. 새 인증 설정·Credential·운영 배포는 아직 적용하지 않았습니다.
+2026-10-07 인증 변경의 `npm run check`는 **978/978 테스트 통과**, 실패·건너뜀·취소 0이며 프런트·서버 타입 검사와 production build도 통과했습니다. `npm run preview:standalone`과 `git diff --check`도 통과했습니다. 운영 적용 순서와 자세한 확인 범위는 [웹훅 인증 안내](N8N_WEBHOOK_AUTH.md)를 참조하세요.
+
+사용자 승인으로 Start Header Auth와 팀원 문자 변경을 함께 발행했습니다. 최초 13:54 테스트는 `failed / HTTP_403`, 해당 DB 상담·요약 0건이었으며 사용자 인증값 재저장 후 코드 `6f1be81`의 재배포 `dep-db2tap2jnfac73fv7s10`가 **14:16:11(Asia/Seoul) Live**로 완료됐습니다. **14:18~14:19 새 통화에서 인증·전송 성공과 중복 없는 DB 상담 1건, 상담 목적·요약·전문·위험분석 저장을 확인했습니다.** 앱은 finalized=true, webhook sent/error=null이며 매장 매핑과 완료 상태도 일치했습니다. n8n [실행 1791](https://rootgo.app.n8n.cloud/workflow/GvZZqJGAAH9EpHuY/executions/1791)의 저장·요약 관련 7개 노드 성공과 마지막 요약 저장 출력도 DB 조회 결과와 일치했습니다. 실제 문자 전달·인증 헤더 보관은 미검증이며 실패 통화는 재전송하지 않았습니다.
 
 ## 사용자 설정과 적용
 
@@ -101,6 +103,7 @@ Start → KCM Normalize → KCM Payload Check → KCM Atomic Save
 
 - `npm.cmd run check`: 기존 전체 테스트와 n8n 테스트, 프런트·백엔드 타입 검사 및 빌드.
 - 자동 검증은 실제 Production URL/키/고객/매장 대신 격리된 모의 Retell 전송과 로컬 HTTP 수신기를 사용합니다. 두 통화의 ID 연결, 최종화 순서, 기존 JSON 계약 보존과 consultation 추가, 최종 대화 투영/시각 검증/매장 설정 누락, 1회 POST, 실패 보존, SSE/키 보호를 확인합니다.
-- 인증 변경의 모의 전송 검사 41개를 포함한 `npm run check`는 978/978 테스트 통과, 실패·건너뜀·취소 0이며 프런트·서버 타입 검사와 production build도 통과했습니다. `npm run preview:standalone`과 `git diff --check`도 통과했습니다. 운영 인증 일치·거부 응답·n8n 실행 기록의 인증값 보관 여부·실제 새 통화는 아직 검증하지 않았습니다.
+- 인증 변경의 모의 전송 검사 41개를 포함합니다. 최초 발행 후 운영 Production Webhook에 인증 없는 빈 JSON과 잘못된 Bearer 인증의 빈 JSON을 순서대로 각각 1회 보내 두 요청 모두 HTTP 403임을 확인했습니다. 리디렉션을 허용하지 않았고 응답 본문은 읽지 않았습니다. 이 거부 확인만으로 실제 통화의 인증 성공을 단정하지 않습니다.
 - 실제 검증: Production 워크플로 활성 확인 → 고객 `#/retell-test`에서 보조 마이크 시작 → Web Call → 발화 → 종료 → 서버 성공 로그 확인 → n8n **Executions**에서 해당 `call_id`와 `body.consultation_id`, `body.customer_id`, `body.signals`, `body.scores`, `body.risk_score`, `body.risk_level` 확인. [n8n 공식 Webhook 안내](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.webhook/)
-- 인증 변경의 운영 적용은 아직 수행하지 않았습니다. Credential 신규 입력·확인·제출은 사용자가 직접 수행하며, 인증 거부 확인은 업무 저장을 만들지 않는 빈 JSON 본문으로 진행합니다. 성공 경로는 이후 사용자의 짧은 새 실제 통화로 확인합니다. n8n Executions의 `headers`에 인증값이 남는지는 설치 버전에서 추가 확인해야 하며 최신 master 소스만으로 미보관을 단정하지 않습니다.
+- HTTP 200/요약 대기 응답과 후속 `KCM Update Summary` 완료는 별도로 확인합니다. 검증 기록에는 실제 인증값·식별자·고객 내용을 넣지 않습니다.
+- n8n About의 실제 버전은 `2.43.0`입니다. 해당 버전 소스와 Executions `headers`의 인증값 보관 여부는 아직 미검증이며 최신 master 소스만으로 미보관을 단정하지 않습니다. 우리 발행 직후 팀원 편집을 확인했으며 해당 후속 변경을 우리가 추가 publish하거나 수정하지 않았습니다.
