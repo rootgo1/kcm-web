@@ -5,9 +5,8 @@ import { applyLiveEvent, isNearConversationBottom, liveStatusLabels, subscribeLi
 import type { LiveCall } from './types';
 import { LiveRiskSignals, LiveTurnBadges } from './LiveRiskSignals';
 import { LiveCallBriefing } from './LiveCallBriefing';
-import { deliveryLabel, liveCustomerHistory } from './livePresentation';
+import { CustomerCallHistory } from './CustomerCallHistory';
 import { liveConnectionNotice } from './liveNotices';
-import { formatRiskScore } from '../lib/riskScoring';
 import './live-calls.css';
 
 function clock(at: string | null) {
@@ -77,21 +76,7 @@ export function LiveConsultations({ view = 'intake' }: { view?: 'intake' | 'hist
   if (!calls.length && connection !== 'reconnecting' && view === 'intake') return null;
   return <>
     {connection === 'reconnecting' && <p className="live-connection-note" role="status">실시간 상담 연결을 다시 시도하고 있습니다. <button className="text-button" onClick={() => setReconnectVersion(value => value + 1)}>다시 연결</button></p>}
-    {view === 'history' && <section className="card live-customer-history" aria-label="고객별 실시간 통화 이력">
-      <div className="card-heading"><h2>고객별 통화 이력</h2></div>
-      {calls.length === 0 && <div className="live-empty" role="status"><strong>현재 수신한 통화 이력이 없습니다.</strong><p>고객용 AI 상담이 연결되면 고객 ID와 통화별 기록을 여기에서 확인할 수 있습니다.</p></div>}
-      {liveCustomerHistory(calls).map(group => <section className="live-customer-group" key={group.key} aria-label={group.customerId || '고객 미식별 통화 ' + group.calls[0].call_id}>
-        <h3>{group.customerId ? <>고객 <span className="live-identifier">{group.customerId}</span></> : '고객 미식별 · 통화별 개별 표시'}</h3>
-        <p className="live-customer-risk">최근 완료 통화 위험도: <strong>{group.latestCompleted?.final_result ? formatRiskScore(group.latestCompleted.final_result.risk_score) : group.latestCompleted ? '점수 확정 보류' : '완료 통화 없음'}</strong></p>
-        {group.calls.map(call => <div className="live-intake-row" key={call.call_id}>
-          <div><strong className="live-identifier">{call.call_id}</strong><span className={`live-badge ${call.status}`}>{liveStatusLabels[call.status]}</span>
-            <p className="live-row-risk">{call.final_result ? formatRiskScore(call.final_result.risk_score) : call.status === 'ended' ? '최종 위험도 확정 보류' : '종료 후 위험도 확정'} <span className="live-row-time">· {clock(call.ended_at ?? call.started_at)}</span></p>
-            {call.status === 'ended' && <p className="live-row-delivery">{deliveryLabel(call)}</p>}
-          </div><button className="button button-secondary" onClick={() => setSelectedId(call.call_id)}>통화 기록 보기<span className="sr-only"> {call.call_id}</span></button>
-        </div>)}
-      </section>)}
-      <details className="live-call-id"><summary>조회 범위</summary><p className="live-small">현재 수신한 기록을 고객 ID로 구분합니다. 서비스 재시작 전의 이력은 이 화면에서 조회하지 않습니다. 각 통화 위험도는 독립 기록이며 합산하지 않습니다.</p></details>
-    </section>}
+    {view === 'history' && <CustomerCallHistory calls={calls} onSelect={setSelectedId}/>}
     {view === 'intake' && displayed.length > 0 && <section className="card live-intake" aria-label="실시간 AI 상담 인입">
       <div className="card-heading"><div className="title-with-icon"><span className="small-icon red"><Icon name="activity" size={17}/></span><h2>실시간 AI 상담</h2></div></div>
       {displayed.map(call => <div className="live-intake-row" key={call.call_id}>

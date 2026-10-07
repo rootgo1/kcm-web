@@ -205,7 +205,7 @@ test('저장 자료 API: 공개 직원 조회 제한은 명시적으로 안내�
     globalThis.fetch = async () => new Response(JSON.stringify({ errorCode: 'REAL_DATA_ACCESS_RESTRICTED', details: 'https://fixture.invalid/?token=private_fixture' }), { status: 503 });
     await assert.rejects(realDataApi.customers(), error => {
       assert.ok(error instanceof RealDataApiError); assert.equal(error.code, 'REAL_DATA_ACCESS_RESTRICTED'); assert.equal(realDataAvailability(error), 'error');
-      const notice = realDataErrorMessage(error.code); assert.match(notice, /직원 조회 접근 설정/); assert.match(notice, /관리자/); assert.doesNotMatch(notice, /private_fixture|https?:|token=/); return true;
+      const notice = realDataErrorMessage(error.code); assert.match(notice, /직원 인증/); assert.match(notice, /저장 자료 조회가 제한/); assert.match(notice, /관리자/); assert.doesNotMatch(notice, /private_fixture|https?:|token=/); return true;
     });
   } finally { globalThis.fetch = original; }
 });

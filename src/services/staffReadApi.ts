@@ -1,19 +1,19 @@
 /** The browser receives staff identity and expiry only. Session credentials stay in cookies. */
-export interface StaffReadEmployee { employeeId: string; storeId: string; nameMasked: string }
+export interface StaffReadEmployee { employeeId: string | null; storeId: string; nameMasked: string }
 export interface StaffReadLogin {
   authenticated: boolean; employee: StaffReadEmployee | null; expiresAt: number | null; errorCode: StaffReadErrorCode | null;
 }
 export interface StaffReadSession extends StaffReadLogin { required: boolean; configured: boolean }
 
 const errorMessages = {
-  STAFF_LOGIN_REQUIRED: '저장된 고객 자료를 조회하려면 직원 로그인이 필요합니다.',
+  STAFF_LOGIN_REQUIRED: '저장된 고객 자료를 조회하려면 조회 로그인이 필요합니다.',
   STAFF_SESSION_EXPIRED: '조회 로그인 시간이 만료되었습니다. 다시 로그인해 주세요.',
-  STAFF_ACCESS_DENIED: '현재 직원 계정에는 이 매장의 고객 자료를 조회할 권한이 없습니다.',
-  STAFF_AUTH_NOT_CONFIGURED: '직원 로그인 설정이 아직 준비되지 않았습니다. 관리자에게 문의해 주세요.',
-  STAFF_AUTH_UNAVAILABLE: '직원 로그인을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+  STAFF_ACCESS_DENIED: '현재 로그인 계정에는 이 매장의 고객 자료를 조회할 권한이 없습니다.',
+  STAFF_AUTH_NOT_CONFIGURED: '조회 로그인 설정이 아직 준비되지 않았습니다. 관리자에게 문의해 주세요.',
+  STAFF_AUTH_UNAVAILABLE: '조회 로그인을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.',
   STAFF_LOGIN_FAILED: '이메일과 비밀번호를 확인해 주세요.',
   STAFF_RATE_LIMITED: '로그인 시도가 많습니다. 잠시 후 다시 시도해 주세요.',
-  STAFF_CONFIG_INVALID: '직원 로그인 설정을 확인할 수 없습니다. 관리자에게 문의해 주세요.',
+  STAFF_CONFIG_INVALID: '조회 로그인 설정을 확인할 수 없습니다. 관리자에게 문의해 주세요.',
 } as const;
 export type StaffReadErrorCode = keyof typeof errorMessages;
 export const STAFF_READ_INVALIDATED_EVENT = 'kcm-staff-read-invalidated';
@@ -36,12 +36,18 @@ export function parseStaffReadLogin(value: unknown): StaffReadLogin {
     if (value.employee !== null || value.expiresAt !== null) return invalid();
     return { authenticated: false, employee: null, expiresAt: null, errorCode: value.errorCode as StaffReadErrorCode | null };
   }
-  if (value.errorCode !== null || !record(value.employee) || !validId('employee', value.employee.employeeId)
+  if (value.errorCode !== null || !record(value.employee)
+    || !(validId('employee', value.employee.employeeId) || value.employee.employeeId === null && value.employee.nameMasked === '조회 계정')
     || !validId('store', value.employee.storeId) || typeof value.employee.nameMasked !== 'string'
     || !value.employee.nameMasked.trim() || value.employee.nameMasked.length > 128 || /[\u0000-\u001f\u007f]/.test(value.employee.nameMasked)
     || typeof value.expiresAt !== 'number' || !Number.isSafeInteger(value.expiresAt) || value.expiresAt <= 0) return invalid();
   return { authenticated: true, employee: { employeeId: value.employee.employeeId, storeId: value.employee.storeId,
     nameMasked: value.employee.nameMasked }, expiresAt: value.expiresAt, errorCode: null };
+}
+/** Display only the server-projected identity; client-side scope/kind values grant no authority. */
+export function staffReadIdentityLabel(identity: StaffReadEmployee): { title: string; details: string } {
+  return identity.employeeId === null ? { title: '매장 고객 자료 조회 계정', details: `${identity.storeId} · 조회 전용` }
+    : { title: `${identity.nameMasked} 직원 · 고객 자료 조회`, details: `${identity.employeeId} · ${identity.storeId}` };
 }
 export function parseStaffReadSession(value: unknown): StaffReadSession {
   if (!record(value) || typeof value.required !== 'boolean' || typeof value.configured !== 'boolean') return invalid();

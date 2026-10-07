@@ -2,8 +2,10 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { isStoredTimestamp, maskStoredName } from './real-data.mjs';
 
-/** @typedef {{employeeId:string, storeId:string, nameMasked:string}} Identity */
-/** @typedef {{authUserId:string, employeeId:string, storeId:string}} Account */
+/** @typedef {{employeeId:string|null, storeId:string, nameMasked:string}} Identity */
+/** @typedef {{authUserId:string, employeeId:string, storeId:string}} EmployeeAccount */
+/** @typedef {{authUserId:string, storeId:string, scope:'customers:read'}} StoreReadAccount */
+/** @typedef {EmployeeAccount|StoreReadAccount} Account */
 /** @typedef {{accessToken:string, authUserId:string, expiresAt:number}} Session */
 /** @typedef {{ok:true, identity:Identity, expiresAt:number}|{ok:false,status:number,errorCode:string}} Authorization */
 /** @typedef {{status:number,body:{authenticated:boolean,employee:Identity|null,expiresAt:number|null,errorCode:string|null},setCookie?:string}} LoginResult */
@@ -39,14 +41,21 @@ function accounts(/** @type {string} */ json) {
   const map = new Map();
   const employees = new Set();
   for (const row of rows) {
-    if (!object(row) || Object.keys(row).sort().join(',') !== 'authUserId,employeeId,storeId'
-      || typeof row.authUserId !== 'string' || !UUID.test(row.authUserId)
-      || typeof row.employeeId !== 'string' || !EMPLOYEE.test(row.employeeId)
+    if (!object(row) || typeof row.authUserId !== 'string' || !UUID.test(row.authUserId)
       || typeof row.storeId !== 'string' || !STORE.test(row.storeId)) throw new Error();
+    const shape = Object.keys(row).sort().join(',');
+    const employeeAccount = shape === 'authUserId,employeeId,storeId';
+    const storeReadAccount = shape === 'authUserId,scope,storeId';
+    if (employeeAccount ? typeof row.employeeId !== 'string' || !EMPLOYEE.test(row.employeeId)
+      : !storeReadAccount || row.scope !== 'customers:read') throw new Error();
     const userId = row.authUserId.toLowerCase();
-    if (map.has(userId) || employees.has(row.employeeId)) throw new Error();
-    employees.add(row.employeeId);
-    map.set(userId, /** @type {Account} */ ({ authUserId: userId, employeeId: row.employeeId, storeId: row.storeId }));
+    if (map.has(userId) || employeeAccount && employees.has(row.employeeId)) throw new Error();
+    if (employeeAccount) {
+      employees.add(row.employeeId);
+      map.set(userId, /** @type {EmployeeAccount} */ ({ authUserId: userId, employeeId: row.employeeId, storeId: row.storeId }));
+    } else {
+      map.set(userId, /** @type {StoreReadAccount} */ ({ authUserId: userId, storeId: row.storeId, scope: 'customers:read' }));
+    }
   }
   return /** @type {Map<string,Account>} */ (map);
 }
@@ -190,7 +199,7 @@ export function createStaffReadAuth({ supabaseUrl = '', publishableKey = '', acc
     }
   }
 
-  /** Auth server verification is repeated, then actual staff membership is read. */
+  /** Auth is verified every time, then the explicit account kind chooses its DB scope check. */
   async function verifiedIdentity(/** @type {string} */ token, /** @type {string} */ expectedUserId, /** @type {()=>boolean} */ isLive = () => !closed) {
     const result = await request('/auth/v1/user', {
       method: 'GET', headers: { apikey: publishableKey, Authorization: 'Bearer ' + token, Accept: 'application/json', 'X-Supabase-Api-Version': '2024-01-01' },
@@ -206,6 +215,18 @@ export function createStaffReadAuth({ supabaseUrl = '', publishableKey = '', acc
     const account = accountMap.get(user.id.toLowerCase());
     if (!account || account.storeId !== fixedHomeStoreId) return denied(403, 'STAFF_ACCESS_DENIED');
     try {
+      if ('scope' in account) {
+        // This server-approved capability is limited by the existing two customer GET routes.
+        // It represents a read account, not a fabricated employee or employee-membership fallback.
+        const store = await provider?.readOne('stores', {
+          select: 'id,name', filters: { id: 'eq.' + fixedHomeStoreId }, limit: 1,
+        });
+        if (!store?.ok) return unavailable();
+        const row = store.data;
+        if (!row || row.id !== fixedHomeStoreId || typeof row.name !== 'string'
+          || !row.name.trim() || row.name.length > 200 || /[\r\n\u0000]/.test(row.name)) return denied(403, 'STAFF_ACCESS_DENIED');
+        return { ok: /** @type {const} */ (true), identity: { employeeId: null, storeId: fixedHomeStoreId, nameMasked: '조회 계정' } };
+      }
       const employee = await provider?.readOne('employees', {
         select: 'id,store_id,name', filters: { id: 'eq.' + account.employeeId, store_id: 'eq.' + fixedHomeStoreId }, limit: 1,
       });

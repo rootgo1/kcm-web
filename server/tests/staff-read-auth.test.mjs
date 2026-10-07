@@ -8,6 +8,7 @@ const key = 'sb_publishable_synthetic_fixture';
 const userId = 'a1111111-1111-4111-8111-111111111111';
 const otherId = '22222222-2222-4222-8222-222222222222';
 const account = { authUserId: userId, employeeId: 'employee_001', storeId: 'store_005' };
+const readAccount = { authUserId: userId, storeId: 'store_005', scope: 'customers:read' };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status });
 const credentials = { email: 'staff@example.test', password: 'fixture-password-never-return' };
 const factor = { id: 'b1111111-1111-4111-8111-111111111111', factor_type: 'totp', status: 'unverified',
@@ -21,6 +22,7 @@ function setup(options = {}) {
     user: { id: userId, is_anonymous: false, email_confirmed_at: '2026-01-01T00:00:00Z',
       user_metadata: { store_id: 'store_999', employee_id: 'employee_999' }, app_metadata: { role: 'admin' } },
     employee: { id: 'employee_001', store_id: 'store_005', name: '테스트직원', private: 'never-projected' },
+    store: { id: 'store_005', name: '합성매장', private: 'store-private-never-projected' },
     calls: [], reads: [], userHook: null, tokenHook: null, providerHook: null,
     expiresIn: 3600, expiresAt: undefined, token: 'synthetic-access-token', ...options.state,
   };
@@ -37,7 +39,8 @@ function setup(options = {}) {
   const provider = {
     async readOne(table, query) {
       state.reads.push({ table, query });
-      return state.providerHook ? state.providerHook(table, query) : { ok: true, data: state.employee };
+      assert.ok(['employees', 'stores'].includes(table));
+      return state.providerHook ? state.providerHook(table, query) : { ok: true, data: table === 'stores' ? state.store : state.employee };
     },
   };
   const auth = createStaffReadAuth({ supabaseUrl: origin, publishableKey: key, accountsJson: JSON.stringify([account]),
@@ -416,4 +419,120 @@ test('a hung Auth transport is aborted within the fixed timeout with a safe unav
   assert.equal(signal.aborted, true);
   assert.equal(result.status, 503);
   assert.equal(result.body.errorCode, 'STAFF_AUTH_UNAVAILABLE');
+});
+
+test('explicit customer-read account verifies Auth and actual home store each time without fabricating staff', async () => {
+  const { auth, state } = setup({ factory: { accountsJson: JSON.stringify([readAccount]) }, state: { employee: null } });
+  const result = await auth.login({ ...credentials, employeeId: 'employee_999', scope: '*', storeId: 'store_999' });
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.employee, { employeeId: null, storeId: 'store_005', nameMasked: '조회 계정' });
+  assert.deepEqual(state.reads, [{ table: 'stores', query: { select: 'id,name', filters: { id: 'eq.store_005' }, limit: 1 } }]);
+  assert.deepEqual(await auth.authorize(cookie(result)), { ok: true, identity: result.body.employee, expiresAt: result.body.expiresAt });
+  assert.equal(state.calls.length, 3, 'store read never replaces per-request verified Auth');
+  assert.equal(state.reads.length, 2);
+  assert.ok(state.reads.every(read => read.table === 'stores'));
+  for (const value of ['合成매장', '합성매장', 'store-private-never-projected', 'employee_999']) {
+    assert.equal(JSON.stringify(result).includes(value), false);
+  }
+});
+
+test('customer-read allowlist rejects unknown scopes, mixed/extra keys and cross-kind duplicate Auth UUIDs', async () => {
+  for (const rows of [
+    [{ ...readAccount, scope: '*' }], [{ ...readAccount, scope: 'customers:write' }], [{ ...readAccount, scope: ['customers:read'] }],
+    [{ ...readAccount, employeeId: 'employee_001' }], [{ ...readAccount, extra: true }],
+    [{ authUserId: userId, storeId: 'store_005' }], [{ ...readAccount, storeId: 'store_bad' }],
+    [account, readAccount], [readAccount, { ...readAccount, authUserId: userId.toUpperCase() }],
+  ]) {
+    const { auth, state } = setup({ factory: { accountsJson: JSON.stringify(rows) } });
+    assert.equal(auth.configured, false);
+    assert.equal(auth.configError, 'STAFF_CONFIG_INVALID');
+    assert.equal((await auth.login(credentials)).status, 503);
+    assert.equal(state.calls.length, 0);
+    assert.equal(state.reads.length, 0);
+  }
+});
+
+test('another-store read mapping and an unapproved Auth UUID cannot borrow customer scope from metadata', async () => {
+  for (const options of [
+    { factory: { accountsJson: JSON.stringify([{ ...readAccount, storeId: 'store_999' }]) } },
+    { factory: { accountsJson: JSON.stringify([{ ...readAccount, authUserId: otherId }]) } },
+  ]) {
+    const { auth, state } = setup(options);
+    state.user.user_metadata = { store_id: 'store_005', scope: 'customers:read', employee_id: 'employee_001' };
+    state.user.app_metadata = { store_id: 'store_005', scope: 'customers:read', role: 'admin' };
+    const result = await auth.login(credentials);
+    assert.equal(result.status, 403);
+    assert.equal(result.body.errorCode, 'STAFF_ACCESS_DENIED');
+    assert.equal(state.reads.length, 0);
+  }
+});
+
+test('deleted or invalid home store rejects read account and discards its existing session', async () => {
+  for (const patch of [null, { id: 'store_999' }, { name: '' }, { name: 'malformed\nname' }]) {
+    const { auth, state } = setup({ factory: { accountsJson: JSON.stringify([readAccount]) } });
+    const result = await auth.login(credentials);
+    state.store = patch === null ? null : { ...state.store, ...patch };
+    assert.deepEqual(await auth.authorize(cookie(result)), failure(403, 'STAFF_ACCESS_DENIED'));
+    assert.ok(state.reads.every(read => read.table === 'stores'));
+    const count = state.calls.length;
+    assert.deepEqual(await auth.authorize(cookie(result)), failure(401, 'STAFF_SESSION_EXPIRED'));
+    assert.equal(state.calls.length, count);
+    assert.equal((await auth.login(credentials)).status, 403, 'store must exist at login as well');
+  }
+});
+
+test('store read failure stays unavailable instead of falling back to an existing employee', async () => {
+  const { auth, state } = setup({ factory: { accountsJson: JSON.stringify([readAccount]) } });
+  state.providerHook = table => table === 'stores' ? { ok: false, code: 'synthetic-read-denied' } : { ok: true, data: state.employee };
+  const result = await auth.login(credentials);
+  assert.equal(result.status, 503);
+  assert.equal(result.body.errorCode, 'STAFF_AUTH_UNAVAILABLE');
+  assert.deepEqual(state.reads.map(read => read.table), ['stores']);
+});
+
+test('invalid employee membership never falls back to the independent store-read account path', async () => {
+  const { auth, state } = setup({ state: { employee: null } });
+  state.user.user_metadata = { scope: 'customers:read', store_id: 'store_005' };
+  const result = await auth.login(credentials);
+  assert.equal(result.status, 403);
+  assert.equal(result.body.errorCode, 'STAFF_ACCESS_DENIED');
+  assert.deepEqual(state.reads.map(read => read.table), ['employees']);
+});
+
+test('mixed allowlist keeps employee and independent read-account identities and DB checks distinct', async () => {
+  const { auth, state } = setup({ factory: { accountsJson: JSON.stringify([account, { ...readAccount, authUserId: otherId }]) } });
+  const staff = await auth.login(credentials);
+  assert.equal(staff.body.employee.employeeId, 'employee_001');
+  state.user.id = otherId;
+  const reader = await auth.login({ ...credentials, email: 'reader@example.test' });
+  assert.deepEqual(reader.body.employee, { employeeId: null, storeId: 'store_005', nameMasked: '조회 계정' });
+  assert.deepEqual(state.reads.map(read => read.table), ['employees', 'stores']);
+});
+
+test('read-only store accounts still deny enabled MFA before any store read', async () => {
+  const { auth, state } = setup({ factory: { accountsJson: JSON.stringify([readAccount]) } });
+  state.user.factors = [{ ...factor, status: 'verified' }];
+  const result = await auth.login(credentials);
+  assert.equal(result.status, 403);
+  assert.equal(result.body.errorCode, 'STAFF_ACCESS_DENIED');
+  assert.equal(state.reads.length, 0);
+});
+
+test('logout and expiry racing the read account store check cannot restore the session', async () => {
+  for (const operation of ['logout', 'expire']) {
+    const { auth, state } = setup({ factory: { accountsJson: JSON.stringify([readAccount]) } });
+    const loggedIn = await auth.login(credentials);
+    let resolve;
+    let entered;
+    const started = new Promise(done => { entered = done; });
+    state.providerHook = table => {
+      assert.equal(table, 'stores');
+      return new Promise(done => { resolve = done; entered(); });
+    };
+    const pending = auth.authorize(cookie(loggedIn));
+    await started;
+    if (operation === 'logout') auth.logout(cookie(loggedIn)); else state.time += 30 * 60_000;
+    resolve({ ok: true, data: state.store });
+    assert.deepEqual(await pending, failure(401, 'STAFF_SESSION_EXPIRED'));
+  }
 });

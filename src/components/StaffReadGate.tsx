@@ -1,5 +1,5 @@
 import { useEffect, useId, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react';
-import { createStaffReadController, staffReadCanShowData, STAFF_READ_INVALIDATED_EVENT, staffReadErrorMessage } from '../services/staffReadApi.js';
+import { createStaffReadController, staffReadCanShowData, STAFF_READ_INVALIDATED_EVENT, staffReadErrorMessage, staffReadIdentityLabel } from '../services/staffReadApi.js';
 import './staff-read.css';
 
 /** Only the saved-customer panel is gated; the existing workspace profile stays unchanged. */
@@ -49,34 +49,35 @@ export function StaffReadGate({ children }: { children: ReactNode }) {
     void controller.login(email.trim(), submittedPassword);
   };
   const logout = () => { setEmail(''); setPassword(''); void controller.logout(); };
+  const identity = state.session?.authenticated && state.session.employee ? staffReadIdentityLabel(state.session.employee) : null;
   if (staffReadCanShowData(state)) return <>
-    {state.session?.authenticated && state.session.employee && <section className="staff-read-identity" aria-label="고객 자료 조회 로그인">
-      <div><strong>{state.session.employee.nameMasked} 직원 · 고객 자료 조회</strong><p>{state.session.employee.employeeId} · {state.session.employee.storeId}</p></div>
+    {identity && <section className="staff-read-identity" aria-label="고객 자료 조회 로그인">
+      <div><strong>{identity.title}</strong><p>{identity.details}</p></div>
       <button type="button" className="button button-secondary" onClick={logout}>고객 자료 조회 로그아웃</button>
     </section>}
     {children}
   </>;
   const busy = state.phase === 'checking' || state.phase === 'submitting' || state.phase === 'signing-out';
   const unconfigured = state.session?.required && !state.session.configured;
-  return <section className="card staff-read-gate" aria-label="직원 고객 자료 조회 로그인">
+  return <section className="card staff-read-gate" aria-label="고객 자료 조회 로그인">
     <div className="card-heading"><h2>저장된 고객 자료 조회</h2></div>
     <div className="staff-read-content">
-      {busy ? <p className="staff-read-status" role="status">{state.phase === 'submitting' ? '직원 로그인을 확인하고 있습니다.' : state.phase === 'signing-out' ? '고객 자료 조회 로그아웃을 처리하고 있습니다.' : '직원 조회 권한을 확인하고 있습니다.'}</p>
+      {busy ? <p className="staff-read-status" role="status">{state.phase === 'submitting' ? '조회 로그인을 확인하고 있습니다.' : state.phase === 'signing-out' ? '고객 자료 조회 로그아웃을 처리하고 있습니다.' : '고객 자료 조회 권한을 확인하고 있습니다.'}</p>
         : unconfigured || state.phase === 'error' || state.phase === 'logout-error' ? <>
           <p className="staff-read-status" role="status">{staffReadErrorMessage(state.errorCode ?? (unconfigured ? 'STAFF_AUTH_NOT_CONFIGURED' : 'STAFF_AUTH_UNAVAILABLE'))}</p>
           {state.phase === 'logout-error' && <p className="staff-read-description">고객 자료는 닫았습니다. 로그인 세션 종료를 다시 확인해 주세요.</p>}
           <button type="button" className="button button-secondary" onClick={() => { setPassword(''); if (state.phase === 'logout-error') void controller.logout(); else void controller.checkSession(); }}>{state.phase === 'logout-error' ? '조회 로그아웃 다시 시도' : '다시 확인'}</button>
         </> : <>
-          <p className="staff-read-description">현재 매장의 저장 고객과 상담 요약은 권한이 있는 직원만 조회할 수 있습니다.</p>
+          <p className="staff-read-description">현재 매장의 저장 고객과 상담 요약은 권한이 있는 계정만 조회할 수 있습니다.</p>
           <form className="staff-read-form" onSubmit={submit}>
-            <label htmlFor={`${formId}-email`}>직원 이메일</label>
+            <label htmlFor={`${formId}-email`}>로그인 이메일</label>
             <input id={`${formId}-email`} name="email" type="email" autoComplete="username" required maxLength={254}
               value={email} onChange={event => setEmail(event.target.value)} spellCheck={false} autoCapitalize="none" aria-describedby={state.errorCode ? `${formId}-error` : undefined}/>
             <label htmlFor={`${formId}-password`}>비밀번호</label>
             <input id={`${formId}-password`} name="password" type="password" autoComplete="current-password" required maxLength={1024}
               value={password} onChange={event => setPassword(event.target.value)} aria-describedby={state.errorCode ? `${formId}-error` : undefined}/>
             {state.errorCode && <p className="staff-read-error" id={`${formId}-error`} role="alert">{staffReadErrorMessage(state.errorCode)}</p>}
-            <button type="submit" className="button button-primary">직원 로그인</button>
+            <button type="submit" className="button button-primary">조회 로그인</button>
           </form>
           <p className="staff-read-description">이 로그인은 저장된 고객 자료 조회에 사용됩니다.</p>
         </>}

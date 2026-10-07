@@ -10,6 +10,7 @@ const origin = 'https://staff.example.test';
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status });
 const rows = {
   employees: [{ id: 'employee_001', store_id: 'store_005', name: '테스트직원' }],
+  stores: [{ id: 'store_005', name: '테스트 매장' }],
   customers: [
     { id: 'customer_001', name: '테스트고객', phone: '010-0000-1234', privacy_consent: true, product_id: 'product_001', plan_id: 'own_plan_001' },
     { id: 'customer_002', name: '비동의고객', phone: '010-0000-5678', privacy_consent: false, product_id: null, plan_id: null },
@@ -91,6 +92,25 @@ test('anonymous/forged staff cookies cannot invoke Auth or business DB reads', a
   const session = await call('/api/staff-read/session');
   assert.equal(session.body.required, true);
   assert.equal(session.body.authenticated, false);
+});
+
+test('explicit store read account can read only customer history without impersonating an employee or changing DB policies', async t => {
+  const { call, login, queried } = await setup(t, { accountsJson: JSON.stringify([{ authUserId: authId, storeId: 'store_005', scope: 'customers:read' }]) });
+  const { response, cookie } = await login();
+  assert.deepEqual(response.body.employee, { employeeId: null, storeId: 'store_005', nameMasked: '조회 계정' });
+  const session = await call('/api/staff-read/session', { cookie });
+  assert.equal(session.body.authenticated, true);
+  assert.equal(session.body.employee.employeeId, null);
+  assert.equal((await call('/api/data/customers', { cookie })).status, 200);
+  const history = await call('/api/data/customers/customer_001/consultations', { cookie });
+  assert.equal(history.status, 200);
+  assert.equal(history.body.items[0].risks[0].score, 0);
+  assert.equal(queried.filter(row => row.table === 'employees').length, 0);
+  assert.equal(queried.filter(row => row.table === 'stores').length, 4);
+  assert.equal((await call('/api/data/appointments', { cookie })).status, 503);
+  assert.equal((await call('/api/briefings/reservation_001', { cookie })).status, 503);
+  await call('/api/staff-read/logout', { method: 'POST', body: {}, cookie });
+  assert.equal((await call('/api/data/customers', { cookie })).status, 401);
 });
 
 test('verified staff can read only fixed-store masked customers and saved summaries; logout invalidates cookie', async t => {

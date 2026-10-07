@@ -44,7 +44,7 @@ const errorMessages = {
   REAL_DATA_CONFIG_INVALID: '저장 자료 조회 설정을 확인할 수 없습니다. 관리자에게 문의해 주세요.',
   HOME_STORE_NOT_CONFIGURED: '현재 매장 범위를 확인할 수 없습니다. 관리자에게 문의해 주세요.',
   REAL_DATA_ACCESS_DENIED: '저장 자료를 조회할 수 있는 권한을 확인해 주세요.',
-  REAL_DATA_ACCESS_RESTRICTED: '공개 환경의 직원 조회 접근 설정이 준비되지 않았습니다. 관리자에게 문의해 주세요.',
+  REAL_DATA_ACCESS_RESTRICTED: '직원 인증이 연결되기 전까지 공개 화면의 저장 자료 조회가 제한됩니다. 관리자에게 문의해 주세요.',
   STAFF_LOGIN_REQUIRED: '고객 자료를 조회하려면 직원 로그인이 필요합니다.',
   STAFF_SESSION_EXPIRED: '조회 로그인이 만료되었습니다. 다시 로그인해 주세요.',
   STAFF_ACCESS_DENIED: '이 매장의 고객 자료 조회 권한이 없습니다. 관리자에게 문의해 주세요.',

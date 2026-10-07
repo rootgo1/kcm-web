@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStaffReadApi, createStaffReadController, parseStaffReadLogin, parseStaffReadSession, StaffReadApiError,
-  staffReadCanShowData, staffReadErrorCode, staffReadErrorMessage, type StaffReadClient, type StaffReadLogin,
+  staffReadCanShowData, staffReadErrorCode, staffReadErrorMessage, staffReadIdentityLabel, type StaffReadClient, type StaffReadLogin,
   type StaffReadSession } from '../src/services/staffReadApi.js';
 
 // Synthetic responses only. No real accounts, browser credentials, or external requests.
 const clock = 1_800_000_000_000;
 const employee = { employeeId: 'employee_001', storeId: 'store_005', nameMasked: '테*트' };
+const readAccount = { employeeId: null, storeId: 'store_005', nameMasked: '조회 계정' };
 const loggedIn = (over: Partial<StaffReadLogin> = {}): StaffReadLogin => ({ authenticated: true, employee,
   expiresAt: clock + 60_000, errorCode: null, ...over });
 const loggedOut = (over: Partial<StaffReadLogin> = {}): StaffReadLogin => ({ authenticated: false, employee: null,
@@ -36,6 +37,37 @@ test('직원 조회: 응답은 직원 ID·매장 ID·마스킹 이름·만료 �
   assert.deepEqual(result, session()); assert.notEqual(result.employee, employee);
   assert.doesNotMatch(JSON.stringify(result), /canary|@|phone|token/);
   assert.deepEqual(parseStaffReadLogin(loggedOut()), loggedOut());
+});
+
+test('고객 조회 계정: 실제 직원 연결이 없는 승인 계정은 null ID를 유지하고 직원으로 표시하지 않는다', () => {
+  const result = parseStaffReadSession(session({ employee: readAccount }));
+  assert.deepEqual(result.employee, readAccount); assert.equal(result.employee?.employeeId, null);
+  assert.deepEqual(parseStaffReadLogin(loggedIn({ employee: readAccount })).employee, readAccount);
+  assert.deepEqual(staffReadIdentityLabel(readAccount), { title: '매장 고객 자료 조회 계정', details: 'store_005 · 조회 전용' });
+  assert.deepEqual(staffReadIdentityLabel(employee), { title: '테*트 직원 · 고객 자료 조회', details: 'employee_001 · store_005' });
+  assert.doesNotMatch(JSON.stringify(staffReadIdentityLabel(readAccount)), /직원|employee_|null/);
+});
+
+test('고객 조회 계정: null ID는 고정 조회 계정 표시와 유효한 매장 ID가 함께 있을 때만 허용한다', () => {
+  for (const identity of [null, {}, { ...readAccount, employeeId: undefined }, { ...readAccount, employeeId: '' },
+    { ...readAccount, employeeId: 0 }, { ...readAccount, employeeId: 'employee_demo' }, { ...readAccount, storeId: null },
+    { ...readAccount, storeId: 'store_other' }, { ...readAccount, nameMasked: undefined }, { ...readAccount, nameMasked: '직원' },
+    { ...readAccount, nameMasked: '조회 계정 ' }, { ...readAccount, nameMasked: '조회 계정\n' }]) {
+    assert.throws(() => parseStaffReadLogin({ ...loggedIn(), employee: identity }), invalid);
+  }
+  assert.throws(() => parseStaffReadLogin({ ...loggedOut(), employee: readAccount }), invalid);
+  assert.throws(() => parseStaffReadSession(session({ configured: false, employee: readAccount })), invalid);
+});
+
+test('고객 조회 계정: scope·접근 종류·권한 필드는 DTO에서 제거하고 프런트 접근 권한으로 사용하지 않는다', () => {
+  const incoming = { ...session({ employee: readAccount }), scope: 'customers:write', accessKind: 'admin', authenticatedByScope: true,
+    employee: { ...readAccount, scope: 'customers:read', accessKind: 'staff', role: 'admin' } };
+  const result = parseStaffReadSession(incoming);
+  assert.deepEqual(result, session({ employee: readAccount })); assert.doesNotMatch(JSON.stringify(result), /scope|accessKind|admin|role/);
+  const noLogin = parseStaffReadSession({ required: true, configured: true, ...loggedOut(), scope: 'customers:read', accessKind: 'admin' });
+  assert.equal(staffReadCanShowData({ phase: 'ready', session: noLogin, errorCode: null }), false);
+  assert.throws(() => parseStaffReadSession({ ...incoming, authenticated: false }), invalid);
+  assert.throws(() => parseStaffReadSession({ ...session(), employee: { storeId: 'store_005', scope: 'customers:read', accessKind: 'reader' } }), invalid);
 });
 
 test('직원 조회: 인증 응답의 필수 항목·타입·연결 ID·만료 시각 모순은 차단한다', () => {
@@ -201,4 +233,16 @@ test('직원 조회: 오류 무효화의 알 수 없는 코드도 자료를 닫�
   assert.equal(staffReadCanShowData(f.controller.getSnapshot()), false); assert.equal(f.controller.getSnapshot().errorCode, 'STAFF_AUTH_UNAVAILABLE');
   f.controller.invalidate('STAFF_CONFIG_INVALID'); assert.equal(f.controller.getSnapshot().session?.configured, false);
   assert.equal(f.controller.getSnapshot().session?.employee, null);
+});
+
+test('고객 조회 계정: null ID 계정도 만료·로그아웃 후 정보와 자료를 즉시 제거한다', async () => {
+  const f = fixture({ session: async () => session({ employee: readAccount }), login: async () => loggedIn({ employee: readAccount }) });
+  await f.controller.checkSession(); assert.equal(staffReadCanShowData(f.controller.getSnapshot()), true);
+  assert.deepEqual(f.controller.getSnapshot().session?.employee, readAccount);
+  f.setTime(clock + 60_000); f.expire(); assert.equal(staffReadCanShowData(f.controller.getSnapshot()), false);
+  assert.equal(f.controller.getSnapshot().session?.employee, null); assert.equal(f.controller.getSnapshot().errorCode, 'STAFF_SESSION_EXPIRED');
+  f.setTime(clock); await f.controller.login('synthetic-reader@example.invalid', 'synthetic-password-canary');
+  assert.equal(staffReadCanShowData(f.controller.getSnapshot()), true); await f.controller.logout();
+  assert.equal(staffReadCanShowData(f.controller.getSnapshot()), false); assert.equal(f.controller.getSnapshot().session?.employee, null);
+  assert.doesNotMatch(JSON.stringify(f.controller.getSnapshot()), /@|password|canary|scope|accessKind/);
 });
