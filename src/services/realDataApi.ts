@@ -45,6 +45,12 @@ const errorMessages = {
   HOME_STORE_NOT_CONFIGURED: '현재 매장 범위를 확인할 수 없습니다. 관리자에게 문의해 주세요.',
   REAL_DATA_ACCESS_DENIED: '저장 자료를 조회할 수 있는 권한을 확인해 주세요.',
   REAL_DATA_ACCESS_RESTRICTED: '공개 환경의 직원 조회 접근 설정이 준비되지 않았습니다. 관리자에게 문의해 주세요.',
+  STAFF_LOGIN_REQUIRED: '고객 자료를 조회하려면 직원 로그인이 필요합니다.',
+  STAFF_SESSION_EXPIRED: '조회 로그인이 만료되었습니다. 다시 로그인해 주세요.',
+  STAFF_ACCESS_DENIED: '이 매장의 고객 자료 조회 권한이 없습니다. 관리자에게 문의해 주세요.',
+  STAFF_AUTH_NOT_CONFIGURED: '직원 조회 로그인이 아직 준비되지 않았습니다. 관리자에게 문의해 주세요.',
+  STAFF_CONFIG_INVALID: '직원 조회 권한 설정을 확인해 주세요.',
+  STAFF_AUTH_UNAVAILABLE: '직원 조회 권한을 확인하지 못했습니다. 다시 로그인해 주세요.',
   REAL_DATA_UNAVAILABLE: '저장 자료를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
   REAL_DATA_TIMEOUT: '자료 조회가 지연되고 있습니다. 잠시 후 다시 시도해 주세요.',
   REAL_DATA_INVALID_RESPONSE: '조회한 자료를 확인할 수 없습니다. 다시 시도해 주세요.',
@@ -200,13 +206,17 @@ export function parseRealBriefing(value: unknown, reservationId?: string): RealB
 
 async function request<T>(path: string, parse: (value: unknown) => T, signal?: AbortSignal): Promise<T> {
   let response: Response;
-  try { response = await fetch(path, { method: 'GET', signal, headers: { Accept: 'application/json' } }); }
+  try { response = await fetch(path, { method: 'GET', credentials: 'same-origin', signal, headers: { Accept: 'application/json' } }); }
   catch { throw new RealDataApiError('NETWORK'); }
   let body: unknown;
   try { body = await response.json(); }
   catch { throw new RealDataApiError(response.ok ? 'INVALID_RESPONSE' : 'REAL_DATA_UNAVAILABLE'); }
   if (!response.ok) {
     const code = record(body) ? body.errorCode ?? body.error : undefined;
+    if (typeof window !== 'undefined' && typeof code === 'string'
+      && ['STAFF_LOGIN_REQUIRED', 'STAFF_SESSION_EXPIRED', 'STAFF_ACCESS_DENIED', 'STAFF_AUTH_UNAVAILABLE', 'STAFF_AUTH_NOT_CONFIGURED', 'STAFF_CONFIG_INVALID'].includes(code)) {
+      window.dispatchEvent(new CustomEvent('kcm-staff-read-invalidated', { detail: { code } }));
+    }
     throw new RealDataApiError(code ?? (response.status === 401 || response.status === 403 ? 'REAL_DATA_ACCESS_DENIED' : 'REAL_DATA_UNAVAILABLE'));
   }
   return parse(body);

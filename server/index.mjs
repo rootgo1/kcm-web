@@ -6,6 +6,7 @@ import { deploymentConfig } from './deployment.mjs';
 import { n8nConfig } from './n8n-delivery.mjs';
 import { inventoryDbConfig } from './inventory.mjs';
 import { realDataConfig } from './real-data.mjs';
+import { staffReadAuthConfig } from './staff-read-auth.mjs';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -32,7 +33,7 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 }
 const liveCalls = createLiveCallStore();
 const monitors = createMonitorRegistry({ key, liveCalls });
-const server = createBackend({ key, agentId, monitors, liveCalls, deployment, ...n8nConfig(), ...inventoryDbConfig(), ...realDataConfig() });
+const server = createBackend({ key, agentId, monitors, liveCalls, deployment, ...n8nConfig(), ...inventoryDbConfig(), ...realDataConfig(), ...staffReadAuthConfig() });
 server.on('error', () => { console.error('백엔드를 실행할 수 없습니다. 포트 사용 여부를 확인하세요.'); monitors.close(); process.exitCode = 1; server.close(); });
 server.listen(port, deployment ? '0.0.0.0' : '127.0.0.1', () => {
   console.log(deployment ? `KCM team test: ${deployment.origin}` : `KCM Retell backend: http://127.0.0.1:${port}`);

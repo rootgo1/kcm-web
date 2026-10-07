@@ -1,4 +1,17 @@
-# KCM 작업 상태 — v0.3 / 2026-10-06
+# KCM 작업 상태 — v0.3 / 2026-10-07
+
+## 직원 로그인 후 매장 고객·상담 요약 조회 / 2026-10-07
+
+- 사용자가 운영용 직원 로그인 후 매장 고객 조회를 선택하여 `fix/staff-customer-read` 작업을 진행했습니다. 기준은 `858cfd7b67544bbf9c1764719f661e4c00c37f0a`이며 기존 작업 폴더의 STATUS/n8n 수정자료는 별도 worktree에 보존했습니다.
+- `server/staff-read-auth.mjs`에 Supabase Auth 비밀번호 로그인→매 조회 `/user` 검증→서버 승인 UUID/employee/store 매핑→실제 직원 소속 검증을 구현했습니다. metadata·클라이언트 매장은 권한 근거로 사용하지 않습니다. 무작위32byte 세션/메모리 hash, 운영 __Host/Secure/HttpOnly/Strict 쿠키, 최대30분/토큰 만료, 서버 재시작·로그아웃 폐기, 속도제한·세션 상한500·5초 timeout·응답 최소화를 적용했습니다. 확인된 MFA 계정은 추가 인증 지원 전까지 로그인·조회에서 거부합니다.
+- `server/app.mjs`/index에서 세션조회/로그인/로그아웃과 고객 목록·고객별 상담 이력 **두 GET만** 인증 후 허용했습니다. 공개 배포의 다른 개인자료 제한과 기존 시연 고객 브리핑·SSE·Retell·n8n·재고 정책은 유지했습니다. DB schema/RLS/권한 변경은 없습니다.
+- `StaffReadGate.tsx`, `staff-read.css`, `staffReadApi.ts` 및 StoredCustomers 래핑을 추가했습니다. 로그인·만료·권한 실패·logout·숨김/재활성화 시 고객 자료를 해제하고 진행 중/늦은 응답·이전 계정 자료 복원을 차단합니다. 비밀번호는 제출 즉시 제거하고 브라우저 저장소를 사용하지 않습니다. 기존 샘플 프로필과 조회 인증 직원은 구분합니다. ProductsPage는 운영 staff 모드에서 고객 목록을 읽지 않고 고객 없는 계산을 유지합니다.
+- 신규 테스트는 Auth25/HTTP6/프런트19, 총50개입니다. 최종 `npm run check`에서 전체 **943/943**, 실패·skip0, 프런트/서버 타입 검사와 production build 통과했습니다. 기존 Retell SDK 큰 청크 경고는 유지됩니다. `npm run preview:standalone`으로 독립 HTML을 갱신했습니다.
+- Chrome의 격리 production dist+합성 Auth/DB 화면에서 로그인 전 차단→로그인→마스킹 고객 목록→저장 요약 및0점정상→미동의 고객 요약 차단→로그아웃 자료 제거를 확인했습니다. 합성 fixture/캡처/로그는 Git 제외 `.cache/staff-read/`에만 저장했습니다. 직접 독립 HTML 실행·모든 viewport 검증은 수행하지 않았습니다.
+- 독립 소스 보안 검토에서 로그인 JSON null 오류와 상품 화면 자료 범위를 수정한 뒤 현재 blocker 없음으로 확인했습니다. 실제 직원 계정·환경값·외부 DB·운영 사이트는 변경하지 않았습니다. 직원 이메일/Auth UUID/기존 employee ID·store_005 소속 확인과 운영 접근 권한 적용 확인을 요청했습니다. 실제 계정 설정·로그인·운영 배포 및 실제 저장 이력 조회는 아직 미검증입니다.
+- 설정·운영 확인 절차는 `docs/STAFF_CUSTOMER_READ.md`와 빈 `.env.example` 항목에 기록했습니다. 실제 키·비밀번호는 소스/대화에 넣지 않습니다. n8n 웹훅 인증은 이번 조회 기능 이후 별도 작업입니다.
+- 사용자가 직원 계정이 없을 것으로 답하여 연결된 KT Project의 Authentication→Users를 읽기 전용 확인했습니다. 목록은 `No users in your project`와0개 데이터행을 표시하며 별도 estimated10 문구가 있어 정확한 전체 계정 수는 단정하지 않았습니다. `Add user→Create new user`의 빈 생성 폼을 열어 사용자 직접 입력을 위한 handoff로 유지했습니다. 이메일/비밀번호 입력·Create user 제출·권한/환경값 변경은 하지 않았습니다. 로컬 합성 검증 서버와 탭은 정리했습니다.
+- 사용자가 직접 생성한 계정의 캡처를 제공한 뒤, KT Project Auth 사용자 상세에서 생성 시각과 Confirmed at(11:38 KST)을 읽기 전용 확인했습니다. Auth UUID/이메일은 운영 소스·문서에 기록하지 않았습니다. 같은 매장(store_005)의 직원 id/name/store_id 3개 컬럼만 SELECT하여 등록직원4명을 확인했고, 연결할 직원 및 해당 계정의 조회 권한 부여 확인을 요청했습니다. 코드 변경/테스트 재실행·실제 계정 로그인·DB 쓰기·환경값·운영 배포 변경은 하지 않았습니다. 계정 생성 완료와 운영 조회권한 적용 완료는 구분했습니다.
 
 ## 실시간 통화 사전 브리핑 / 2026-10-06
 

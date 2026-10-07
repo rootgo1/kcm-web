@@ -3674,6 +3674,113 @@ function RealAppointments({ compact = false, onAvailability, onAll }) {
 }
 
 },
+"src/components/StaffReadGate":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.StaffReadGate = StaffReadGate;
+const react_1 = require("react");
+const staffReadApi_js_1 = require("../services/staffReadApi.js");
+require("./staff-read.css");
+/** Only the saved-customer panel is gated; the existing workspace profile stays unchanged. */
+function StaffReadGate({ children }) {
+    const [standalone] = (0, react_1.useState)(() => document.documentElement.dataset.kcmStandalone === 'true');
+    const [controller] = (0, react_1.useState)(() => (0, staffReadApi_js_1.createStaffReadController)());
+    const state = (0, react_1.useSyncExternalStore)(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
+    const [email, setEmail] = (0, react_1.useState)('');
+    const [password, setPassword] = (0, react_1.useState)('');
+    const formId = (0, react_1.useId)();
+    (0, react_1.useEffect)(() => {
+        if (standalone)
+            return;
+        void controller.checkSession();
+        const recheck = () => {
+            if (document.visibilityState === 'hidden')
+                return;
+            const phase = controller.getSnapshot().phase;
+            if (phase !== 'submitting' && phase !== 'signing-out')
+                void controller.checkSession();
+        };
+        const visibility = () => {
+            if (document.visibilityState === 'hidden') {
+                const phase = controller.getSnapshot().phase;
+                if (phase !== 'submitting' && phase !== 'signing-out')
+                    controller.clearForRecheck();
+            }
+            else
+                recheck();
+        };
+        const invalidated = (event) => {
+            const detail = event.detail;
+            const code = typeof detail === 'object' && detail !== null && 'code' in detail ? detail.code : undefined;
+            setEmail('');
+            setPassword('');
+            controller.invalidate(code);
+        };
+        window.addEventListener('focus', recheck);
+        document.addEventListener('visibilitychange', visibility);
+        window.addEventListener(staffReadApi_js_1.STAFF_READ_INVALIDATED_EVENT, invalidated);
+        return () => {
+            window.removeEventListener('focus', recheck);
+            document.removeEventListener('visibilitychange', visibility);
+            window.removeEventListener(staffReadApi_js_1.STAFF_READ_INVALIDATED_EVENT, invalidated);
+            controller.dispose();
+        };
+    }, [controller, standalone]);
+    (0, react_1.useEffect)(() => {
+        if (state.errorCode && state.errorCode !== 'STAFF_LOGIN_FAILED' && state.errorCode !== 'STAFF_RATE_LIMITED') {
+            setEmail('');
+            setPassword('');
+        }
+    }, [state.errorCode]);
+    if (standalone)
+        return __React.createElement(__React.Fragment, null, children);
+    const submit = (event) => {
+        event.preventDefault();
+        if (state.phase !== 'ready' || !state.session?.configured || state.session.authenticated)
+            return;
+        const submittedPassword = password;
+        setPassword('');
+        void controller.login(email.trim(), submittedPassword);
+    };
+    const logout = () => { setEmail(''); setPassword(''); void controller.logout(); };
+    if ((0, staffReadApi_js_1.staffReadCanShowData)(state))
+        return __React.createElement(__React.Fragment, null,
+            state.session?.authenticated && state.session.employee && __React.createElement("section", { className: "staff-read-identity", "aria-label": "\uACE0\uAC1D \uC790\uB8CC \uC870\uD68C \uB85C\uADF8\uC778" },
+                __React.createElement("div", null,
+                    __React.createElement("strong", null,
+                        state.session.employee.nameMasked,
+                        " \uC9C1\uC6D0 \u00B7 \uACE0\uAC1D \uC790\uB8CC \uC870\uD68C"),
+                    __React.createElement("p", null,
+                        state.session.employee.employeeId,
+                        " \u00B7 ",
+                        state.session.employee.storeId)),
+                __React.createElement("button", { type: "button", className: "button button-secondary", onClick: logout }, "\uACE0\uAC1D \uC790\uB8CC \uC870\uD68C \uB85C\uADF8\uC544\uC6C3")),
+            children);
+    const busy = state.phase === 'checking' || state.phase === 'submitting' || state.phase === 'signing-out';
+    const unconfigured = state.session?.required && !state.session.configured;
+    return __React.createElement("section", { className: "card staff-read-gate", "aria-label": "\uC9C1\uC6D0 \uACE0\uAC1D \uC790\uB8CC \uC870\uD68C \uB85C\uADF8\uC778" },
+        __React.createElement("div", { className: "card-heading" },
+            __React.createElement("h2", null, "\uC800\uC7A5\uB41C \uACE0\uAC1D \uC790\uB8CC \uC870\uD68C")),
+        __React.createElement("div", { className: "staff-read-content" }, busy ? __React.createElement("p", { className: "staff-read-status", role: "status" }, state.phase === 'submitting' ? '직원 로그인을 확인하고 있습니다.' : state.phase === 'signing-out' ? '고객 자료 조회 로그아웃을 처리하고 있습니다.' : '직원 조회 권한을 확인하고 있습니다.')
+            : unconfigured || state.phase === 'error' || state.phase === 'logout-error' ? __React.createElement(__React.Fragment, null,
+                __React.createElement("p", { className: "staff-read-status", role: "status" }, (0, staffReadApi_js_1.staffReadErrorMessage)(state.errorCode ?? (unconfigured ? 'STAFF_AUTH_NOT_CONFIGURED' : 'STAFF_AUTH_UNAVAILABLE'))),
+                state.phase === 'logout-error' && __React.createElement("p", { className: "staff-read-description" }, "\uACE0\uAC1D \uC790\uB8CC\uB294 \uB2EB\uC558\uC2B5\uB2C8\uB2E4. \uB85C\uADF8\uC778 \uC138\uC158 \uC885\uB8CC\uB97C \uB2E4\uC2DC \uD655\uC778\uD574 \uC8FC\uC138\uC694."),
+                __React.createElement("button", { type: "button", className: "button button-secondary", onClick: () => { setPassword(''); if (state.phase === 'logout-error')
+                        void controller.logout();
+                    else
+                        void controller.checkSession(); } }, state.phase === 'logout-error' ? '조회 로그아웃 다시 시도' : '다시 확인')) : __React.createElement(__React.Fragment, null,
+                __React.createElement("p", { className: "staff-read-description" }, "\uD604\uC7AC \uB9E4\uC7A5\uC758 \uC800\uC7A5 \uACE0\uAC1D\uACFC \uC0C1\uB2F4 \uC694\uC57D\uC740 \uAD8C\uD55C\uC774 \uC788\uB294 \uC9C1\uC6D0\uB9CC \uC870\uD68C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."),
+                __React.createElement("form", { className: "staff-read-form", onSubmit: submit },
+                    __React.createElement("label", { htmlFor: `${formId}-email` }, "\uC9C1\uC6D0 \uC774\uBA54\uC77C"),
+                    __React.createElement("input", { id: `${formId}-email`, name: "email", type: "email", autoComplete: "username", required: true, maxLength: 254, value: email, onChange: event => setEmail(event.target.value), spellCheck: false, autoCapitalize: "none", "aria-describedby": state.errorCode ? `${formId}-error` : undefined }),
+                    __React.createElement("label", { htmlFor: `${formId}-password` }, "\uBE44\uBC00\uBC88\uD638"),
+                    __React.createElement("input", { id: `${formId}-password`, name: "password", type: "password", autoComplete: "current-password", required: true, maxLength: 1024, value: password, onChange: event => setPassword(event.target.value), "aria-describedby": state.errorCode ? `${formId}-error` : undefined }),
+                    state.errorCode && __React.createElement("p", { className: "staff-read-error", id: `${formId}-error`, role: "alert" }, (0, staffReadApi_js_1.staffReadErrorMessage)(state.errorCode)),
+                    __React.createElement("button", { type: "submit", className: "button button-primary" }, "\uC9C1\uC6D0 \uB85C\uADF8\uC778")),
+                __React.createElement("p", { className: "staff-read-description" }, "\uC774 \uB85C\uADF8\uC778\uC740 \uC800\uC7A5\uB41C \uACE0\uAC1D \uC790\uB8CC \uC870\uD68C\uC5D0 \uC0AC\uC6A9\uB429\uB2C8\uB2E4."))));
+}
+
+},
 "src/components/StoredCustomers":function(module,exports,require){const __React=require('react');
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -3682,6 +3789,7 @@ exports.StoredCustomers = StoredCustomers;
 const react_1 = require("react");
 const realDataApi_js_1 = require("../services/realDataApi.js");
 const Icon_1 = require("./Icon");
+const StaffReadGate_1 = require("./StaffReadGate");
 const stageLabels = { AI: 'AI 응대', PHONE: '전화', VISIT: '방문' };
 const codeOf = (error) => error instanceof realDataApi_js_1.RealDataApiError ? error.code : 'UNKNOWN_ERROR';
 /** Saved records only; each stage's score is displayed without recalculating or combining calls. */
@@ -3711,6 +3819,10 @@ function StoredConsultationList({ items }) {
             __React.createElement("span", { className: "real-data-meta" }, (0, realDataApi_js_1.formatRealDataDate)(risk.createdAt)))) : __React.createElement("span", { className: "real-data-meta" }, "\uC800\uC7A5\uB41C \uC704\uD5D8 \uAE30\uB85D \uC5C6\uC74C")))));
 }
 function StoredCustomers({ onAvailability }) {
+    return __React.createElement(StaffReadGate_1.StaffReadGate, null,
+        __React.createElement(StoredCustomersBody, { onAvailability: onAvailability }));
+}
+function StoredCustomersBody({ onAvailability }) {
     const [items, setItems] = (0, react_1.useState)([]);
     const [availability, setAvailability] = (0, react_1.useState)('loading');
     const [errorCode, setErrorCode] = (0, react_1.useState)('');
@@ -6839,6 +6951,7 @@ const productLookup_1 = require("../lib/productLookup");
 const effectivePriceApi_1 = require("../services/effectivePriceApi");
 const realDataApi_1 = require("../services/realDataApi");
 const EffectivePricePanel_1 = require("../components/EffectivePricePanel");
+const staffReadApi_1 = require("../services/staffReadApi");
 const descriptions = {
     plans: '이용 조건을 확인하고 최대 3개 요금제를 함께 비교하세요.',
     bundles: '회선 구성에 맞는 결합 조건과 확인사항을 살펴보세요.',
@@ -6939,8 +7052,17 @@ function ProductsPage({ data }) {
             setCatalogMode('error');
             setCatalogError('저장 상품을 불러오지 못했습니다. 설정과 조회 권한을 확인한 뒤 다시 시도해 주세요.');
         } });
-        void realDataApi_1.realDataApi.customers(controller.signal).then(body => {
-            if (active)
+        void staffReadApi_1.staffReadApi.session(controller.signal).then(session => {
+            if (!active)
+                return null;
+            // Operational staff access currently covers the customer-history page only.
+            if (session.required) {
+                setCustomersError('고객·상담 요약은 고객관리에서 조회해 주세요. 여기서는 고객 정보 없이 계산할 수 있습니다.');
+                return null;
+            }
+            return realDataApi_1.realDataApi.customers(controller.signal);
+        }).then(body => {
+            if (active && body)
                 setCustomers(body.items.filter(customer => customer.privacyConsent));
         }).catch(error => {
             if (active)
@@ -8430,6 +8552,12 @@ const errorMessages = {
     HOME_STORE_NOT_CONFIGURED: '현재 매장 범위를 확인할 수 없습니다. 관리자에게 문의해 주세요.',
     REAL_DATA_ACCESS_DENIED: '저장 자료를 조회할 수 있는 권한을 확인해 주세요.',
     REAL_DATA_ACCESS_RESTRICTED: '공개 환경의 직원 조회 접근 설정이 준비되지 않았습니다. 관리자에게 문의해 주세요.',
+    STAFF_LOGIN_REQUIRED: '고객 자료를 조회하려면 직원 로그인이 필요합니다.',
+    STAFF_SESSION_EXPIRED: '조회 로그인이 만료되었습니다. 다시 로그인해 주세요.',
+    STAFF_ACCESS_DENIED: '이 매장의 고객 자료 조회 권한이 없습니다. 관리자에게 문의해 주세요.',
+    STAFF_AUTH_NOT_CONFIGURED: '직원 조회 로그인이 아직 준비되지 않았습니다. 관리자에게 문의해 주세요.',
+    STAFF_CONFIG_INVALID: '직원 조회 권한 설정을 확인해 주세요.',
+    STAFF_AUTH_UNAVAILABLE: '직원 조회 권한을 확인하지 못했습니다. 다시 로그인해 주세요.',
     REAL_DATA_UNAVAILABLE: '저장 자료를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
     REAL_DATA_TIMEOUT: '자료 조회가 지연되고 있습니다. 잠시 후 다시 시도해 주세요.',
     REAL_DATA_INVALID_RESPONSE: '조회한 자료를 확인할 수 없습니다. 다시 시도해 주세요.',
@@ -8607,7 +8735,7 @@ function parseRealBriefing(value, reservationId) {
 async function request(path, parse, signal) {
     let response;
     try {
-        response = await fetch(path, { method: 'GET', signal, headers: { Accept: 'application/json' } });
+        response = await fetch(path, { method: 'GET', credentials: 'same-origin', signal, headers: { Accept: 'application/json' } });
     }
     catch {
         throw new RealDataApiError('NETWORK');
@@ -8621,6 +8749,10 @@ async function request(path, parse, signal) {
     }
     if (!response.ok) {
         const code = record(body) ? body.errorCode ?? body.error : undefined;
+        if (typeof window !== 'undefined' && typeof code === 'string'
+            && ['STAFF_LOGIN_REQUIRED', 'STAFF_SESSION_EXPIRED', 'STAFF_ACCESS_DENIED', 'STAFF_AUTH_UNAVAILABLE', 'STAFF_AUTH_NOT_CONFIGURED', 'STAFF_CONFIG_INVALID'].includes(code)) {
+            window.dispatchEvent(new CustomEvent('kcm-staff-read-invalidated', { detail: { code } }));
+        }
         throw new RealDataApiError(code ?? (response.status === 401 || response.status === 403 ? 'REAL_DATA_ACCESS_DENIED' : 'REAL_DATA_UNAVAILABLE'));
     }
     return parse(body);
@@ -8646,6 +8778,229 @@ function formatRealDataDate(value) {
     if (!validRealDataTimestamp(value))
         return '미확인';
     return new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(value));
+}
+
+},
+"src/services/staffReadApi":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.staffReadApi = exports.StaffReadApiError = exports.STAFF_READ_INVALIDATED_EVENT = void 0;
+exports.staffReadErrorCode = staffReadErrorCode;
+exports.staffReadErrorMessage = staffReadErrorMessage;
+exports.parseStaffReadLogin = parseStaffReadLogin;
+exports.parseStaffReadSession = parseStaffReadSession;
+exports.createStaffReadApi = createStaffReadApi;
+exports.createStaffReadController = createStaffReadController;
+exports.staffReadCanShowData = staffReadCanShowData;
+const errorMessages = {
+    STAFF_LOGIN_REQUIRED: '저장된 고객 자료를 조회하려면 직원 로그인이 필요합니다.',
+    STAFF_SESSION_EXPIRED: '조회 로그인 시간이 만료되었습니다. 다시 로그인해 주세요.',
+    STAFF_ACCESS_DENIED: '현재 직원 계정에는 이 매장의 고객 자료를 조회할 권한이 없습니다.',
+    STAFF_AUTH_NOT_CONFIGURED: '직원 로그인 설정이 아직 준비되지 않았습니다. 관리자에게 문의해 주세요.',
+    STAFF_AUTH_UNAVAILABLE: '직원 로그인을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+    STAFF_LOGIN_FAILED: '이메일과 비밀번호를 확인해 주세요.',
+    STAFF_RATE_LIMITED: '로그인 시도가 많습니다. 잠시 후 다시 시도해 주세요.',
+    STAFF_CONFIG_INVALID: '직원 로그인 설정을 확인할 수 없습니다. 관리자에게 문의해 주세요.',
+};
+exports.STAFF_READ_INVALIDATED_EVENT = 'kcm-staff-read-invalidated';
+function staffReadErrorCode(value) {
+    return typeof value === 'string' && Object.hasOwn(errorMessages, value) ? value : 'STAFF_AUTH_UNAVAILABLE';
+}
+function staffReadErrorMessage(value) { return errorMessages[staffReadErrorCode(value)]; }
+class StaffReadApiError extends Error {
+    code;
+    constructor(code) { const safe = staffReadErrorCode(code); super(safe); this.name = 'StaffReadApiError'; this.code = safe; }
+}
+exports.StaffReadApiError = StaffReadApiError;
+const record = (value) => typeof value === 'object' && value !== null && !Array.isArray(value);
+const validId = (kind, value) => typeof value === 'string' && value.length <= 128 && new RegExp(`^${kind}_[0-9]{3,}$`).test(value);
+const invalid = () => { throw new StaffReadApiError('STAFF_AUTH_UNAVAILABLE'); };
+function parseStaffReadLogin(value) {
+    if (!record(value) || typeof value.authenticated !== 'boolean'
+        || !(value.errorCode === null || typeof value.errorCode === 'string' && Object.hasOwn(errorMessages, value.errorCode)))
+        return invalid();
+    if (!value.authenticated) {
+        if (value.employee !== null || value.expiresAt !== null)
+            return invalid();
+        return { authenticated: false, employee: null, expiresAt: null, errorCode: value.errorCode };
+    }
+    if (value.errorCode !== null || !record(value.employee) || !validId('employee', value.employee.employeeId)
+        || !validId('store', value.employee.storeId) || typeof value.employee.nameMasked !== 'string'
+        || !value.employee.nameMasked.trim() || value.employee.nameMasked.length > 128 || /[\u0000-\u001f\u007f]/.test(value.employee.nameMasked)
+        || typeof value.expiresAt !== 'number' || !Number.isSafeInteger(value.expiresAt) || value.expiresAt <= 0)
+        return invalid();
+    return { authenticated: true, employee: { employeeId: value.employee.employeeId, storeId: value.employee.storeId,
+            nameMasked: value.employee.nameMasked }, expiresAt: value.expiresAt, errorCode: null };
+}
+function parseStaffReadSession(value) {
+    if (!record(value) || typeof value.required !== 'boolean' || typeof value.configured !== 'boolean')
+        return invalid();
+    const login = parseStaffReadLogin(value);
+    if (login.authenticated && !value.configured)
+        return invalid();
+    return { required: value.required, configured: value.configured, ...login };
+}
+function createStaffReadApi(fetchImpl = fetch) {
+    async function request(operation, parse, signal, body) {
+        let response;
+        try {
+            response = await fetchImpl(`/api/staff-read/${operation}`, { method: operation === 'session' ? 'GET' : 'POST',
+                signal, credentials: 'same-origin', cache: 'no-store', redirect: 'error',
+                headers: body === undefined ? { Accept: 'application/json' } : { Accept: 'application/json', 'Content-Type': 'application/json' },
+                ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+        }
+        catch (error) {
+            if (signal?.aborted)
+                throw error;
+            throw new StaffReadApiError('STAFF_AUTH_UNAVAILABLE');
+        }
+        if (signal?.aborted)
+            throw new DOMException('Request aborted', 'AbortError');
+        let value;
+        try {
+            value = await response.json();
+        }
+        catch {
+            throw new StaffReadApiError('STAFF_AUTH_UNAVAILABLE');
+        }
+        if (signal?.aborted)
+            throw new DOMException('Request aborted', 'AbortError');
+        if (response.status !== 200) {
+            const code = record(value) ? value.errorCode : undefined;
+            throw new StaffReadApiError(code ?? (response.status === 429 ? 'STAFF_RATE_LIMITED'
+                : response.status === 403 ? 'STAFF_ACCESS_DENIED'
+                    : response.status === 401 ? operation === 'login' ? 'STAFF_LOGIN_FAILED' : 'STAFF_LOGIN_REQUIRED' : 'STAFF_AUTH_UNAVAILABLE'));
+        }
+        return parse(value);
+    }
+    return { session: signal => request('session', parseStaffReadSession, signal),
+        login: (email, password, signal) => request('login', parseStaffReadLogin, signal, { email, password }),
+        logout: signal => request('logout', parseStaffReadLogin, signal, {}) };
+}
+exports.staffReadApi = createStaffReadApi();
+/** Each operation removes the old identity before waiting; aborted or late responses cannot restore it. */
+function createStaffReadController({ client = exports.staffReadApi, now = Date.now, schedule = (action, delay) => { const timer = setTimeout(action, delay); return () => clearTimeout(timer); } } = {}) {
+    let state = { phase: 'checking', session: null, errorCode: null };
+    let revision = 0;
+    let request = null;
+    let cancelExpiry = null;
+    let pendingCheck = null;
+    let logoutRequested = false;
+    const subscribers = new Set();
+    const publish = (next) => { state = next; for (const listener of subscribers)
+        listener(); };
+    const cancel = () => { revision += 1; request?.abort(); request = null; cancelExpiry?.(); cancelExpiry = null; pendingCheck = null; };
+    const begin = (phase) => {
+        cancel();
+        request = new AbortController();
+        const context = { revision, controller: request };
+        publish({ phase, session: null, errorCode: null });
+        return context;
+    };
+    const current = (context) => context.revision === revision && !context.controller.signal.aborted;
+    const errorCode = (error) => error instanceof StaffReadApiError ? error.code : 'STAFF_AUTH_UNAVAILABLE';
+    const blocked = (code, configured = true) => ({ required: true, configured,
+        authenticated: false, employee: null, expiresAt: null, errorCode: code });
+    const invalidate = (code) => {
+        const safe = staffReadErrorCode(code);
+        cancel();
+        publish({ phase: 'ready', session: blocked(safe, safe !== 'STAFF_AUTH_NOT_CONFIGURED' && safe !== 'STAFF_CONFIG_INVALID'), errorCode: safe });
+    };
+    const armExpiry = (session) => {
+        if (!session.authenticated || session.expiresAt === null)
+            return;
+        const remaining = session.expiresAt - now();
+        if (remaining <= 0) {
+            invalidate('STAFF_SESSION_EXPIRED');
+            return;
+        }
+        cancelExpiry = schedule(() => {
+            cancelExpiry = null;
+            if (session.expiresAt <= now())
+                invalidate('STAFF_SESSION_EXPIRED');
+            else
+                armExpiry(session);
+        }, Math.min(remaining, 2_147_483_647));
+    };
+    const accept = (session) => {
+        // A failed logout must not silently reopen the old account on window focus.
+        if (logoutRequested && session.authenticated) {
+            publish({ phase: 'logout-error', session: null, errorCode: 'STAFF_AUTH_UNAVAILABLE' });
+            return;
+        }
+        if (!session.authenticated)
+            logoutRequested = false;
+        if (session.authenticated && session.expiresAt <= now()) {
+            invalidate('STAFF_SESSION_EXPIRED');
+            return;
+        }
+        publish({ phase: 'ready', session, errorCode: session.errorCode });
+        armExpiry(session);
+    };
+    const checkSession = () => {
+        if (pendingCheck)
+            return pendingCheck;
+        const context = begin('checking');
+        const operation = (async () => {
+            try {
+                const session = await client.session(context.controller.signal);
+                if (current(context))
+                    accept(session);
+            }
+            catch (error) {
+                if (current(context))
+                    publish({ phase: logoutRequested ? 'logout-error' : 'error', session: null, errorCode: errorCode(error) });
+            }
+        })();
+        pendingCheck = operation;
+        void operation.finally(() => { if (pendingCheck === operation)
+            pendingCheck = null; });
+        return operation;
+    };
+    return {
+        getSnapshot: () => state,
+        subscribe: (listener) => { subscribers.add(listener); return () => { subscribers.delete(listener); }; },
+        checkSession,
+        async login(email, password) {
+            logoutRequested = false;
+            const context = begin('submitting');
+            try {
+                const login = await client.login(email, password, context.controller.signal);
+                if (current(context))
+                    accept({ required: true, configured: true, ...login,
+                        errorCode: login.authenticated ? null : login.errorCode ?? 'STAFF_LOGIN_FAILED' });
+            }
+            catch (error) {
+                if (current(context))
+                    invalidate(errorCode(error));
+            }
+        },
+        async logout() {
+            logoutRequested = true;
+            const context = begin('signing-out');
+            try {
+                const login = await client.logout(context.controller.signal);
+                if (!current(context))
+                    return;
+                if (login.authenticated) {
+                    publish({ phase: 'logout-error', session: null, errorCode: 'STAFF_AUTH_UNAVAILABLE' });
+                    return;
+                }
+                logoutRequested = false;
+                invalidate(login.errorCode ?? 'STAFF_LOGIN_REQUIRED');
+            }
+            catch (error) {
+                if (current(context))
+                    publish({ phase: 'logout-error', session: null, errorCode: errorCode(error) });
+            }
+        },
+        invalidate,
+        clearForRecheck: () => { cancel(); publish({ phase: 'checking', session: null, errorCode: null }); },
+        dispose: () => { cancel(); subscribers.clear(); },
+    };
+}
+function staffReadCanShowData(state) {
+    return state.phase === 'ready' && state.session !== null && (!state.session.required || state.session.configured && state.session.authenticated);
 }
 
 },

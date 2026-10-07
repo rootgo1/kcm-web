@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatRealDataDate, realDataApi, realDataAvailability, realDataErrorMessage, RealDataApiError,
   type RealDataAvailability, type StoredConsultation, type StoredCustomer } from '../services/realDataApi.js';
 import { Icon } from './Icon';
+import { StaffReadGate } from './StaffReadGate';
 
 const stageLabels = { AI: 'AI 응대', PHONE: '전화', VISIT: '방문' } as const;
 const codeOf = (error: unknown) => error instanceof RealDataApiError ? error.code : 'UNKNOWN_ERROR';
@@ -22,6 +23,10 @@ export function StoredConsultationList({ items }: { items: StoredConsultation[] 
 }
 
 export function StoredCustomers({ onAvailability }: { onAvailability?: (state: RealDataAvailability) => void }) {
+  return <StaffReadGate><StoredCustomersBody onAvailability={onAvailability}/></StaffReadGate>;
+}
+
+function StoredCustomersBody({ onAvailability }: { onAvailability?: (state: RealDataAvailability) => void }) {
   const [items, setItems] = useState<StoredCustomer[]>([]);
   const [availability, setAvailability] = useState<RealDataAvailability>('loading');
   const [errorCode, setErrorCode] = useState('');
