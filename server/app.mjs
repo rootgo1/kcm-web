@@ -8,6 +8,7 @@ import { createDbInventoryApi, createInventoryDb, createInventoryNotifier, inven
 import { createRealDataApi, createSupabaseReadProvider, isStoredTimestamp } from './real-data.mjs';
 import { createEffectivePriceApi } from './effective-price.mjs';
 import { createLiveBriefingApi } from './live-briefing.mjs';
+import { createStaffReadAuth } from './staff-read-auth.mjs';
 
 const localOrigins = new Set(['http://127.0.0.1:5173', 'http://localhost:5173']);
 const api = 'https://api.retellai.com';
@@ -32,16 +33,15 @@ async function readBody(request) {
  * fetchImpl?: typeof fetch, log?: (line: string) => void, liveCalls?: ReturnType<typeof createLiveCallStore>,
  * deployment?: import('./deployment.mjs').Deployment | null, demoCustomerId?: string | null, demoStoreId?: string | null,
  * webhookUrl?: string, webhookFetchImpl?: typeof fetch, inventoryBaseUrl?: string,
- * supabaseUrl?: string, supabaseKey?: string, realDataProvider?: ReturnType<typeof createSupabaseReadProvider> }} options
+ * supabaseUrl?: string, supabaseKey?: string, realDataProvider?: ReturnType<typeof createSupabaseReadProvider>,
+ * publishableKey?: string, accountsJson?: string, staffAuthFetchImpl?: typeof fetch }} options
  */
 export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log = console.log, liveCalls = createLiveCallStore(), deployment = null,
   demoCustomerId = null, demoStoreId = null, webhookUrl = '', webhookFetchImpl = fetch, inventoryBaseUrl = '',
-  supabaseUrl = '', supabaseKey = '', realDataProvider }) {
+  supabaseUrl = '', supabaseKey = '', realDataProvider, publishableKey = '', accountsJson = '', staffAuthFetchImpl = fetch }) {
   const allowedOrigins = deployment ? new Set([deployment.origin]) : localOrigins;
   const publicHost = deployment ? new URL(deployment.origin).host : null;
-  // Public deployments have no employee authentication. Keep the new stored-customer APIs
-  // unavailable there until staff access control exists; loopback development/QA stays usable.
-  // This depends on trusted deployment configuration, never request/proxy headers.
+  // The deployment scope comes from trusted server configuration, never proxy headers.
   const storedCustomerAccessRestricted = Boolean(deployment
     && !/^(?:localhost|127(?:\.\d{1,3}){3}|\[::1\])$/.test(new URL(deployment.origin).hostname));
   const liveEvents = createLiveEvents(liveCalls);
@@ -51,6 +51,11 @@ export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log =
   const inventoryNotify = inventoryBaseUrl ? createInventoryNotifier({ baseUrl: inventoryBaseUrl, fetchImpl: webhookFetchImpl, log }) : null;
   const inventoryApi = inventoryDb ? createDbInventoryApi({ db: inventoryDb, homeStoreId: demoStoreId, log, notify: inventoryNotify }) : inventoryNotConfiguredApi;
   const dataProvider = realDataProvider ?? createSupabaseReadProvider({ supabaseUrl, supabaseKey });
+  const staffAuth = createStaffReadAuth({ supabaseUrl, publishableKey, accountsJson,
+    homeStoreId: demoStoreId, provider: dataProvider,
+    secure: Boolean(deployment && new URL(deployment.origin).protocol === 'https:'), fetchImpl: staffAuthFetchImpl });
+  // Invalid or partial auth configuration must not fall back to local unauthenticated reads.
+  const staffLoginRequired = storedCustomerAccessRestricted || Boolean(publishableKey || accountsJson);
   const realDataApi = createRealDataApi({ provider: dataProvider, homeStoreId: demoStoreId });
   const effectivePriceApi = createEffectivePriceApi({ provider: dataProvider, homeStoreId: demoStoreId });
   const liveBriefingApi = createLiveBriefingApi({ provider: dataProvider, homeStoreId: demoStoreId });
@@ -110,6 +115,37 @@ export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log =
       return send(200, { agent_id: agentId, configured: Boolean(key && agentId) });
     }
     if (request.method === 'GET' && path === '/health') return send(200, { ok: true, configured: Boolean(key && agentId) });
+    if (path.startsWith('/api/staff-read/')) {
+      if ((request.url ?? '').includes('?')) return send(400, { errorCode: 'INVALID_REQUEST_BODY' });
+      if (path === '/api/staff-read/session') {
+        if (request.method !== 'GET') return send(405, { errorCode: 'METHOD_NOT_ALLOWED' });
+        const base = { required: staffLoginRequired, configured: staffAuth.configured,
+          authenticated: false, employee: null, expiresAt: null, errorCode: null };
+        if (!staffLoginRequired) return send(200, base);
+        if (!staffAuth.configured) return send(200, { ...base, errorCode: staffAuth.configError });
+        const result = await staffAuth.authorize(request.headers.cookie);
+        return send(200, result.ok
+          ? { ...base, authenticated: true, employee: result.identity, expiresAt: result.expiresAt }
+          : { ...base, errorCode: result.errorCode });
+      }
+      if (path !== '/api/staff-read/login' && path !== '/api/staff-read/logout') return send(404, { errorCode: 'NOT_FOUND' });
+      if (request.method !== 'POST') return send(405, { errorCode: 'METHOD_NOT_ALLOWED' });
+      if (!origin) return error(403, 'ORIGIN_REQUIRED');
+      if (!request.headers['content-type']?.startsWith('application/json')) return error(415, 'JSON_REQUIRED');
+      let body;
+      try { body = await readBody(request); } catch { return send(400, { errorCode: 'STAFF_LOGIN_FAILED' }); }
+      if (path === '/api/staff-read/login' && (typeof body !== 'object' || body === null || Array.isArray(body)
+        || Object.keys(body).sort().join(',') !== 'email,password' || typeof body.email !== 'string' || typeof body.password !== 'string')) {
+        return send(400, { errorCode: 'STAFF_LOGIN_FAILED' });
+      }
+      if (path === '/api/staff-read/logout' && (typeof body !== 'object' || body === null || Array.isArray(body) || Object.keys(body).length)) {
+        return send(400, { errorCode: 'INVALID_REQUEST_BODY' });
+      }
+      const result = path === '/api/staff-read/login'
+        ? await staffAuth.login(body, request.headers.cookie) : staffAuth.logout(request.headers.cookie);
+      if (result.setCookie) response.setHeader('Set-Cookie', result.setCookie);
+      return send(result.status, result.body);
+    }
     if (path.startsWith('/api/live-briefing/')) {
       const match = /^\/api\/live-briefing\/([^/]+)$/.exec(path);
       if (!match) return send(404, { errorCode: 'NOT_FOUND' });
@@ -146,10 +182,18 @@ export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log =
       return result ? send(result.status, result.body) : send(404, { errorCode: 'NOT_FOUND' });
     }
     if (path.startsWith('/api/data/') || path.startsWith('/api/briefings/')) {
-      if (storedCustomerAccessRestricted && path !== '/api/data/status') {
+      const staffReadPath = path === '/api/data/customers' || /^\/api\/data\/customers\/customer_[0-9]{3,}\/consultations$/.test(path);
+      if (staffReadPath && staffLoginRequired && staffAuth.configured) {
+        if (request.method !== 'GET') return send(405, { errorCode: 'METHOD_NOT_ALLOWED' });
+        const auth = await staffAuth.authorize(request.headers.cookie);
+        if (!auth.ok) return send(auth.status, { errorCode: auth.errorCode });
+      } else if ((storedCustomerAccessRestricted && path !== '/api/data/status') || (staffReadPath && staffLoginRequired)) {
         return send(503, { errorCode: 'REAL_DATA_ACCESS_RESTRICTED' });
       }
       const query = new URLSearchParams((request.url ?? '').split('?')[1] ?? '');
+      if (staffReadPath && staffLoginRequired && ([...query.keys()].some(name => path === '/api/data/customers' || name !== 'limit') || query.getAll('limit').length > 1)) {
+        return send(400, { errorCode: 'INVALID_LIMIT' });
+      }
       const result = await realDataApi.handle(request.method ?? '', path, query);
       if (result) return send(result.status, result.body);
       return error(404, 'NOT_FOUND');
@@ -250,7 +294,7 @@ export function createBackend({ key, agentId, monitors, fetchImpl = fetch, log =
       error(502, 'RETELL_CONNECTION_FAILED');
     }
   });
-  server.on('close', () => { dataProvider.close(); delivery.close(); inventoryDb?.close(); inventoryNotify?.close(); liveEvents.close(); clearInterval(expiry); owned.clear(); monitors.close(); });
+  server.on('close', () => { staffAuth.close(); dataProvider.close(); delivery.close(); inventoryDb?.close(); inventoryNotify?.close(); liveEvents.close(); clearInterval(expiry); owned.clear(); monitors.close(); });
   server.requestTimeout = 20_000;
   server.headersTimeout = 10_000;
   return server;

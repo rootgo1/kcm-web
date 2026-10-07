@@ -9,6 +9,7 @@ import type { DashboardData } from '../types';
 import { loadProductCatalog, toCatalogItems, type ProductCatalog } from '../services/effectivePriceApi';
 import { realDataApi, realDataErrorMessage, RealDataApiError, type StoredCustomer } from '../services/realDataApi';
 import { EffectivePricePanel } from '../components/EffectivePricePanel';
+import { staffReadApi } from '../services/staffReadApi';
 
 const descriptions: Record<ProductTabId, string> = {
   plans: '이용 조건을 확인하고 최대 3개 요금제를 함께 비교하세요.',
@@ -80,8 +81,16 @@ export function ProductsPage({ data }: { data: Pick<DashboardData, 'inventory'> 
       if (!active) return;
       setStoredCatalog(body); setCatalogMode('db');
     }).catch(() => { if (active) { setCatalogMode('error'); setCatalogError('저장 상품을 불러오지 못했습니다. 설정과 조회 권한을 확인한 뒤 다시 시도해 주세요.'); } });
-    void realDataApi.customers(controller.signal).then(body => {
-      if (active) setCustomers(body.items.filter(customer => customer.privacyConsent));
+    void staffReadApi.session(controller.signal).then(session => {
+      if (!active) return null;
+      // Operational staff access currently covers the customer-history page only.
+      if (session.required) {
+        setCustomersError('고객·상담 요약은 고객관리에서 조회해 주세요. 여기서는 고객 정보 없이 계산할 수 있습니다.');
+        return null;
+      }
+      return realDataApi.customers(controller.signal);
+    }).then(body => {
+      if (active && body) setCustomers(body.items.filter(customer => customer.privacyConsent));
     }).catch(error => {
       if (active) setCustomersError(realDataErrorMessage(error instanceof RealDataApiError ? error.code : 'NETWORK'));
     });
