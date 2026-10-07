@@ -1,5 +1,8 @@
+import { calculatePreparedQuote } from './effective-price-policy.mjs';
+
 /** Read-only product catalog and deterministic calculation from verified DB values. */
 export const EFFECTIVE_PRICE_POLICY = 'db-fixed-mobile-v1';
+export const PREPARED_QUOTE_POLICY = 'n8n-quote-v2';
 
 const ids = { product: /^product_\d{3,}$/, plan: /^own_plan_\d{3,}$/, competitor: /^competitor_plan_\d{3,}$/, bundle: /^bundle_\d{3,}$/, rule: /^bundle_rule_\d{3,}$/, benefit: /^benefit_\d{3,}$/, customer: /^customer_\d{3,}$/, store: /^store_\d{3,}$/, consultation: /^consultation_\d{3,}$/ };
 const object = (/** @type {any} */ value) => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -13,6 +16,11 @@ const productSelect = 'id,name,maker,storage_gb,color,price';
 const planSelect = 'id,name,group_name,type,monthly_fee,data_unlimited,data_gb,after_speed_kbps,voice_unlimited,voice_minutes,text_unlimited,text_count';
 const bundleSelect = 'id,name,type,description,family_required,internet_required,min_mobile_lines,max_mobile_lines,discount_method';
 const ruleSelect = 'id,bundle_id,order_no,type,service,scope,fee_basis,min_fee,max_fee,min_speed,max_speed,min_line,max_line,customer_condition,mobile_discount,mobile_rate,extra_discount,description';
+const quoteBundleSelect = bundleSelect + ',parent_id,max_internet_lines,max_tv_lines,family_relations';
+const quoteRuleSelect = ruleSelect + ',internet_discount,tv_discount';
+const quoteFields = ['installment_months', 'contract_months', 'discount_type'];
+const preparedRequest = (/** @type {any} */ value) => quoteFields.some(field => Object.hasOwn(value, field));
+const project = (/** @type {any} */ row, /** @type {string} */ select) => Object.fromEntries(select.split(',').map(field => [field, row[field]]));
 
 function productDto(/** @type {any} */ row) {
   requireData(object(row) && typeof row.id === 'string' && ids.product.test(row.id) && text(row.name) && integer(row.price, 1)
@@ -53,16 +61,80 @@ function benefitDto(/** @type {any} */ row) {
 
 function requestInput(/** @type {any} */ body) {
   requireInput(object(body));
-  requireInput(Object.keys(body).every(key => ['plan_id', 'product_id', 'bundle_id', 'customer_id', 'family', 'internet', 'mobile_lines'].includes(key)));
+  const prepared = preparedRequest(body);
+  const allowed = prepared ? ['plan_id', 'product_id', 'bundle_id', 'customer_id', ...quoteFields]
+    : ['plan_id', 'product_id', 'bundle_id', 'customer_id', 'family', 'internet', 'mobile_lines'];
+  requireInput(Object.keys(body).every(key => allowed.includes(key)));
   requireInput(typeof body.plan_id === 'string' && ids.plan.test(body.plan_id));
   for (const [field, pattern] of [['product_id', ids.product], ['bundle_id', ids.bundle], ['customer_id', ids.customer]]) {
-    requireInput(body[/** @type {string} */ (field)] === undefined
+    requireInput(body[/** @type {string} */ (field)] === undefined || prepared && field === 'bundle_id' && body.bundle_id === null
       || typeof body[/** @type {string} */ (field)] === 'string' && /** @type {RegExp} */ (pattern).test(body[/** @type {string} */ (field)]));
+  }
+  if (prepared) {
+    requireInput(typeof body.product_id === 'string' && ids.product.test(body.product_id));
+    requireInput(body.installment_months === 1 || body.installment_months === 24);
+    requireInput(body.contract_months === 24);
+    requireInput(body.discount_type === 'DEVICE_DISCOUNT' || body.discount_type === 'PLAN_DISCOUNT');
   }
   requireInput(body.family === undefined || typeof body.family === 'boolean');
   requireInput(body.internet === undefined || typeof body.internet === 'boolean');
   requireInput(body.mobile_lines === undefined || integer(body.mobile_lines, 1));
   return body;
+}
+
+/** Only projected catalog data reaches the policy; it must not repair malformed DB rows. */
+function quoteBundle(/** @type {any} */ row) {
+  requireData(object(row) && typeof row.id === 'string' && ids.bundle.test(row.id)
+    && text(row.name) && text(row.type) && text(row.discount_method) && typeof row.description === 'string'
+    && typeof row.family_required === 'boolean' && typeof row.internet_required === 'boolean');
+  requireData(quoteBundleSelect.split(',').every(field => Object.hasOwn(row, field)));
+  requireData(row.parent_id === null || typeof row.parent_id === 'string' && ids.bundle.test(row.parent_id) && row.parent_id !== row.id);
+  for (const field of ['min_mobile_lines', 'max_mobile_lines', 'max_internet_lines']) requireData(row[field] === null || integer(row[field], 1));
+  requireData(row.min_mobile_lines === null || row.max_mobile_lines === null || row.min_mobile_lines <= row.max_mobile_lines);
+  requireData(row.max_tv_lines === null || integer(row.max_tv_lines));
+  requireData(row.family_relations === null || Array.isArray(row.family_relations) && row.family_relations.every(text));
+  return project(row, quoteBundleSelect);
+}
+
+function quoteRules(/** @type {any[]} */ rows, /** @type {string} */ bundleId) {
+  requireData(rows.length <= 1000 && new Set(rows.map(row => row?.id)).size === rows.length);
+  return rows.map(row => {
+    requireData(object(row) && typeof row.id === 'string' && ids.rule.test(row.id) && row.bundle_id === bundleId
+      && integer(row.order_no) && quoteRuleSelect.split(',').every(field => Object.hasOwn(row, field)));
+    for (const field of ['type', 'service', 'scope', 'fee_basis']) requireData(text(row[field]));
+    for (const field of ['min_fee', 'max_fee', 'min_speed', 'max_speed', 'min_line', 'max_line',
+      'mobile_discount', 'internet_discount', 'tv_discount', 'extra_discount']) requireData(row[field] === null || integer(row[field]));
+    for (const [minimum, maximum] of [['min_fee', 'max_fee'], ['min_speed', 'max_speed'], ['min_line', 'max_line']]) {
+      requireData(row[minimum] === null || row[maximum] === null || row[minimum] <= row[maximum]);
+    }
+    requireData(row.mobile_rate === null || typeof row.mobile_rate === 'number' && Number.isFinite(row.mobile_rate) && row.mobile_rate >= 0 && row.mobile_rate <= 100
+      || typeof row.mobile_rate === 'string' && /^\d+(?:\.\d+)?$/.test(row.mobile_rate) && Number(row.mobile_rate) <= 100);
+    requireData(row.customer_condition === null || typeof row.customer_condition === 'string');
+    requireData(row.description === null || typeof row.description === 'string');
+    return project(row, quoteRuleSelect);
+  });
+}
+
+function preparedQuote(/** @type {any} */ input, /** @type {any} */ product, /** @type {any} */ plan,
+  /** @type {any} */ bundle, /** @type {any} */ parent, /** @type {any[]} */ rules) {
+  productDto(product); planPrice(plan);
+  const calculation = project(input, 'product_id,plan_id,installment_months,contract_months,discount_type');
+  calculation.bundle_id = input.bundle_id ?? null;
+  try {
+    const quote = calculatePreparedQuote({ calculation,
+      product: { ...project(product, productSelect), product_name: product.name },
+      plan: { id: plan.id, plan_name: plan.name, monthly_fee: plan.monthly_fee },
+      bundle, parent_bundle: parent, bundle_rules: rules });
+    requireData(object(quote) && object(quote.raw_result) && object(quote.breakdown)
+      && Object.values(quote.raw_result).every(value => integer(value))
+      && Object.values(quote.breakdown).every(value => integer(value)));
+    return { policyVersion: PREPARED_QUOTE_POLICY, quote };
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'PRICE_POLICY_UNAVAILABLE') {
+      throw new PriceFailure('PRICE_POLICY_UNAVAILABLE');
+    }
+    throw new PriceFailure('PRICE_DATA_INVALID');
+  }
 }
 
 /**
@@ -132,7 +204,7 @@ export function calculateEffectivePrice({ plan, product = null, bundle = null, r
 
 const errorStatus = /** @type {Record<string, number>} */ ({ INVALID_PRICE_REQUEST: 400, PLAN_NOT_FOUND: 404, PRODUCT_NOT_FOUND: 404,
   BUNDLE_NOT_FOUND: 404, CUSTOMER_NOT_FOUND: 404, STORE_NOT_ALLOWED: 403, CUSTOMER_PRIVACY_RESTRICTED: 403, HOME_STORE_NOT_CONFIGURED: 503,
-  PRICE_DATA_INVALID: 502, REAL_DATA_NOT_CONFIGURED: 503, REAL_DATA_CONFIG_INVALID: 503, REAL_DATA_ACCESS_DENIED: 502,
+  PRICE_DATA_INVALID: 502, PRICE_POLICY_UNAVAILABLE: 422, REAL_DATA_NOT_CONFIGURED: 503, REAL_DATA_CONFIG_INVALID: 503, REAL_DATA_ACCESS_DENIED: 502,
   REAL_DATA_UNAVAILABLE: 502, REAL_DATA_TIMEOUT: 504, REAL_DATA_INVALID_RESPONSE: 502, REAL_DATA_INVALID_QUERY: 500 });
 const failure = (/** @type {string} */ code) => ({ status: errorStatus[code] ?? 502, body: { errorCode: Object.hasOwn(errorStatus, code) ? code : 'REAL_DATA_UNAVAILABLE' } });
 
@@ -168,16 +240,28 @@ export function createEffectivePriceApi({ provider, homeStoreId = null }) {
             competitorPlans: unique(other.map(row => planDto(row, true))), bundles: unique(bundles.map(bundleDto)), benefits: unique(benefits.map(benefitDto)) } };
         }
         const input = requestInput(body);
+        const prepared = preparedRequest(input);
         const plan = await one('own_plans', { select: 'id,name,monthly_fee', filters: { id: 'eq.' + input.plan_id } });
         if (!plan) throw new PriceFailure('PLAN_NOT_FOUND');
         requireData(plan.id === input.plan_id);
         const product = input.product_id ? await one('products', { select: productSelect, filters: { id: 'eq.' + input.product_id } }) : null;
         if (input.product_id && !product) throw new PriceFailure('PRODUCT_NOT_FOUND');
         if (product) requireData(product.id === input.product_id);
-        const bundle = input.bundle_id ? await one('bundles', { select: bundleSelect, filters: { id: 'eq.' + input.bundle_id } }) : null;
+        let bundle = input.bundle_id ? await one('bundles', { select: prepared ? quoteBundleSelect : bundleSelect, filters: { id: 'eq.' + input.bundle_id } }) : null;
         if (input.bundle_id && !bundle) throw new PriceFailure('BUNDLE_NOT_FOUND');
         if (bundle) requireData(bundle.id === input.bundle_id);
-        const rules = bundle ? await read('bundle_rules', { select: ruleSelect, filters: { bundle_id: 'eq.' + bundle.id }, order: 'order_no.asc,id.asc', limit: 1000 }) : [];
+        let rules = bundle ? await read('bundle_rules', { select: prepared ? quoteRuleSelect : ruleSelect, filters: { bundle_id: 'eq.' + bundle.id }, order: 'order_no.asc,id.asc', limit: 1000 }) : [];
+        let parentBundle = null;
+        if (prepared && bundle) {
+          bundle = quoteBundle(bundle);
+          rules = quoteRules(rules, bundle.id);
+          if (bundle.parent_id !== null) {
+            parentBundle = await one('bundles', { select: quoteBundleSelect, filters: { id: 'eq.' + bundle.parent_id } });
+            requireData(parentBundle && parentBundle.id === bundle.parent_id);
+            parentBundle = quoteBundle(parentBundle);
+            requireData(parentBundle.parent_id !== bundle.id);
+          }
+        }
         let currentPlan = null;
         if (input.customer_id) {
           if (typeof homeStoreId !== 'string' || !ids.store.test(homeStoreId)) throw new PriceFailure('HOME_STORE_NOT_CONFIGURED');
@@ -193,9 +277,11 @@ export function createEffectivePriceApi({ provider, homeStoreId = null }) {
             requireData(typeof customer.plan_id === 'string' && ids.plan.test(customer.plan_id));
             currentPlan = await one('own_plans', { select: 'id,name,monthly_fee', filters: { id: 'eq.' + customer.plan_id } });
             requireData(currentPlan && currentPlan.id === customer.plan_id);
+            if (prepared) planPrice(currentPlan);
           }
         }
-        return { status: 200, body: calculateEffectivePrice({ plan, product, bundle, rules, conditions: input, currentPlan, customerSelected: Boolean(input.customer_id) }) };
+        return { status: 200, body: prepared ? preparedQuote(input, product, plan, bundle, parentBundle, rules)
+          : calculateEffectivePrice({ plan, product, bundle, rules, conditions: input, currentPlan, customerSelected: Boolean(input.customer_id) }) };
       } catch (error) { return failure(error instanceof PriceFailure ? error.code : 'REAL_DATA_UNAVAILABLE'); }
     },
   };

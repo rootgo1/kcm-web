@@ -2954,24 +2954,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EffectivePricePanel = EffectivePricePanel;
 const react_1 = require("react");
 const effectivePriceApi_1 = require("../services/effectivePriceApi");
-const customerName_1 = require("../lib/customerName");
-function amountLabel(row) {
-    if (row.amount !== null)
-        return (0, effectivePriceApi_1.formatEffectivePrice)(row.amount);
-    if (row.status === 'not_selected')
-        return '선택 안함';
-    if (row.status === 'not_applicable')
-        return '조건 미충족 · 미적용';
-    return '확인 필요';
-}
-const validLines = (value) => /^[1-9]\d*$/.test(value) && Number.isSafeInteger(Number(value));
-/** Server-read prices only; editing a selection invalidates any result from earlier choices. */
-function EffectivePricePanel({ catalog, customers, customersError, initialPlanId = '', initialProductId = '' }) {
+/** Prices are calculated by the server. Changing any choice invalidates earlier results. */
+function EffectivePricePanel({ catalog, initialPlanId = '', initialProductId = '' }) {
     const elementId = (0, react_1.useId)();
     const [choices, setChoices] = (0, react_1.useState)(() => ({
-        planId: catalog.ownPlans.some(plan => plan.id === initialPlanId) ? initialPlanId : '',
         productId: catalog.products.some(product => product.id === initialProductId) ? initialProductId : '',
-        bundleId: '', customerId: '', family: '', internet: '', mobileLines: '',
+        planId: catalog.ownPlans.some(plan => plan.id === initialPlanId) ? initialPlanId : '',
+        bundleId: '', installmentMonths: '24', contractMonths: '24', discountType: 'PLAN_DISCOUNT',
     }));
     const [result, setResult] = (0, react_1.useState)(null);
     const [resultRevision, setResultRevision] = (0, react_1.useState)('');
@@ -2980,8 +2969,6 @@ function EffectivePricePanel({ catalog, customers, customersError, initialPlanId
     const generation = (0, react_1.useRef)(0);
     const activeRequest = (0, react_1.useRef)(null);
     const catalogRevision = JSON.stringify(catalog);
-    const customerRevision = JSON.stringify(customers?.map(customer => ({ id: customer.id, privacyConsent: customer.privacyConsent, currentPlan: customer.currentPlan })) ?? []);
-    const dataRevision = `${catalogRevision}|${customerRevision}`;
     const invalidate = () => {
         generation.current += 1;
         activeRequest.current?.abort();
@@ -2994,50 +2981,45 @@ function EffectivePricePanel({ catalog, customers, customersError, initialPlanId
     (0, react_1.useEffect)(() => {
         invalidate();
         setChoices(previous => ({ ...previous,
-            planId: catalog.ownPlans.some(plan => plan.id === previous.planId) ? previous.planId : '',
             productId: catalog.products.some(product => product.id === previous.productId) ? previous.productId : '',
+            planId: catalog.ownPlans.some(plan => plan.id === previous.planId) ? previous.planId : '',
             bundleId: catalog.bundles.some(bundle => bundle.id === previous.bundleId) ? previous.bundleId : '',
-            customerId: customers?.some(customer => customer.id === previous.customerId && customer.privacyConsent) ? previous.customerId : '',
         }));
         return () => { generation.current += 1; activeRequest.current?.abort(); activeRequest.current = null; };
-    }, [catalogRevision, customerRevision]);
-    const change = (field, value) => {
-        invalidate();
-        setChoices(previous => ({ ...previous, [field]: value,
-            ...(field === 'bundleId' ? { family: '', internet: '', mobileLines: '' } : {}) }));
-    };
+    }, [catalogRevision]);
+    const change = (field, value) => { invalidate(); setChoices(previous => ({ ...previous, [field]: value })); };
+    const selectedProduct = catalog.products.find(product => product.id === choices.productId);
     const selectedPlan = catalog.ownPlans.find(plan => plan.id === choices.planId);
-    const selectedCustomer = customers?.find(customer => customer.id === choices.customerId);
     const calculate = async () => {
         invalidate();
+        if (!selectedProduct) {
+            setError('계산할 단말기를 선택해 주세요.');
+            return;
+        }
         if (!selectedPlan) {
             setError('계산할 자사 요금제를 선택해 주세요.');
             return;
         }
-        if (choices.customerId && (!selectedCustomer || !selectedCustomer.privacyConsent)) {
-            setError('현재 매장의 고객과 개인정보 동의를 다시 확인해 주세요.');
+        if (choices.bundleId && !catalog.bundles.some(bundle => bundle.id === choices.bundleId)
+            || !['1', '24'].includes(choices.installmentMonths) || choices.contractMonths !== '24'
+            || !['DEVICE_DISCOUNT', 'PLAN_DISCOUNT'].includes(choices.discountType)) {
+            setError('결합·할부·약정·할인 조건을 다시 확인해 주세요.');
             return;
         }
-        if (choices.bundleId && choices.mobileLines !== '' && !validLines(choices.mobileLines)) {
-            setError('휴대전화 회선 수를 1 이상의 정수로 입력해 주세요.');
-            return;
-        }
-        const input = { plan_id: choices.planId,
-            ...(choices.productId ? { product_id: choices.productId } : {}), ...(choices.bundleId ? { bundle_id: choices.bundleId } : {}),
-            ...(choices.customerId ? { customer_id: choices.customerId } : {}), ...(choices.bundleId ? {
-                ...(choices.family === '' ? {} : { family: choices.family === 'yes' }),
-                ...(choices.internet === '' ? {} : { internet: choices.internet === 'yes' }),
-                ...(choices.mobileLines === '' ? {} : { mobile_lines: Number(choices.mobileLines) }),
-            } : {}) };
+        const input = { product_id: choices.productId, plan_id: choices.planId,
+            ...(choices.bundleId ? { bundle_id: choices.bundleId } : {}), installment_months: Number(choices.installmentMonths),
+            contract_months: 24, discount_type: choices.discountType };
         const token = generation.current;
         const controller = new AbortController();
         activeRequest.current = controller;
         setLoading(true);
         try {
             const response = await (0, effectivePriceApi_1.calculateEffectivePrice)(input, controller.signal);
+            if (response.policyVersion !== 'n8n-quote-v2')
+                throw new effectivePriceApi_1.EffectivePriceApiError('INVALID_RESPONSE');
             if (token === generation.current && !controller.signal.aborted) {
                 setResult(response);
-                setResultRevision(dataRevision);
+                setResultRevision(catalogRevision);
             }
         }
         catch (cause) {
@@ -3051,31 +3033,30 @@ function EffectivePricePanel({ catalog, customers, customersError, initialPlanId
             }
         }
     };
+    const quote = result?.quote;
+    const output = quote?.result;
     return __React.createElement("section", { className: "card effective-price-panel", "aria-labelledby": `${elementId}-title` },
         __React.createElement("div", { className: "card-heading" },
             __React.createElement("div", null,
                 __React.createElement("h2", { id: `${elementId}-title` }, "\uCCB4\uAC10\uAC00 \uD655\uC778"),
-                __React.createElement("p", { className: "real-data-notice" }, "\uB4F1\uB85D\uB41C \uC6D4\uC815\uC561\uACFC \uD655\uC778 \uAC00\uB2A5\uD55C \uC815\uC561 \uACB0\uD569 \uD560\uC778\uC73C\uB85C \uC6D4 \uD1B5\uC2E0\uC694\uAE08\uC744 \uACC4\uC0B0\uD569\uB2C8\uB2E4."))),
+                __React.createElement("p", { className: "real-data-notice" }, "\uB2E8\uB9D0\uAE30\u00B7\uC694\uAE08\uC81C\u00B7\uACB0\uD569\uACFC \uB0A9\uBD80 \uC870\uAC74\uC744 \uC120\uD0DD\uD574 \uC608\uC0C1 \uB0A9\uBD80\uAE08\uC561\uACFC \uC57D\uC815\uAE30\uAC04 \uCCB4\uAC10\uAC00\uB97C \uD655\uC778\uD569\uB2C8\uB2E4."))),
         __React.createElement("div", { className: "effective-price-content" },
             __React.createElement("div", { className: "effective-price-form" },
                 __React.createElement("div", { className: "consultation-field" },
-                    __React.createElement("label", { htmlFor: `${elementId}-customer` },
-                        "\uACE0\uAC1D ",
-                        __React.createElement("span", null, "\uC120\uD0DD")),
-                    __React.createElement("select", { id: `${elementId}-customer`, value: choices.customerId, onChange: event => change('customerId', event.target.value) },
-                        __React.createElement("option", { value: "" }, "\uACE0\uAC1D \uC815\uBCF4 \uC5C6\uC774 \uACC4\uC0B0"),
-                        customers?.filter(customer => customer.privacyConsent).map(customer => __React.createElement("option", { key: customer.id, value: customer.id },
-                            (0, customerName_1.storedCustomerDisplayName)(customer.nameMasked, customer.id),
+                    __React.createElement("label", { htmlFor: `${elementId}-product` },
+                        "\uB2E8\uB9D0\uAE30 ",
+                        __React.createElement("span", null, "\uD544\uC218")),
+                    __React.createElement("select", { id: `${elementId}-product`, value: choices.productId, onChange: event => change('productId', event.target.value) },
+                        __React.createElement("option", { value: "" }, "\uB2E8\uB9D0\uAE30\uB97C \uC120\uD0DD\uD574 \uC8FC\uC138\uC694"),
+                        catalog.products.map(product => __React.createElement("option", { key: product.id, value: product.id },
+                            product.name,
                             " \u00B7 ",
-                            customer.phoneMasked))),
-                    __React.createElement("p", { className: "real-data-notice" }, "\uD604\uC7AC \uB9E4\uC7A5\uC758 \uCD5C\uADFC \uC0C1\uB2F4 \uACE0\uAC1D \uCD5C\uB300 20\uBA85 \uC911 \uB3D9\uC758\uAC00 \uD655\uC778\uB41C \uACE0\uAC1D\uC744 \uBE44\uAD50\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."),
-                    customersError && __React.createElement("p", { className: "real-data-notice", role: "status" },
-                        customersError,
-                        " \uACE0\uAC1D \uC815\uBCF4 \uC5C6\uC774 \uACC4\uC0B0\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."),
-                    choices.customerId && !selectedCustomer?.currentPlan && __React.createElement("p", { className: "real-data-notice" }, "\uD604\uC7AC \uC694\uAE08\uC81C \uAE30\uB85D\uC774 \uC5C6\uC73C\uBA74 \uC694\uAE08 \uCC28\uC774\uB294 \uD655\uC778 \uD544\uC694\uB85C \uD45C\uC2DC\uB429\uB2C8\uB2E4.")),
+                            product.storageGb,
+                            "GB \u00B7 ",
+                            product.color)))),
                 __React.createElement("div", { className: "consultation-field" },
                     __React.createElement("label", { htmlFor: `${elementId}-plan` },
-                        "\uC120\uD0DD \uC694\uAE08\uC81C ",
+                        "\uC694\uAE08\uC81C ",
                         __React.createElement("span", null, "\uD544\uC218 \u00B7 \uC790\uC0AC \uC694\uAE08\uC81C")),
                     __React.createElement("select", { id: `${elementId}-plan`, value: choices.planId, onChange: event => change('planId', event.target.value) },
                         __React.createElement("option", { value: "" }, "\uC694\uAE08\uC81C\uB97C \uC120\uD0DD\uD574 \uC8FC\uC138\uC694"),
@@ -3085,75 +3066,56 @@ function EffectivePricePanel({ catalog, customers, customersError, initialPlanId
                             (0, effectivePriceApi_1.formatEffectivePrice)(plan.monthlyFee),
                             " / \uC6D4")))),
                 __React.createElement("div", { className: "consultation-field" },
-                    __React.createElement("label", { htmlFor: `${elementId}-product` },
-                        "\uB2E8\uB9D0 ",
-                        __React.createElement("span", null, "\uC120\uD0DD")),
-                    __React.createElement("select", { id: `${elementId}-product`, value: choices.productId, onChange: event => change('productId', event.target.value) },
-                        __React.createElement("option", { value: "" }, "\uB2E8\uB9D0 \uC120\uD0DD \uC548\uD568"),
-                        catalog.products.map(product => __React.createElement("option", { key: product.id, value: product.id },
-                            product.name,
-                            " \u00B7 ",
-                            product.storageGb,
-                            "GB \u00B7 ",
-                            product.color)))),
-                __React.createElement("div", { className: "consultation-field" },
                     __React.createElement("label", { htmlFor: `${elementId}-bundle` },
                         "\uACB0\uD569 ",
                         __React.createElement("span", null, "\uC120\uD0DD")),
                     __React.createElement("select", { id: `${elementId}-bundle`, value: choices.bundleId, onChange: event => change('bundleId', event.target.value) },
                         __React.createElement("option", { value: "" }, "\uACB0\uD569 \uC120\uD0DD \uC548\uD568"),
-                        catalog.bundles.map(bundle => __React.createElement("option", { key: bundle.id, value: bundle.id }, bundle.name))))),
-            choices.bundleId && __React.createElement("fieldset", { className: "effective-price-conditions" },
-                __React.createElement("legend", null, "\uACB0\uD569 \uC870\uAC74"),
-                __React.createElement("p", { className: "real-data-notice" }, "\uBAA8\uB974\uB294 \uC870\uAC74\uC740 \u2018\uD655\uC778 \uD544\uC694\u2019\uB85C \uB450\uC138\uC694. \uD655\uC778\uB418\uC9C0 \uC54A\uC740 \uD560\uC778\uC740 \uACC4\uC0B0\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."),
-                __React.createElement("div", { className: "effective-price-form" },
-                    __React.createElement("div", { className: "consultation-field" },
-                        __React.createElement("label", { htmlFor: `${elementId}-family` }, "\uAC00\uC871\uAD00\uACC4 \uC870\uAC74"),
-                        __React.createElement("select", { id: `${elementId}-family`, value: choices.family, onChange: event => change('family', event.target.value) },
-                            __React.createElement("option", { value: "" }, "\uD655\uC778 \uD544\uC694"),
-                            __React.createElement("option", { value: "yes" }, "\uCDA9\uC871"),
-                            __React.createElement("option", { value: "no" }, "\uBBF8\uCDA9\uC871"))),
-                    __React.createElement("div", { className: "consultation-field" },
-                        __React.createElement("label", { htmlFor: `${elementId}-internet` }, "\uC778\uD130\uB137 \uC774\uC6A9 \uC870\uAC74"),
-                        __React.createElement("select", { id: `${elementId}-internet`, value: choices.internet, onChange: event => change('internet', event.target.value) },
-                            __React.createElement("option", { value: "" }, "\uD655\uC778 \uD544\uC694"),
-                            __React.createElement("option", { value: "yes" }, "\uCDA9\uC871"),
-                            __React.createElement("option", { value: "no" }, "\uBBF8\uCDA9\uC871"))),
-                    __React.createElement("div", { className: "consultation-field" },
-                        __React.createElement("label", { htmlFor: `${elementId}-lines` },
-                            "\uD734\uB300\uC804\uD654 \uD68C\uC120 \uC218 ",
-                            __React.createElement("span", null, "\uD655\uC778\uB41C \uACBD\uC6B0 \uC785\uB825")),
-                        __React.createElement("input", { id: `${elementId}-lines`, type: "text", inputMode: "numeric", value: choices.mobileLines, onChange: event => change('mobileLines', event.target.value), placeholder: "\uD655\uC778 \uD544\uC694", "aria-invalid": choices.mobileLines !== '' && !validLines(choices.mobileLines) })))),
+                        catalog.bundles.map(bundle => __React.createElement("option", { key: bundle.id, value: bundle.id }, bundle.name)))),
+                __React.createElement("div", { className: "consultation-field" },
+                    __React.createElement("label", { htmlFor: `${elementId}-installment` }, "\uD560\uBD80\uAC1C\uC6D4"),
+                    __React.createElement("select", { id: `${elementId}-installment`, value: choices.installmentMonths, onChange: event => change('installmentMonths', event.target.value) },
+                        __React.createElement("option", { value: "24" }, "24\uAC1C\uC6D4"),
+                        __React.createElement("option", { value: "1" }, "\uC77C\uC2DC\uBD88"))),
+                __React.createElement("div", { className: "consultation-field" },
+                    __React.createElement("label", { htmlFor: `${elementId}-contract` }, "\uC57D\uC815\uAC1C\uC6D4"),
+                    __React.createElement("select", { id: `${elementId}-contract`, value: choices.contractMonths, onChange: event => change('contractMonths', event.target.value) },
+                        __React.createElement("option", { value: "24" }, "24\uAC1C\uC6D4"))),
+                __React.createElement("div", { className: "consultation-field" },
+                    __React.createElement("label", { htmlFor: `${elementId}-discount` }, "\uD560\uC778\uC885\uB958"),
+                    __React.createElement("select", { id: `${elementId}-discount`, value: choices.discountType, onChange: event => change('discountType', event.target.value) },
+                        __React.createElement("option", { value: "PLAN_DISCOUNT" }, "\uC694\uAE08\uD560\uC778"),
+                        __React.createElement("option", { value: "DEVICE_DISCOUNT" }, "\uAE30\uAE30\uD560\uC778")))),
+            __React.createElement("p", { className: "real-data-notice" }, "\uB4F1\uB85D\uB41C \uB2E8\uB9D0 \uD560\uC778\uD45C\uB97C \uC801\uC6A9\uD558\uBA70, \uACB0\uD569 \uC120\uD0DD \uC2DC \uC2DC\uC5F0\uC6A9 \uAC00\uC871\u00B7\uD68C\uC120 \uC870\uAC74\uC744 \uAC00\uC815\uD569\uB2C8\uB2E4. \uC2E4\uC81C \uAC00\uC785 \uC790\uACA9\uC740 \uD655\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4."),
             __React.createElement("div", { className: "effective-price-actions" },
-                __React.createElement("button", { className: "button button-primary", type: "button", disabled: loading || !selectedPlan, onClick: calculate }, loading ? '계산 중…' : '월 통신요금 계산'),
-                __React.createElement("p", { className: "real-data-notice" }, "\uAC00\uC785\u00B7\uACB0\uC81C\u00B7\uACE0\uAC1D \uAE30\uB85D \uBCC0\uACBD\uC740 \uC2E4\uD589\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.")),
+                __React.createElement("button", { className: "button button-primary", type: "button", disabled: loading || !selectedPlan || !selectedProduct, onClick: calculate }, loading ? '계산 중…' : '체감가 계산')),
             error && __React.createElement("p", { className: "field-error", role: "alert" }, error),
-            loading && __React.createElement("p", { className: "real-data-notice", role: "status" }, "\uB4F1\uB85D\uB41C \uAC00\uACA9\uACFC \uC870\uAC74\uC744 \uD655\uC778\uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4."),
-            result && resultRevision === dataRevision && (!choices.customerId || selectedCustomer?.privacyConsent) && __React.createElement("div", { className: "effective-price-result", "aria-live": "polite" },
-                __React.createElement("h3", null, "\uACC4\uC0B0 \uACB0\uACFC"),
-                __React.createElement("p", { className: "real-data-notice" },
-                    result.plan.name,
-                    " \u00B7 ",
-                    result.bundleDiscount.message),
-                choices.customerId && __React.createElement("dl", { className: "product-detail-fields effective-price-current-plan" },
-                    __React.createElement("div", null,
-                        __React.createElement("dt", null, "\uD604\uC7AC \uC694\uAE08\uC81C"),
-                        __React.createElement("dd", null, result.currentPlan ? `${result.currentPlan.name} · ${(0, effectivePriceApi_1.formatEffectivePrice)(result.currentPlan.monthlyFee)} / 월` : '기록 확인 필요')),
-                    __React.createElement("div", null,
-                        __React.createElement("dt", null, "\uC6D4\uC815\uC561 \uCC28\uC774 \u00B7 \uD560\uC778 \uC804"),
-                        __React.createElement("dd", null, result.monthlyFeeDifference === null ? '확인 필요' : result.monthlyFeeDifference === 0 ? '0원 · 동일' : `${(0, effectivePriceApi_1.formatEffectivePrice)(Math.abs(result.monthlyFeeDifference))} ${result.monthlyFeeDifference < 0 ? '감소' : '증가'}`))),
-                __React.createElement("dl", { className: "product-detail-fields effective-price-breakdown" }, result.breakdown.map(row => __React.createElement("div", { key: row.key },
-                    __React.createElement("dt", null,
-                        row.label,
-                        row.period === 'once' && __React.createElement("small", null, " \u00B7 \uC77C\uC2DC \uAE08\uC561"),
-                        row.note && __React.createElement("small", null,
-                            " \u00B7 ",
-                            row.note)),
-                    __React.createElement("dd", { className: row.key === 'monthly_subtotal' ? 'product-monthly-price' : undefined }, amountLabel(row))))),
+            loading && __React.createElement("p", { className: "real-data-notice", role: "status" }, "\uB4F1\uB85D\uB41C \uAC00\uACA9\uACFC \uACC4\uC0B0 \uC870\uAC74\uC744 \uD655\uC778\uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4."),
+            quote && output && resultRevision === catalogRevision && __React.createElement("div", { className: "effective-price-result", "aria-live": "polite" },
+                __React.createElement("h3", null, "\uC608\uC0C1 \uB0A9\uBD80\uAE08\uC561"),
                 __React.createElement("p", { className: "effective-price-total" },
-                    __React.createElement("strong", null, result.finalMonthlyTotal === null ? '총 부담 확인 필요' : `계산 범위 내 월 통신요금 ${(0, effectivePriceApi_1.formatEffectivePrice)(result.finalMonthlyTotal)}`)),
-                __React.createElement("p", { className: "real-data-notice" }, result.quoteScope === 'communication_only' ? '단말·결합을 선택하지 않은 월정액 기준입니다. 약정 할인과 부가 비용을 제외한 범위입니다.' : '월 통신요금 소계와 단말 현금 가격을 구분해 표시합니다. 할부·혜택·추가 조건을 확인하기 전 최종 월 부담은 확정하지 않습니다.'),
-                __React.createElement("ul", { className: "effective-price-warnings" }, result.warnings.map(warning => __React.createElement("li", { key: warning }, warning))))));
+                    __React.createElement("strong", null, output['예상 납부금액'])),
+                __React.createElement("p", { className: "real-data-notice" }, output['계산 설명']),
+                output['다음 달부터 예상 납부금액'] && __React.createElement("p", { className: "real-data-notice" },
+                    "\uB2E4\uC74C \uB2EC\uBD80\uD130 \uC608\uC0C1 \uB0A9\uBD80\uAE08\uC561: ",
+                    output['다음 달부터 예상 납부금액']),
+                __React.createElement("h3", null, "\uAE08\uC561 \uAD6C\uC131"),
+                __React.createElement("dl", { className: "product-detail-fields effective-price-breakdown" }, Object.entries(output['금액 구성']).map(([label, amount]) => __React.createElement("div", { key: label },
+                    __React.createElement("dt", null, label),
+                    __React.createElement("dd", null, amount)))),
+                __React.createElement("h3", null, "\uC801\uC6A9 \uD560\uC778"),
+                __React.createElement("dl", { className: "product-detail-fields effective-price-breakdown" }, Object.entries(output['적용 할인']).map(([label, amount]) => __React.createElement("div", { key: label },
+                    __React.createElement("dt", null, label),
+                    __React.createElement("dd", null, amount)))),
+                __React.createElement("h3", null, "\uACE0\uAC1D \uCCB4\uAC10\uAC00"),
+                __React.createElement("p", { className: "real-data-notice" }, output['고객 체감가']['체감가 안내']),
+                __React.createElement("dl", { className: "product-detail-fields effective-price-breakdown" }, Object.entries(output['고객 체감가']).filter(([label]) => label !== '체감가 안내').map(([label, amount]) => __React.createElement("div", { key: label },
+                    __React.createElement("dt", null, label),
+                    __React.createElement("dd", { className: label === '월평균 체감가' ? 'product-monthly-price' : undefined }, amount)))),
+                (quote.calculation_basis.quote_is_estimate || !quote.calculation_basis.bundle_eligibility_fully_verified) && __React.createElement("p", { className: "real-data-notice" }, "\uC2DC\uC5F0 \uAC00\uC815\uC774 \uD3EC\uD568\uB41C \uC608\uC0C1 \uACAC\uC801\uC774\uBA70 \uC2E4\uC81C \uAC00\uC785 \uC870\uAC74\uACFC \uD560\uC778 \uC801\uC6A9 \uC5EC\uBD80\uB294 \uBCC4\uB3C4\uB85C \uD655\uC778\uD574 \uC8FC\uC138\uC694."),
+                output['계산 유의사항'].length > 0 && __React.createElement(__React.Fragment, null,
+                    __React.createElement("h3", null, "\uACC4\uC0B0 \uC720\uC758\uC0AC\uD56D"),
+                    __React.createElement("ul", { className: "effective-price-warnings" }, output['계산 유의사항'].map((warning, index) => __React.createElement("li", { key: `${index}-${warning}` }, (0, effectivePriceApi_1.effectivePriceNoteMessage)(warning))))))));
 }
 
 },
@@ -8312,6 +8274,7 @@ exports.effectivePriceErrorMessage = effectivePriceErrorMessage;
 exports.parseProductCatalog = parseProductCatalog;
 exports.parseEffectivePrice = parseEffectivePrice;
 exports.calculateEffectivePrice = calculateEffectivePrice;
+exports.effectivePriceNoteMessage = effectivePriceNoteMessage;
 exports.toCatalogItems = toCatalogItems;
 const errorMessages = {
     NETWORK: '상품 정보를 조회하지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.',
@@ -8325,6 +8288,7 @@ const errorMessages = {
     CUSTOMER_PRIVACY_RESTRICTED: '개인정보 동의를 확인하기 전에는 고객의 현재 요금제를 비교할 수 없습니다.',
     HOME_STORE_NOT_CONFIGURED: '현재 매장 설정을 확인한 뒤 고객 요금제를 비교해 주세요.',
     PRICE_DATA_INVALID: '등록된 가격 또는 조건을 확인할 수 없어 계산하지 않았습니다.',
+    PRICE_POLICY_UNAVAILABLE: '선택한 단말기의 시연 할인표가 아직 등록되지 않았습니다. 다른 단말기를 선택해 주세요.',
     REAL_DATA_NOT_CONFIGURED: '저장된 상품 조회가 아직 준비되지 않았습니다.',
     REAL_DATA_CONFIG_INVALID: '저장된 상품 조회 설정을 확인해야 합니다.',
     REAL_DATA_ACCESS_DENIED: '저장된 상품 조회 권한을 확인해야 합니다.',
@@ -8410,7 +8374,97 @@ function parseProductCatalog(value) {
 const rowKeys = ['plan_fee', 'bundle_discount', 'benefit_value', 'contract_discount', 'monthly_subtotal', 'device_cash', 'device_installment'];
 const rowStatuses = ['not_selected', 'not_applicable', 'needs_confirmation', 'applied', 'recorded', 'calculated'];
 const discountStatuses = ['not_selected', 'not_applicable', 'needs_confirmation', 'applied'];
+const quoteRawKeys = ['monthly_payment_during_installment', 'last_installment_month_payment', 'monthly_payment_after_installment',
+    'average_monthly_effective_price', 'total_effective_cost', 'total_contract_discount_benefit'];
+const quoteBreakdownKeys = ['product_price', 'common_device_discount', 'additional_device_discount', 'total_device_discount',
+    'financed_principal', 'installment_interest_total', 'installment_repayment_total', 'monthly_device_installment', 'last_month_device_installment',
+    'plan_monthly_fee', 'selection_agreement_discount', 'selection_agreement_discount_contract_total', 'target_mobile_bundle_discount_before_youth',
+    'premium_youth_additional_discount', 'bundle_mobile_discount_applied', 'bundle_mobile_discount_contract_total', 'group_internet_discount_reference', 'plan_fee_after_discount'];
+const quoteText = (value) => nonempty(value) && value.length <= 10000;
+function quoteNotes(value) {
+    if (!Array.isArray(value) || value.length > 100 || !value.every(quoteText))
+        return invalid();
+    return [...value];
+}
+function quoteAmounts(value, keys) {
+    if (!record(value) || !keys.every(key => money(value[key])))
+        return invalid();
+    return Object.fromEntries(keys.map(key => [key, value[key]]));
+}
+const newQuoteInput = (value) => value.installment_months !== undefined || value.contract_months !== undefined || value.discount_type !== undefined;
+function parseQuote(value, expected) {
+    const q = value.quote;
+    if (!record(q) || q.currency !== 'KRW' || q.quote_type !== 'pure_calculation'
+        || !id('product', q.product_id) || !(q.product_name === null || quoteText(q.product_name))
+        || !id('plan', q.plan_id) || !(q.plan_name === null || quoteText(q.plan_name))
+        || !(q.bundle_id === null || id('bundle', q.bundle_id)) || !(q.bundle_name === null || quoteText(q.bundle_name))
+        || (q.bundle_id === null) !== (q.bundle_name === null))
+        return invalid();
+    const basis = q.calculation_basis;
+    if (!record(basis) || ![1, 24].includes(basis.installment_months) || basis.contract_months !== 24
+        || !['DEVICE_DISCOUNT', 'PLAN_DISCOUNT'].includes(basis.discount_type)
+        || typeof basis.quote_is_estimate !== 'boolean' || typeof basis.bundle_eligibility_fully_verified !== 'boolean'
+        || !['DEMO_ASSUMPTIONS', 'REQUEST'].includes(basis.eligibility_source))
+        return invalid();
+    if (expected && (!newQuoteInput(expected) || q.product_id !== expected.product_id || q.plan_id !== expected.plan_id
+        || (q.bundle_id ?? undefined) !== (expected.bundle_id ?? undefined) || basis.installment_months !== expected.installment_months
+        || basis.contract_months !== expected.contract_months || basis.discount_type !== expected.discount_type))
+        return invalid();
+    const raw = quoteAmounts(q.raw_result, quoteRawKeys);
+    const amounts = quoteAmounts(q.breakdown, quoteBreakdownKeys);
+    const result = q.result;
+    if (!record(result) || !quoteText(result['계산 설명']) || !quoteText(result['예상 납부금액'])
+        || !record(result['금액 구성']) || !record(result['적용 할인']) || !record(result['고객 체감가']))
+        return invalid();
+    const composition = result['금액 구성'];
+    const discounts = result['적용 할인'];
+    const effective = result['고객 체감가'];
+    const cash = basis.installment_months === 1;
+    const deviceLabel = cash ? '일시불 단말금' : '월 단말 할부금';
+    const display = (amount, monthly = false, discount = false) => `${monthly ? '월 ' : ''}${discount && amount > 0 ? '-' : ''}${amount.toLocaleString('ko-KR')}원`;
+    // Amounts are calculated by the server. Check that displayed strings describe its returned amounts.
+    if (result['예상 납부금액'] !== `${cash ? '첫 달 ' : ''}${display(raw.monthly_payment_during_installment, !cash)}`
+        || composition[deviceLabel] !== display(amounts.monthly_device_installment, !cash)
+        || composition['할인 후 월 통신요금'] !== display(amounts.plan_fee_after_discount, true)
+        || discounts['할인 방식'] !== (basis.discount_type === 'PLAN_DISCOUNT' ? '요금할인' : '단말할인')
+        || discounts['단말 할인 총액'] !== display(amounts.total_device_discount, false, true)
+        || discounts['선택약정 월 할인'] !== display(amounts.selection_agreement_discount, false, true)
+        || discounts['모바일 결합 월 할인'] !== display(amounts.bundle_mobile_discount_applied, false, true)
+        || !quoteText(effective['체감가 안내'])
+        || effective['약정기간 총 할인 혜택'] !== display(raw.total_contract_discount_benefit)
+        || effective['단말 할부수수료 총액'] !== display(amounts.installment_interest_total)
+        || effective['약정기간 총 체감가'] !== display(raw.total_effective_cost)
+        || effective['월평균 체감가'] !== display(raw.average_monthly_effective_price, true)
+        || cash && result['다음 달부터 예상 납부금액'] !== display(amounts.plan_fee_after_discount, true))
+        return invalid();
+    const notes = quoteNotes(result['계산 유의사항']);
+    const deviceNotes = quoteNotes(basis.device_discount_policy_notes);
+    const bundleNotes = quoteNotes(basis.bundle_validation_notes);
+    if ([...deviceNotes, ...bundleNotes].some(note => !notes.includes(note)))
+        return invalid();
+    return { policyVersion: 'n8n-quote-v2', quote: {
+            currency: 'KRW', quote_type: 'pure_calculation', product_id: q.product_id, product_name: q.product_name,
+            plan_id: q.plan_id, plan_name: q.plan_name, bundle_id: q.bundle_id, bundle_name: q.bundle_name,
+            calculation_basis: { installment_months: basis.installment_months, contract_months: 24,
+                discount_type: basis.discount_type, quote_is_estimate: basis.quote_is_estimate,
+                bundle_eligibility_fully_verified: basis.bundle_eligibility_fully_verified, eligibility_source: basis.eligibility_source,
+                device_discount_policy_notes: deviceNotes, bundle_validation_notes: bundleNotes },
+            result: { '계산 설명': result['계산 설명'], '계산 유의사항': notes, '예상 납부금액': result['예상 납부금액'],
+                '금액 구성': { [deviceLabel]: composition[deviceLabel], '할인 후 월 통신요금': composition['할인 후 월 통신요금'] },
+                '적용 할인': { '할인 방식': discounts['할인 방식'], '단말 할인 총액': discounts['단말 할인 총액'],
+                    '선택약정 월 할인': discounts['선택약정 월 할인'], '모바일 결합 월 할인': discounts['모바일 결합 월 할인'] },
+                '고객 체감가': { '체감가 안내': effective['체감가 안내'], '약정기간 총 할인 혜택': effective['약정기간 총 할인 혜택'],
+                    '단말 할부수수료 총액': effective['단말 할부수수료 총액'], '약정기간 총 체감가': effective['약정기간 총 체감가'],
+                    '월평균 체감가': effective['월평균 체감가'] },
+                ...(cash ? { '다음 달부터 예상 납부금액': result['다음 달부터 예상 납부금액'] } : {}) },
+            raw_result: raw, breakdown: amounts,
+        } };
+}
 function parseEffectivePrice(value, expected) {
+    if (record(value) && value.policyVersion === 'n8n-quote-v2')
+        return parseQuote(value, expected);
+    if (expected && newQuoteInput(expected))
+        return invalid();
     if (!record(value) || value.source !== 'supabase' || value.policyVersion !== 'db-fixed-mobile-v1')
         return invalid();
     const selectedPlan = pricePlan(value.plan);
@@ -8470,11 +8524,14 @@ function parseEffectivePrice(value, expected) {
         breakdown: rows, warnings: [...value.warnings] };
 }
 function validInput(value) {
-    return record(value) && Object.keys(value).every(key => ['plan_id', 'product_id', 'bundle_id', 'customer_id', 'family', 'internet', 'mobile_lines'].includes(key))
+    return record(value) && Object.keys(value).every(key => ['plan_id', 'product_id', 'bundle_id', 'customer_id', 'family', 'internet', 'mobile_lines', 'installment_months', 'contract_months', 'discount_type'].includes(key))
         && id('plan', value.plan_id) && (value.product_id === undefined || id('product', value.product_id))
-        && (value.bundle_id === undefined || id('bundle', value.bundle_id)) && (value.customer_id === undefined || id('customer', value.customer_id))
+        && (value.bundle_id === undefined || newQuoteInput(value) && value.bundle_id === null || id('bundle', value.bundle_id)) && (value.customer_id === undefined || id('customer', value.customer_id))
         && (value.family === undefined || typeof value.family === 'boolean') && (value.internet === undefined || typeof value.internet === 'boolean')
-        && (value.mobile_lines === undefined || money(value.mobile_lines) && value.mobile_lines >= 1);
+        && (value.mobile_lines === undefined || money(value.mobile_lines) && value.mobile_lines >= 1)
+        && (!newQuoteInput(value) || id('product', value.product_id) && [1, 24].includes(value.installment_months)
+            && value.contract_months === 24 && ['DEVICE_DISCOUNT', 'PLAN_DISCOUNT'].includes(value.discount_type)
+            && value.family === undefined && value.internet === undefined && value.mobile_lines === undefined);
 }
 async function request(path, parse, signal, input) {
     let response;
@@ -8507,6 +8564,31 @@ function calculateEffectivePrice(input, signal) {
 exports.storedProductNote = '저장된 상품 정보입니다. 가입·구매 전 최신 요금·조건·사양을 별도로 확인하세요.';
 const formatEffectivePrice = (value) => `${value.toLocaleString('ko-KR')}원`;
 exports.formatEffectivePrice = formatEffectivePrice;
+/** Friendly display only; the original quotation notes remain in the parsed response. */
+function effectivePriceNoteMessage(note) {
+    if (note.includes('family_relation이 없어'))
+        return '실제 가족관계를 확인해야 결합 가입 자격을 확정할 수 있습니다.';
+    if (note.startsWith('상위상품 직접 선택:'))
+        return '선택한 가족결합의 모바일 할인은 준비된 시연 기준으로 계산했습니다.';
+    const internet = note.match(/^(?:internet_line_count|household_group_internet_line_count)가 없어 인터넷 회선 최대 (\d+)회선 조건을 확인할 수 없습니다\./);
+    if (internet)
+        return `인터넷 회선 수가 확인되지 않아 최대 ${internet[1]}회선 조건은 추가 확인이 필요합니다.`;
+    const tv = note.match(/^(?:tv_line_count|household_group_tv_line_count)가 없어 TV 회선 최대 (\d+)회선 조건을 확인할 수 없습니다\./);
+    if (tv)
+        return `TV 회선 수가 확인되지 않아 최대 ${tv[1]}회선 조건은 추가 확인이 필요합니다.`;
+    if (note.startsWith('프리미엄 싱글 규칙 ') && note.includes('customer_condition')) {
+        return '프리미엄 싱글결합의 추가 가입 조건은 확인하지 않았습니다. 시연에서는 준비된 회선·요금제·인터넷 조건으로 계산했습니다.';
+    }
+    if (note.startsWith('프리미엄 가족 추가회선 규칙 ') && note.includes('customer_condition')) {
+        return '프리미엄 가족결합의 추가 회선 가입 조건은 확인하지 않았습니다. 시연에서는 준비된 요금제·회선 조건으로 계산했습니다.';
+    }
+    if (note.startsWith('프리미엄 가족결합의 인터넷 할인 규칙이 없습니다.')) {
+        return '프리미엄 가족결합의 인터넷 할인 기준이 확인되지 않아 참고용 인터넷 할인은 0원으로 계산했습니다.';
+    }
+    if (/[a-z]+_[a-z_]+|\b(?:DB|SQL)\b|코드의/i.test(note))
+        return '결합 가입 조건을 추가로 확인해야 합니다.';
+    return note;
+}
 const allowance = (unlimited, value, unit) => unlimited ? '무제한' : value === null ? '제공량 확인 필요' : `${value.toLocaleString('ko-KR')}${unit}`;
 /** Keeps the existing four tabs and comparison contract without adding reference prices. */
 function toCatalogItems(catalog) {
