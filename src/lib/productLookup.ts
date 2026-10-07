@@ -12,6 +12,16 @@ export function filterProducts(items: readonly CatalogItem[], tab: ProductTabId,
   });
 }
 
+export const productPageSize = 5;
+
+/** Paginate an already filtered list and keep its page valid when that list changes. */
+export function paginateProducts(items: readonly CatalogItem[], requestedPage: number): { items: CatalogItem[]; page: number; totalPages: number; totalItems: number } {
+  const totalPages = Math.max(1, Math.ceil(items.length / productPageSize));
+  const page = Number.isSafeInteger(requestedPage) && requestedPage >= 1 ? Math.min(requestedPage, totalPages) : 1;
+  const offset = (page - 1) * productPageSize;
+  return { items: items.slice(offset, offset + productPageSize), page, totalPages, totalItems: items.length };
+}
+
 /** Selection always belongs to the visible list; empty search results have no stale detail. */
 export function selectedProduct(items: readonly CatalogItem[], id: string | undefined): CatalogItem | undefined {
   return items.find(item => item.id === id) ?? items[0];

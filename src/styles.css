@@ -1017,6 +1017,57 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
 .product-reference-note { font-size: 10px; line-height: 1.65; color: #6f7b8b; }
 .product-search-empty p { font-size: 12px; }
 
+/* Product browsing stays compact; longer tools open in the existing dialog design. */
+.products-page .page-heading { margin-bottom: 10px; }
+.products-page .section-tabs { margin-bottom: 8px; }
+.products-page .product-source-bar { margin-block: 4px 6px; gap: 8px 12px; }
+.products-page .real-data-header-actions { flex-wrap: wrap; min-width: 0; }
+.products-page .section-intro { margin-bottom: 8px; gap: 12px; }
+.products-page .section-intro > div:first-child { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; }
+.products-page .section-intro h2 { font-size: 16px; }
+.products-page .section-intro p { margin-top: 0; }
+.product-view-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.products-page .product-catalog-grid { grid-template-columns: minmax(310px, .95fr) minmax(0, 1.65fr); gap: 16px; }
+.products-page .product-catalog-list .card-heading { padding: 10px 16px; }
+.products-page .product-search-row { padding: 8px 14px 3px; }
+.products-page .product-catalog-list .directory-options { display: block; padding: 4px 8px; }
+.products-page .product-catalog-list .directory-option { padding: 6px 10px; min-height: 52px; gap: 9px; margin-block: 1px; }
+.products-page .directory-option-text > strong { line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.products-page .directory-option-text > small { margin-top: 3px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.products-page .directory-option-text .home-store-badge { margin-left: 6px; }
+.product-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 6px; border-top: 1px solid var(--line); padding: 4px 12px; font-size: 12px; }
+.product-page-range { margin-right: auto; font-size: 11px; color: #6f7b8b; }
+.product-page-number { min-width: 44px; text-align: center; font-variant-numeric: tabular-nums; }
+.product-page-previous { display: inline-flex; transform: rotate(180deg); }
+.product-pagination .icon-button { width: 32px; height: 32px; }
+.product-pagination .icon-button:disabled { color: #adb4bf; background: transparent; }
+.products-page .product-detail { padding: 16px 18px; }
+.products-page .product-detail-heading { padding-bottom: 12px; gap: 10px; }
+.products-page .product-detail-heading h2 { font-size: 18px; line-height: 1.45; }
+.products-page .product-detail-sections { gap: 14px; padding-top: 14px; }
+.products-page .product-detail-fields { margin-top: 8px; }
+.products-page .product-detail-fields > div { display: grid; grid-template-columns: minmax(55px, .65fr) minmax(0, 1.35fr); gap: 8px; padding-block: 7px; align-items: baseline; }
+.products-page .product-detail-fields dd { margin: 0; }
+.products-page .product-reference-note { margin-top: 8px; }
+.product-tool-modal .product-comparison { margin-top: 14px; }
+.product-tool-modal .modal-actions { margin-top: 16px; }
+@media (min-width: 1100px) {
+  .main-content:has(> .products-page) { padding-top: 16px; padding-bottom: 10px; }
+  .main-content:has(> .products-page) + .app-footer { padding-bottom: 8px; }
+}
+@media (max-width: 1000px) {
+  .products-page .product-catalog-grid { grid-template-columns: minmax(270px, .85fr) minmax(0, 1.35fr); }
+  .products-page .product-detail-sections { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .products-page .product-catalog-grid { grid-template-columns: minmax(0, 1fr); }
+  .products-page .section-intro { align-items: flex-start; flex-wrap: wrap; }
+  .product-view-actions { width: 100%; justify-content: space-between; }
+  .products-page .product-source-bar > p { flex-basis: 100%; }
+  .products-page .product-detail-sections { grid-template-columns: minmax(0, 1fr); }
+  .products-page .product-detail-fields > div { grid-template-columns: 90px minmax(0, 1fr); }
+}
+
 @media (max-width: 650px) {
   .product-detail-fields dd { margin-top: 0; }
   .product-detail-sections { gap: 16px; }
