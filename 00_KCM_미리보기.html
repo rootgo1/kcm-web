@@ -1260,7 +1260,40 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
 .inventory-step-button { width: 32px; height: 32px; flex-shrink: 0; }
 .inventory-step-button:focus-visible { outline: 2px solid var(--red); outline-offset: -2px; }
 .inventory-stepper input:focus-visible { outline: 2px solid var(--red) !important; outline-offset: -2px; }
+/* Paginated inventory stays compact without reducing the existing text or touch targets. */
+.smart-inventory-page .page-heading { margin-bottom: 18px; }
+.smart-inventory-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+.smart-inventory-layout > .smart-inventory-card { min-width: 0; margin-top: 0; }
+.smart-inventory-page .smart-inventory-card .card-heading { padding-block: 12px 10px; gap: 8px; }
+.smart-inventory-page .smart-inventory-table { table-layout: fixed; width: 100%; }
+.smart-inventory-page .smart-inventory-table td { height: 50px; padding-block: 8px; white-space: normal; }
+.smart-inventory-page .smart-inventory-table th { padding-block: 9px; }
+.smart-inventory-page .smart-inventory-card .table-footer { padding-block: 8px; }
+.inventory-stock-editor { flex-wrap: wrap; max-width: 100%; }
+.inventory-view-switch { display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 14px; border: 1px solid var(--line); border-radius: 9px; background: #f4f5f7; }
+.inventory-view-switch > button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 6px 16px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; font-weight: 650; cursor: pointer; }
+.inventory-view-switch > button.selected { background: #fff; color: var(--ink); box-shadow: 0 1px 3px #20252d0a; }
+.inventory-view-switch > button > span { font-size: 11px; color: var(--muted); }
+.inventory-view-switch > button:disabled { opacity: .45; cursor: default; }
+.inventory-view-switch > button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+.inventory-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 8px 16px; border-top: 1px solid var(--line); font-size: 11px; }
+.inventory-page-range { margin-right: auto; color: var(--muted); }
+.inventory-page-number { min-width: 38px; text-align: center; font-variant-numeric: tabular-nums; }
+.inventory-pagination .icon-button { width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 6px; }
+.inventory-pagination .icon-button:disabled { opacity: .35; cursor: default; }
+.inventory-page-previous { display: inline-flex; transform: rotate(180deg); }
+.inventory-navigation-note { margin: 0; padding: 0 16px 8px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+@media (min-width: 1870px) {
+  .smart-inventory-layout { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .inventory-view-switch { display: none; }
+}
+@media (max-width: 1869px) {
+  .smart-inventory-layout[data-active-panel="stock"] > [data-inventory-panel="rentals"],
+  .smart-inventory-layout[data-active-panel="rentals"] > [data-inventory-panel="stock"] { display: none; }
+}
 @media (max-width: 640px) {
+  .inventory-view-switch > button { min-height: 40px; }
+  .inventory-pagination .icon-button { width: 40px; height: 40px; }
   .inventory-heading-controls { flex-basis: 100%; justify-content: flex-start; }
   .inventory-heading-controls .search-field { flex: 1; }
   .inventory-heading-controls select { max-width: 100% !important; }
@@ -5767,6 +5800,21 @@ function describeRequest(result) {
 }
 
 },
+"src/lib/inventoryPagination":function(module,exports,require){const __React=require('react');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.inventoryPageSize = void 0;
+exports.paginateInventory = paginateInventory;
+exports.inventoryPageSize = 5;
+/** Only divides an already filtered UI list; inventory rows and rental policies remain unchanged. */
+function paginateInventory(items, requestedPage) {
+    const totalPages = Math.max(1, Math.ceil(items.length / exports.inventoryPageSize));
+    const page = Number.isSafeInteger(requestedPage) && requestedPage >= 1 ? Math.min(requestedPage, totalPages) : 1;
+    const offset = (page - 1) * exports.inventoryPageSize;
+    return { items: items.slice(offset, offset + exports.inventoryPageSize), page, totalPages, totalItems: items.length };
+}
+
+},
 "src/lib/navigation":function(module,exports,require){const __React=require('react');
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -7005,9 +7053,31 @@ const Icon_1 = require("../components/Icon");
 const Modal_1 = require("../components/Modal");
 const inventory_1 = require("../lib/inventory");
 const inventoryApi_1 = require("../services/inventoryApi");
+const inventoryPagination_1 = require("../lib/inventoryPagination");
 const codeOf = (error) => error instanceof inventoryApi_1.InventoryApiError ? error.code : 'NETWORK';
 const smallButton = { padding: '4px 10px', fontSize: 12 };
 const stepButton = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#f8f9fb', color: '#5f6671', fontSize: 14, lineHeight: 1 };
+function InventoryPagination({ label, controls, pagination, disabled = false, onChange }) {
+    if (pagination.totalPages <= 1)
+        return null;
+    return __React.createElement("nav", { className: "inventory-pagination", "aria-label": `${label} 페이지 이동` },
+        __React.createElement("span", { className: "inventory-page-range" },
+            (pagination.page - 1) * inventoryPagination_1.inventoryPageSize + 1,
+            "\u2013",
+            Math.min(pagination.page * inventoryPagination_1.inventoryPageSize, pagination.totalItems),
+            " / ",
+            pagination.totalItems,
+            "\uAC74"),
+        __React.createElement("button", { type: "button", className: "icon-button", "aria-label": `이전 ${label} 페이지`, "aria-controls": controls, disabled: disabled || pagination.page === 1, onClick: () => onChange(pagination.page - 1) },
+            __React.createElement("span", { className: "inventory-page-previous" },
+                __React.createElement(Icon_1.Icon, { name: "chevron", size: 16 }))),
+        __React.createElement("span", { className: "inventory-page-number", "aria-live": "polite", "aria-atomic": "true" },
+            pagination.page,
+            " / ",
+            pagination.totalPages),
+        __React.createElement("button", { type: "button", className: "icon-button", "aria-label": `다음 ${label} 페이지`, "aria-controls": controls, disabled: disabled || pagination.page === pagination.totalPages, onClick: () => onChange(pagination.page + 1) },
+            __React.createElement(Icon_1.Icon, { name: "chevron", size: 16 })));
+}
 /** One stock count: plain number + 수정 button, or (for the row being edited) a stepper with 저장/취소. */
 function StockCell({ row, editing, draft, saving, error, onEdit, onDraft, onSave, onCancel }) {
     const current = (0, inventory_1.stockQtyOf)(row);
@@ -7021,8 +7091,8 @@ function StockCell({ row, editing, draft, saving, error, onEdit, onDraft, onSave
     const value = /^\d{1,4}$/.test(draft.trim()) ? Number(draft.trim()) : null;
     const delta = value === null ? 0 : value - current;
     const step = (by) => onDraft(String(Math.min(9999, Math.max(locked, (value ?? current) + by))));
-    return __React.createElement("span", { style: { display: 'inline-flex', flexDirection: 'column', gap: 6 } },
-        __React.createElement("span", { style: { display: 'inline-flex', alignItems: 'center', gap: 8 } },
+    return __React.createElement("span", { style: { display: 'inline-flex', flexDirection: 'column', gap: 6, maxWidth: '100%' } },
+        __React.createElement("span", { className: "inventory-stock-editor", style: { display: 'inline-flex', alignItems: 'center', gap: 8 } },
             __React.createElement("span", { className: "inventory-stepper", role: "group", "aria-label": `${row.model_name} 재고 수량`, style: { display: 'inline-flex', alignItems: 'center', border: '1px solid #e0e4e9', borderRadius: 7, overflow: 'hidden', background: 'white' } },
                 __React.createElement("button", { type: "button", className: "inventory-step-button", style: stepButton, "aria-label": "1\uB300 \uC904\uC774\uAE30", disabled: saving || (value ?? current) <= locked, onClick: () => step(-1) }, "\u2212"),
                 __React.createElement("input", { type: "text", inputMode: "numeric", autoFocus: true, "aria-label": `${row.model_name} 새 재고 수량`, value: draft, disabled: saving, onChange: event => onDraft(event.target.value), onKeyDown: event => { if (event.key === 'Enter')
@@ -7053,6 +7123,9 @@ function SmartInventoryPage({ fallback }) {
     const [stock, setStock] = (0, react_1.useState)([]);
     const [rentals, setRentals] = (0, react_1.useState)([]);
     const [role, setRole] = (0, react_1.useState)('incoming');
+    const [panel, setPanel] = (0, react_1.useState)('stock');
+    const [stockPage, setStockPage] = (0, react_1.useState)(1);
+    const [rentalPage, setRentalPage] = (0, react_1.useState)(1);
     const [loadError, setLoadError] = (0, react_1.useState)('');
     const [stockError, setStockError] = (0, react_1.useState)('');
     const [loading, setLoading] = (0, react_1.useState)(true);
@@ -7118,6 +7191,11 @@ function SmartInventoryPage({ fallback }) {
                 groups[(0, inventory_1.rentalRole)(rental, home.id)].push(rental);
         return groups;
     }, [rentals, home]);
+    const stockPagination = (0, inventoryPagination_1.paginateInventory)(stock, stockPage);
+    const rentalPagination = (0, inventoryPagination_1.paginateInventory)(grouped[role], rentalPage);
+    (0, react_1.useEffect)(() => { setStockPage(stockPagination.page); }, [stockPagination.page]);
+    (0, react_1.useEffect)(() => { setRentalPage(rentalPagination.page); }, [rentalPagination.page]);
+    (0, react_1.useEffect)(() => { setRentalPage(1); }, [role]);
     const startEdit = (row) => { setEditing(row.model_id); setDraft(String((0, inventory_1.stockQtyOf)(row))); setNotice(''); setRowErrors(current => ({ ...current, [row.model_id]: '' })); };
     const cancelEdit = () => { setEditing(''); setDraft(''); };
     const save = (0, react_1.useCallback)(async (row) => {
@@ -7179,6 +7257,8 @@ function SmartInventoryPage({ fallback }) {
             setRole('sent');
             setRentalNotice((0, inventory_1.describeRequest)(result));
             setRequestModel(null);
+            setRentalPage(1);
+            setPanel('rentals');
         }
         catch (error) {
             setRequestError((0, inventory_1.inventoryErrorMessage)(codeOf(error)));
@@ -7217,17 +7297,17 @@ function SmartInventoryPage({ fallback }) {
             __React.createElement("h1", null, "\uC2A4\uB9C8\uD2B8 \uC7AC\uACE0"),
             __React.createElement("p", null, "\uC6B0\uB9AC \uB9E4\uC7A5\uACFC \uB2E4\uB978 \uB9E4\uC7A5\uC758 \uC7AC\uACE0, \uB9E4\uC7A5 \uAC04 \uB300\uC5EC \uD604\uD669\uC744 \uD655\uC778\uD569\uB2C8\uB2E4.")),
         __React.createElement("div", { className: "heading-actions" },
-            __React.createElement("button", { className: "button button-secondary", onClick: () => setReloadKey(key => key + 1), disabled: loading },
+            __React.createElement("button", { className: "button button-secondary", onClick: () => { setStockPage(1); setRentalPage(1); setReloadKey(key => key + 1); }, disabled: loading },
                 __React.createElement(Icon_1.Icon, { name: "refresh", size: 16 }),
                 "\uC0C8\uB85C\uACE0\uCE68")));
     if (loading)
-        return __React.createElement(__React.Fragment, null,
+        return __React.createElement("div", { className: "smart-inventory-page" },
             heading,
             __React.createElement("div", { className: "loading-view", role: "status" },
                 __React.createElement("div", { className: "loader" }),
                 __React.createElement("p", null, "\uC7AC\uACE0 \uC815\uBCF4\uB97C \uBD88\uB7EC\uC624\uB294 \uC911\uC785\uB2C8\uB2E4.")));
     if (loadError)
-        return __React.createElement(__React.Fragment, null,
+        return __React.createElement("div", { className: "smart-inventory-page" },
             heading,
             __React.createElement("div", { className: "notice-inline", role: "alert", style: { marginBottom: 16 } },
                 __React.createElement(Icon_1.Icon, { name: "alert", size: 17 }),
@@ -7235,11 +7315,20 @@ function SmartInventoryPage({ fallback }) {
             fallback && __React.createElement(__React.Fragment, null,
                 __React.createElement("p", { className: "panel-note", style: { marginBottom: 8 } }, "\uC544\uB798\uB294 \uCC38\uACE0\uC6A9 \uC7AC\uACE0\uC785\uB2C8\uB2E4. \uD604\uC7AC \uC7AC\uACE0 \uBCC0\uACBD\u00B7\uB300\uC5EC \uCC98\uB9AC\uB294 \uC0AC\uC6A9\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4."),
                 fallback));
-    const visibleRentals = grouped[role];
-    return __React.createElement(__React.Fragment, null,
+    const visibleRentals = rentalPagination.items;
+    return __React.createElement("div", { className: "smart-inventory-page" },
         heading,
-        __React.createElement("div", { style: { display: 'grid', gap: 20 } },
-            __React.createElement("section", { className: "card appointments-card smart-inventory-card", "aria-label": "\uB9E4\uC7A5 \uC7AC\uACE0" },
+        __React.createElement("div", { className: "inventory-view-switch", role: "group", "aria-label": "\uC7AC\uACE0\u00B7\uB300\uC5EC \uD654\uBA74 \uC120\uD0DD" },
+            __React.createElement("button", { type: "button", className: panel === 'stock' ? 'selected' : '', "aria-pressed": panel === 'stock', "aria-controls": "inventory-stock-section", disabled: panel !== 'stock' && Boolean(acting), onClick: () => setPanel('stock') },
+                __React.createElement(Icon_1.Icon, { name: "box", size: 16 }),
+                "\uC7AC\uACE0 ",
+                __React.createElement("span", null, stock.length)),
+            __React.createElement("button", { type: "button", className: panel === 'rentals' ? 'selected' : '', "aria-pressed": panel === 'rentals', "aria-controls": "inventory-rental-section", disabled: panel !== 'rentals' && Boolean(editing || saving), title: editing ? '수량을 저장하거나 취소한 뒤 대여 화면으로 이동할 수 있습니다.' : undefined, onClick: () => setPanel('rentals') },
+                __React.createElement(Icon_1.Icon, { name: "truck", size: 16 }),
+                "\uB300\uC5EC ",
+                __React.createElement("span", null, rentals.length))),
+        __React.createElement("div", { className: "smart-inventory-layout", "data-active-panel": panel },
+            __React.createElement("section", { id: "inventory-stock-section", className: "card appointments-card smart-inventory-card", "data-inventory-panel": "stock", "aria-label": "\uB9E4\uC7A5 \uC7AC\uACE0" },
                 __React.createElement("div", { className: "card-heading" },
                     __React.createElement("div", { className: "title-with-icon" },
                         __React.createElement("span", { className: "small-icon gray" },
@@ -7252,7 +7341,7 @@ function SmartInventoryPage({ fallback }) {
                             "\uB300\uC5EC \uC694\uCCAD"),
                         __React.createElement("label", { className: "search-field", style: { gap: 6, width: 'auto', maxWidth: '100%' } },
                             __React.createElement(Icon_1.Icon, { name: "store", size: 15 }),
-                            __React.createElement("select", { "aria-label": "\uB9E4\uC7A5 \uC120\uD0DD", value: storeId, onChange: event => { stockRequestVersion.current++; setStoreId(event.target.value); setNotice(''); }, style: { border: 0, background: 'transparent', font: 'inherit', paddingRight: 4, maxWidth: 260 } }, stores.map(store => __React.createElement("option", { key: store.id, value: store.id },
+                            __React.createElement("select", { "aria-label": "\uB9E4\uC7A5 \uC120\uD0DD", value: storeId, onChange: event => { stockRequestVersion.current++; setStockPage(1); setStoreId(event.target.value); setNotice(''); }, style: { border: 0, background: 'transparent', font: 'inherit', paddingRight: 4, maxWidth: 260 } }, stores.map(store => __React.createElement("option", { key: store.id, value: store.id },
                                 store.name,
                                 store.is_home ? ' (우리 매장)' : '')))))),
                 notice && __React.createElement("div", { className: "notice-inline", role: "status", style: { margin: '0 20px 12px' } },
@@ -7261,7 +7350,7 @@ function SmartInventoryPage({ fallback }) {
                 stockError ? __React.createElement("div", { className: "notice-inline", role: "alert", style: { margin: '0 20px 16px' } },
                     __React.createElement(Icon_1.Icon, { name: "alert", size: 16 }),
                     __React.createElement("span", null, (0, inventory_1.inventoryErrorMessage)(stockError)))
-                    : __React.createElement("div", { className: "table-scroll", role: "region", "aria-label": "\uC7AC\uACE0 \uD45C \u00B7 \uC881\uC740 \uD654\uBA74\uC5D0\uC11C \uC88C\uC6B0 \uC2A4\uD06C\uB864", tabIndex: 0 },
+                    : __React.createElement("div", { id: "inventory-stock-table", className: "table-scroll", role: "region", "aria-label": "\uC7AC\uACE0 \uD45C \u00B7 \uC881\uC740 \uD654\uBA74\uC5D0\uC11C \uC88C\uC6B0 \uC2A4\uD06C\uB864", tabIndex: 0 },
                         __React.createElement("table", { className: "appointment-table smart-inventory-table" },
                             __React.createElement("thead", null,
                                 __React.createElement("tr", null,
@@ -7273,7 +7362,7 @@ function SmartInventoryPage({ fallback }) {
                                     __React.createElement("th", { scope: "col", style: { width: '16%' } }, "\uC0C1\uD0DC"))),
                             __React.createElement("tbody", null, stockLoading ? __React.createElement("tr", null,
                                 __React.createElement("td", { colSpan: 6 }, "\uBD88\uB7EC\uC624\uB294 \uC911\u2026")) : stock.length === 0 ? __React.createElement("tr", null,
-                                __React.createElement("td", { colSpan: 6 }, "\uC7AC\uACE0 \uC815\uBCF4\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.")) : stock.map(row => {
+                                __React.createElement("td", { colSpan: 6 }, "\uC7AC\uACE0 \uC815\uBCF4\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.")) : stockPagination.items.map(row => {
                                 const level = (0, inventory_1.stockLevel)(row);
                                 const error = rowErrors[row.model_id];
                                 return __React.createElement("tr", { key: row.model_id, style: { cursor: 'default' } },
@@ -7295,26 +7384,28 @@ function SmartInventoryPage({ fallback }) {
                                             __React.createElement("span", { className: `status-pill ${inventory_1.stockLevelPill[level]}` }, inventory_1.stockLevelLabels[level]),
                                             isHome && level !== 'ok' && __React.createElement("button", { className: "text-button", onClick: () => openRequest(row.model_id), "aria-label": `${row.model_name} 대여 요청` }, "\uB300\uC5EC \uC694\uCCAD"))));
                             })))),
+                !stockLoading && !stockError && __React.createElement(InventoryPagination, { label: "\uC7AC\uACE0", controls: "inventory-stock-table", pagination: stockPagination, disabled: Boolean(editing || saving), onChange: setStockPage }),
+                editing && __React.createElement("p", { className: "inventory-navigation-note", role: "status" }, "\uC218\uB7C9\uC744 \uC800\uC7A5\uD558\uAC70\uB098 \uCDE8\uC18C\uD55C \uB4A4 \uD398\uC774\uC9C0\u00B7\uD654\uBA74\uC744 \uC774\uB3D9\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."),
                 __React.createElement("div", { className: "table-footer" },
                     __React.createElement("span", null,
                         __React.createElement(Icon_1.Icon, { name: "help", size: 13 }),
                         "\uAC00\uC6A9 = \uC7AC\uACE0 \u2212 \uC608\uC57D \u2212 \uC774\uB3D9 \uC911 \u00B7 \uAC00\uC6A9 1\uB300 \uC774\uD558\uB294 \uC7AC\uACE0 \uBD80\uC871"),
                     __React.createElement("span", null, isHome ? '우리 매장 재고만 수정할 수 있습니다 · Enter 저장 · Esc 취소' : '다른 매장은 조회만 가능합니다'))),
-            __React.createElement("section", { className: "card appointments-card smart-inventory-card", "aria-label": "\uB300\uC5EC \uBAA9\uB85D" },
+            __React.createElement("section", { id: "inventory-rental-section", className: "card appointments-card smart-inventory-card", "data-inventory-panel": "rentals", "aria-label": "\uB300\uC5EC \uBAA9\uB85D" },
                 __React.createElement("div", { className: "card-heading" },
                     __React.createElement("div", { className: "title-with-icon" },
                         __React.createElement("span", { className: "small-icon gray" },
                             __React.createElement(Icon_1.Icon, { name: "truck", size: 18 })),
                         __React.createElement("h2", null, "\uB300\uC5EC"),
                         __React.createElement("span", { className: "count-label" }, rentals.length)),
-                    __React.createElement("div", { className: "segmented-control", "aria-label": "\uB300\uC5EC \uAD6C\uBD84" }, inventory_1.rentalRoles.map(item => __React.createElement("button", { key: item, "aria-pressed": role === item, className: role === item ? 'selected' : '', onClick: () => setRole(item) },
+                    __React.createElement("div", { className: "segmented-control", "aria-label": "\uB300\uC5EC \uAD6C\uBD84" }, inventory_1.rentalRoles.map(item => __React.createElement("button", { key: item, "aria-pressed": role === item, className: role === item ? 'selected' : '', disabled: Boolean(acting), onClick: () => { setRentalPage(1); setRole(item); } },
                         inventory_1.rentalRoleLabels[item],
                         " ",
                         grouped[item].length)))),
                 rentalNotice && __React.createElement("div", { className: "notice-inline", role: "status", style: { margin: '0 20px 12px' } },
                     __React.createElement(Icon_1.Icon, { name: "check", size: 16 }),
                     __React.createElement("span", null, rentalNotice)),
-                __React.createElement("div", { className: "table-scroll", role: "region", "aria-label": "\uB300\uC5EC \uD45C \u00B7 \uC881\uC740 \uD654\uBA74\uC5D0\uC11C \uC88C\uC6B0 \uC2A4\uD06C\uB864", tabIndex: 0 },
+                __React.createElement("div", { id: "inventory-rental-table", className: "table-scroll", role: "region", "aria-label": "\uB300\uC5EC \uD45C \u00B7 \uC881\uC740 \uD654\uBA74\uC5D0\uC11C \uC88C\uC6B0 \uC2A4\uD06C\uB864", tabIndex: 0 },
                     __React.createElement("table", { className: "appointment-table smart-inventory-table" },
                         __React.createElement("thead", null,
                             __React.createElement("tr", null,
@@ -7352,6 +7443,7 @@ function SmartInventoryPage({ fallback }) {
                                     __React.createElement("button", { className: `button ${spec.name === 'cancel' ? 'button-secondary' : 'button-primary'}`, style: smallButton, disabled: busy || Boolean(acting), "aria-label": `${rental.rental_id} ${spec.label}`, onClick: () => spec.confirm ? setConfirming({ rental, spec }) : void runAction(rental, spec) }, busy ? '처리 중…' : spec.label),
                                     actionErrors[rental.rental_id] && __React.createElement("small", { role: "alert", style: { color: 'var(--red)', whiteSpace: 'normal' } }, actionErrors[rental.rental_id]));
                             })())))))),
+                __React.createElement(InventoryPagination, { label: "\uB300\uC5EC", controls: "inventory-rental-table", pagination: rentalPagination, disabled: Boolean(acting), onChange: setRentalPage }),
                 __React.createElement("div", { className: "table-footer" },
                     __React.createElement("span", null,
                         __React.createElement(Icon_1.Icon, { name: "help", size: 13 }),

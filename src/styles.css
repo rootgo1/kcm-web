@@ -1260,7 +1260,40 @@ h1 { font-size: 27px; line-height: 1.4; font-weight: 750; margin-top: 8px; color
 .inventory-step-button { width: 32px; height: 32px; flex-shrink: 0; }
 .inventory-step-button:focus-visible { outline: 2px solid var(--red); outline-offset: -2px; }
 .inventory-stepper input:focus-visible { outline: 2px solid var(--red) !important; outline-offset: -2px; }
+/* Paginated inventory stays compact without reducing the existing text or touch targets. */
+.smart-inventory-page .page-heading { margin-bottom: 18px; }
+.smart-inventory-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+.smart-inventory-layout > .smart-inventory-card { min-width: 0; margin-top: 0; }
+.smart-inventory-page .smart-inventory-card .card-heading { padding-block: 12px 10px; gap: 8px; }
+.smart-inventory-page .smart-inventory-table { table-layout: fixed; width: 100%; }
+.smart-inventory-page .smart-inventory-table td { height: 50px; padding-block: 8px; white-space: normal; }
+.smart-inventory-page .smart-inventory-table th { padding-block: 9px; }
+.smart-inventory-page .smart-inventory-card .table-footer { padding-block: 8px; }
+.inventory-stock-editor { flex-wrap: wrap; max-width: 100%; }
+.inventory-view-switch { display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 14px; border: 1px solid var(--line); border-radius: 9px; background: #f4f5f7; }
+.inventory-view-switch > button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 6px 16px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; font-weight: 650; cursor: pointer; }
+.inventory-view-switch > button.selected { background: #fff; color: var(--ink); box-shadow: 0 1px 3px #20252d0a; }
+.inventory-view-switch > button > span { font-size: 11px; color: var(--muted); }
+.inventory-view-switch > button:disabled { opacity: .45; cursor: default; }
+.inventory-view-switch > button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+.inventory-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 8px 16px; border-top: 1px solid var(--line); font-size: 11px; }
+.inventory-page-range { margin-right: auto; color: var(--muted); }
+.inventory-page-number { min-width: 38px; text-align: center; font-variant-numeric: tabular-nums; }
+.inventory-pagination .icon-button { width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 6px; }
+.inventory-pagination .icon-button:disabled { opacity: .35; cursor: default; }
+.inventory-page-previous { display: inline-flex; transform: rotate(180deg); }
+.inventory-navigation-note { margin: 0; padding: 0 16px 8px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+@media (min-width: 1870px) {
+  .smart-inventory-layout { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .inventory-view-switch { display: none; }
+}
+@media (max-width: 1869px) {
+  .smart-inventory-layout[data-active-panel="stock"] > [data-inventory-panel="rentals"],
+  .smart-inventory-layout[data-active-panel="rentals"] > [data-inventory-panel="stock"] { display: none; }
+}
 @media (max-width: 640px) {
+  .inventory-view-switch > button { min-height: 40px; }
+  .inventory-pagination .icon-button { width: 40px; height: 40px; }
   .inventory-heading-controls { flex-basis: 100%; justify-content: flex-start; }
   .inventory-heading-controls .search-field { flex: 1; }
   .inventory-heading-controls select { max-width: 100% !important; }

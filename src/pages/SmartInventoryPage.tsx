@@ -7,11 +7,24 @@ import {
   type InventoryStore, type RentalActionSpec, type RentalRole, type RentalRow, type StockRow,
 } from '../lib/inventory';
 import { InventoryApiError, inventoryApi } from '../services/inventoryApi';
+import { inventoryPageSize, paginateInventory, type InventoryPage } from '../lib/inventoryPagination';
 
 const codeOf = (error: unknown) => error instanceof InventoryApiError ? error.code : 'NETWORK';
 
 const smallButton: CSSProperties = { padding: '4px 10px', fontSize: 12 };
 const stepButton: CSSProperties = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#f8f9fb', color: '#5f6671', fontSize: 14, lineHeight: 1 };
+
+function InventoryPagination({ label, controls, pagination, disabled = false, onChange }: {
+  label: string; controls: string; pagination: InventoryPage<unknown>; disabled?: boolean; onChange: (page: number) => void;
+}) {
+  if (pagination.totalPages <= 1) return null;
+  return <nav className="inventory-pagination" aria-label={`${label} 페이지 이동`}>
+    <span className="inventory-page-range">{(pagination.page - 1) * inventoryPageSize + 1}–{Math.min(pagination.page * inventoryPageSize, pagination.totalItems)} / {pagination.totalItems}건</span>
+    <button type="button" className="icon-button" aria-label={`이전 ${label} 페이지`} aria-controls={controls} disabled={disabled || pagination.page === 1} onClick={() => onChange(pagination.page - 1)}><span className="inventory-page-previous"><Icon name="chevron" size={16}/></span></button>
+    <span className="inventory-page-number" aria-live="polite" aria-atomic="true">{pagination.page} / {pagination.totalPages}</span>
+    <button type="button" className="icon-button" aria-label={`다음 ${label} 페이지`} aria-controls={controls} disabled={disabled || pagination.page === pagination.totalPages} onClick={() => onChange(pagination.page + 1)}><Icon name="chevron" size={16}/></button>
+  </nav>;
+}
 
 /** One stock count: plain number + 수정 button, or (for the row being edited) a stepper with 저장/취소. */
 function StockCell({ row, editing, draft, saving, error, onEdit, onDraft, onSave, onCancel }: {
@@ -27,8 +40,8 @@ function StockCell({ row, editing, draft, saving, error, onEdit, onDraft, onSave
   const value = /^\d{1,4}$/.test(draft.trim()) ? Number(draft.trim()) : null;
   const delta = value === null ? 0 : value - current;
   const step = (by: number) => onDraft(String(Math.min(9999, Math.max(locked, (value ?? current) + by))));
-  return <span style={{ display: 'inline-flex', flexDirection: 'column', gap: 6 }}>
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+  return <span style={{ display: 'inline-flex', flexDirection: 'column', gap: 6, maxWidth: '100%' }}>
+    <span className="inventory-stock-editor" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
       <span className="inventory-stepper" role="group" aria-label={`${row.model_name} 재고 수량`} style={{ display: 'inline-flex', alignItems: 'center', border: '1px solid #e0e4e9', borderRadius: 7, overflow: 'hidden', background: 'white' }}>
         <button type="button" className="inventory-step-button" style={stepButton} aria-label="1대 줄이기" disabled={saving || (value ?? current) <= locked} onClick={() => step(-1)}>−</button>
         <input type="text" inputMode="numeric" autoFocus aria-label={`${row.model_name} 새 재고 수량`} value={draft} disabled={saving}
@@ -57,6 +70,9 @@ export function SmartInventoryPage({ fallback }: { fallback?: ReactNode }) {
   const [stock, setStock] = useState<StockRow[]>([]);
   const [rentals, setRentals] = useState<RentalRow[]>([]);
   const [role, setRole] = useState<RentalRole>('incoming');
+  const [panel, setPanel] = useState<'stock' | 'rentals'>('stock');
+  const [stockPage, setStockPage] = useState(1);
+  const [rentalPage, setRentalPage] = useState(1);
   const [loadError, setLoadError] = useState('');
   const [stockError, setStockError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -110,6 +126,12 @@ export function SmartInventoryPage({ fallback }: { fallback?: ReactNode }) {
     return groups;
   }, [rentals, home]);
 
+  const stockPagination = paginateInventory(stock, stockPage);
+  const rentalPagination = paginateInventory(grouped[role], rentalPage);
+  useEffect(() => { setStockPage(stockPagination.page); }, [stockPagination.page]);
+  useEffect(() => { setRentalPage(rentalPagination.page); }, [rentalPagination.page]);
+  useEffect(() => { setRentalPage(1); }, [role]);
+
   const startEdit = (row: StockRow) => { setEditing(row.model_id); setDraft(String(stockQtyOf(row))); setNotice(''); setRowErrors(current => ({ ...current, [row.model_id]: '' })); };
   const cancelEdit = () => { setEditing(''); setDraft(''); };
   const save = useCallback(async (row: StockRow) => {
@@ -149,6 +171,7 @@ export function SmartInventoryPage({ fallback }: { fallback?: ReactNode }) {
       const result = await inventoryApi.requestRental(requestModel, requestQty);
       setRentals(current => [{ ...result.rental, role: 'sent' }, ...current.filter(item => item.rental_id !== result.rental.rental_id)]);
       setRole('sent'); setRentalNotice(describeRequest(result)); setRequestModel(null);
+      setRentalPage(1); setPanel('rentals');
     } catch (error) { setRequestError(inventoryErrorMessage(codeOf(error))); } finally { setRequesting(false); }
   };
   const runAction = async (rental: RentalRow, spec: RentalActionSpec) => {
@@ -168,30 +191,34 @@ export function SmartInventoryPage({ fallback }: { fallback?: ReactNode }) {
 
   const heading = <div className="page-heading"><div><span className="eyebrow">매장관리</span><h1>스마트 재고</h1>
     <p>우리 매장과 다른 매장의 재고, 매장 간 대여 현황을 확인합니다.</p></div>
-    <div className="heading-actions"><button className="button button-secondary" onClick={() => setReloadKey(key => key + 1)} disabled={loading}><Icon name="refresh" size={16}/>새로고침</button></div></div>;
+    <div className="heading-actions"><button className="button button-secondary" onClick={() => { setStockPage(1); setRentalPage(1); setReloadKey(key => key + 1); }} disabled={loading}><Icon name="refresh" size={16}/>새로고침</button></div></div>;
 
-  if (loading) return <>{heading}<div className="loading-view" role="status"><div className="loader"/><p>재고 정보를 불러오는 중입니다.</p></div></>;
-  if (loadError) return <>{heading}
+  if (loading) return <div className="smart-inventory-page">{heading}<div className="loading-view" role="status"><div className="loader"/><p>재고 정보를 불러오는 중입니다.</p></div></div>;
+  if (loadError) return <div className="smart-inventory-page">{heading}
     <div className="notice-inline" role="alert" style={{ marginBottom: 16 }}><Icon name="alert" size={17}/><span>{inventoryErrorMessage(loadError)}</span></div>
     {fallback && <><p className="panel-note" style={{ marginBottom: 8 }}>아래는 참고용 재고입니다. 현재 재고 변경·대여 처리는 사용할 수 없습니다.</p>{fallback}</>}
-  </>;
+  </div>;
 
-  const visibleRentals = grouped[role];
-  return <>{heading}
-    <div style={{ display: 'grid', gap: 20 }}>
-      <section className="card appointments-card smart-inventory-card" aria-label="매장 재고">
+  const visibleRentals = rentalPagination.items;
+  return <div className="smart-inventory-page">{heading}
+    <div className="inventory-view-switch" role="group" aria-label="재고·대여 화면 선택">
+      <button type="button" className={panel === 'stock' ? 'selected' : ''} aria-pressed={panel === 'stock'} aria-controls="inventory-stock-section" disabled={panel !== 'stock' && Boolean(acting)} onClick={() => setPanel('stock')}><Icon name="box" size={16}/>재고 <span>{stock.length}</span></button>
+      <button type="button" className={panel === 'rentals' ? 'selected' : ''} aria-pressed={panel === 'rentals'} aria-controls="inventory-rental-section" disabled={panel !== 'rentals' && Boolean(editing || saving)} title={editing ? '수량을 저장하거나 취소한 뒤 대여 화면으로 이동할 수 있습니다.' : undefined} onClick={() => setPanel('rentals')}><Icon name="truck" size={16}/>대여 <span>{rentals.length}</span></button>
+    </div>
+    <div className="smart-inventory-layout" data-active-panel={panel}>
+      <section id="inventory-stock-section" className="card appointments-card smart-inventory-card" data-inventory-panel="stock" aria-label="매장 재고">
         <div className="card-heading"><div className="title-with-icon"><span className="small-icon gray"><Icon name="box" size={18}/></span><h2>재고</h2><span className="count-label">{stock.length}</span></div>
           <div className="inventory-heading-controls">
           {isHome && <button className="button button-primary" style={{ minHeight: 32, padding: '6px 12px' }} onClick={() => openRequest()}><Icon name="truck" size={15}/>대여 요청</button>}
           <label className="search-field" style={{ gap: 6, width: 'auto', maxWidth: '100%' }}><Icon name="store" size={15}/>
-            <select aria-label="매장 선택" value={storeId} onChange={event => { stockRequestVersion.current++; setStoreId(event.target.value); setNotice(''); }} style={{ border: 0, background: 'transparent', font: 'inherit', paddingRight: 4, maxWidth: 260 }}>
+            <select aria-label="매장 선택" value={storeId} onChange={event => { stockRequestVersion.current++; setStockPage(1); setStoreId(event.target.value); setNotice(''); }} style={{ border: 0, background: 'transparent', font: 'inherit', paddingRight: 4, maxWidth: 260 }}>
               {stores.map(store => <option key={store.id} value={store.id}>{store.name}{store.is_home ? ' (우리 매장)' : ''}</option>)}
             </select></label></div></div>
         {notice && <div className="notice-inline" role="status" style={{ margin: '0 20px 12px' }}><Icon name="check" size={16}/><span>{notice}</span></div>}
         {stockError ? <div className="notice-inline" role="alert" style={{ margin: '0 20px 16px' }}><Icon name="alert" size={16}/><span>{inventoryErrorMessage(stockError)}</span></div>
-          : <div className="table-scroll" role="region" aria-label="재고 표 · 좁은 화면에서 좌우 스크롤" tabIndex={0}><table className="appointment-table smart-inventory-table">
+          : <div id="inventory-stock-table" className="table-scroll" role="region" aria-label="재고 표 · 좁은 화면에서 좌우 스크롤" tabIndex={0}><table className="appointment-table smart-inventory-table">
             <thead><tr><th scope="col" style={{ width: '26%' }}>모델</th><th scope="col" style={{ width: '10%' }}>가용</th><th scope="col" style={{ width: '30%' }}>재고</th><th scope="col" style={{ width: '10%' }}>예약</th><th scope="col" style={{ width: '10%' }}>이동 중</th><th scope="col" style={{ width: '16%' }}>상태</th></tr></thead>
-            <tbody>{stockLoading ? <tr><td colSpan={6}>불러오는 중…</td></tr> : stock.length === 0 ? <tr><td colSpan={6}>재고 정보가 없습니다.</td></tr> : stock.map(row => {
+            <tbody>{stockLoading ? <tr><td colSpan={6}>불러오는 중…</td></tr> : stock.length === 0 ? <tr><td colSpan={6}>재고 정보가 없습니다.</td></tr> : stockPagination.items.map(row => {
               const level = stockLevel(row);
               const error = rowErrors[row.model_id];
               return <tr key={row.model_id} style={{ cursor: 'default' }}>
@@ -206,14 +233,16 @@ export function SmartInventoryPage({ fallback }: { fallback?: ReactNode }) {
                   {isHome && level !== 'ok' && <button className="text-button" onClick={() => openRequest(row.model_id)} aria-label={`${row.model_name} 대여 요청`}>대여 요청</button>}</span></td>
               </tr>;
             })}</tbody></table></div>}
+        {!stockLoading && !stockError && <InventoryPagination label="재고" controls="inventory-stock-table" pagination={stockPagination} disabled={Boolean(editing || saving)} onChange={setStockPage}/>}
+        {editing && <p className="inventory-navigation-note" role="status">수량을 저장하거나 취소한 뒤 페이지·화면을 이동할 수 있습니다.</p>}
         <div className="table-footer"><span><Icon name="help" size={13}/>가용 = 재고 − 예약 − 이동 중 · 가용 1대 이하는 재고 부족</span><span>{isHome ? '우리 매장 재고만 수정할 수 있습니다 · Enter 저장 · Esc 취소' : '다른 매장은 조회만 가능합니다'}</span></div>
       </section>
 
-      <section className="card appointments-card smart-inventory-card" aria-label="대여 목록">
+      <section id="inventory-rental-section" className="card appointments-card smart-inventory-card" data-inventory-panel="rentals" aria-label="대여 목록">
         <div className="card-heading"><div className="title-with-icon"><span className="small-icon gray"><Icon name="truck" size={18}/></span><h2>대여</h2><span className="count-label">{rentals.length}</span></div>
-          <div className="segmented-control" aria-label="대여 구분">{rentalRoles.map(item => <button key={item} aria-pressed={role === item} className={role === item ? 'selected' : ''} onClick={() => setRole(item)}>{rentalRoleLabels[item]} {grouped[item].length}</button>)}</div></div>
+          <div className="segmented-control" aria-label="대여 구분">{rentalRoles.map(item => <button key={item} aria-pressed={role === item} className={role === item ? 'selected' : ''} disabled={Boolean(acting)} onClick={() => { setRentalPage(1); setRole(item); }}>{rentalRoleLabels[item]} {grouped[item].length}</button>)}</div></div>
         {rentalNotice && <div className="notice-inline" role="status" style={{ margin: '0 20px 12px' }}><Icon name="check" size={16}/><span>{rentalNotice}</span></div>}
-        <div className="table-scroll" role="region" aria-label="대여 표 · 좁은 화면에서 좌우 스크롤" tabIndex={0}><table className="appointment-table smart-inventory-table">
+        <div id="inventory-rental-table" className="table-scroll" role="region" aria-label="대여 표 · 좁은 화면에서 좌우 스크롤" tabIndex={0}><table className="appointment-table smart-inventory-table">
           <thead><tr><th scope="col" style={{ width: '13%' }}>대여번호</th><th scope="col" style={{ width: '24%' }}>모델</th><th scope="col" style={{ width: '8%' }}>수량</th><th scope="col" style={{ width: '18%' }}>{role === 'sent' ? '빌려주는 매장' : '요청 매장'}</th><th scope="col" style={{ width: '11%' }}>상태</th><th scope="col" style={{ width: '12%' }}>요청일</th><th scope="col" style={{ width: '14%' }}>처리</th></tr></thead>
           <tbody>{visibleRentals.length === 0 ? <tr><td colSpan={7}>{rentalRoleLabels[role]}이 없습니다.</td></tr> : visibleRentals.map(rental => <tr key={rental.rental_id} style={{ cursor: 'default' }}>
             <td><strong>{rental.rental_id}</strong></td>
@@ -233,6 +262,7 @@ export function SmartInventoryPage({ fallback }: { fallback?: ReactNode }) {
               </span>;
             })()}</td>
           </tr>)}</tbody></table></div>
+        <InventoryPagination label="대여" controls="inventory-rental-table" pagination={rentalPagination} disabled={Boolean(acting)} onChange={setRentalPage}/>
         <div className="table-footer"><span><Icon name="help" size={13}/>우리 매장이 지금 할 수 있는 처리만 버튼으로 보입니다.</span><span>{home?.name ?? ''} 기준</span></div>
       </section>
     </div>
@@ -263,5 +293,5 @@ export function SmartInventoryPage({ fallback }: { fallback?: ReactNode }) {
       <div className="modal-actions"><button className="button button-secondary" onClick={() => setConfirming(null)}>닫기</button>
         <button className="button button-primary" onClick={() => void runAction(confirming.rental, confirming.spec)}>{confirming.spec.label}</button></div>
     </Modal>}
-  </>;
+  </div>;
 }

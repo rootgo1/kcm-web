@@ -5,6 +5,7 @@ import {
   type RentalRow, type StockRow,
 } from '../src/lib/inventory.js';
 import { InventoryApiError, inventoryApi } from '../src/services/inventoryApi.js';
+import { inventoryPageSize, paginateInventory } from '../src/lib/inventoryPagination.js';
 
 // Synthetic rows only.
 const dbRow: StockRow = { store_id: 'store_005', store_name: '테스트점', is_home: true, model_id: 'product_001', model_name: '모델 A', variant: '256GB · 블랙',
@@ -192,4 +193,84 @@ test('스마트 재고: 대여 요청 결과 문구', () => {
   assert.match(describeRequest({ rental: r, applied_radius_km: null, candidates: [c(1), c(2), c(3), c(4)] }), /거리 제한 없이 4개 매장.* 외$/);
   assert.equal(describeRequest({ rental: r, applied_radius_km: null, candidates: [] }), 'stock_042 요청을 보냈습니다.');
   assert.match(inventoryErrorMessage('NO_LENDER_AVAILABLE'), /빌려줄 수 있는 매장이 없습니다/);
+});
+
+test('스마트 재고 페이지: 재고 5·6·12건을 순서대로 5건씩 나누고 마지막 나머지도 보존한다', () => {
+  assert.equal(inventoryPageSize, 5);
+  for (const count of [5, 6, 12]) {
+    const rows = Array.from({ length: count }, (_, index) => ({ ...dbRow, model_id: `product_${index + 1}` }));
+    const totalPages = Math.ceil(count / 5);
+    const pages = Array.from({ length: totalPages }, (_, index) => paginateInventory(rows, index + 1));
+    assert.equal(pages[0].totalItems, count);
+    assert.equal(pages[0].totalPages, totalPages);
+    assert.equal(pages[0].items.length, 5);
+    assert.equal(pages.at(-1)!.items.length, count === 5 ? 5 : count === 6 ? 1 : 2);
+    assert.deepEqual(pages.flatMap(result => result.items), rows);
+    pages.forEach((result, index) => assert.equal(result.page, index + 1));
+  }
+});
+
+test('스마트 재고 페이지: 삭제·목록 축소 시 페이지를 제한하고 빈 목록·잘못된 페이지는 1페이지로 처리한다', () => {
+  const rows = Array.from({ length: 12 }, (_, index) => rental({ rental_id: `stock_${index + 1}` }));
+  assert.equal(paginateInventory(rows, 3).page, 3);
+  assert.deepEqual(paginateInventory(rows.slice(0, 6), 3), { items: [rows[5]], page: 2, totalPages: 2, totalItems: 6 });
+  assert.deepEqual(paginateInventory(rows.slice(0, 5), 2), { items: rows.slice(0, 5), page: 1, totalPages: 1, totalItems: 5 });
+  assert.deepEqual(paginateInventory([], 3), { items: [], page: 1, totalPages: 1, totalItems: 0 });
+  for (const page of [0, -1, 1.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.equal(paginateInventory(rows, page).page, 1);
+    assert.deepEqual(paginateInventory(rows, page).items, rows.slice(0, 5));
+  }
+  assert.equal(paginateInventory(rows, Number.MAX_SAFE_INTEGER).page, 3);
+});
+
+test('스마트 재고 페이지: 매장·검색 필터 결과와 대여 구분별 목록을 기준으로 계산한다', () => {
+  const stock = Array.from({ length: 12 }, (_, index) => ({ ...dbRow, model_id: `product_${index + 1}`,
+    store_id: index < 8 ? 'store_005' : 'store_001', model_name: index < 6 ? '검색 모델' : '다른 모델' }));
+  const filteredStock = stock.filter(row => row.store_id === 'store_005' && row.model_name.includes('검색'));
+  const stockPage = paginateInventory(filteredStock, 2);
+  assert.equal(stockPage.totalItems, 6);
+  assert.equal(stockPage.totalPages, 2);
+  assert.deepEqual(stockPage.items, [stock[5]]);
+
+  const rentals = Array.from({ length: 12 }, (_, index) => rental({ rental_id: `stock_${index + 1}`,
+    role: index < 6 ? 'sent' : index < 9 ? 'incoming' : 'lending' }));
+  const sent = rentals.filter(row => rentalRole(row, 'store_005') === 'sent');
+  const sentPage = paginateInventory(sent, 2);
+  assert.equal(sentPage.totalItems, 6);
+  assert.deepEqual(sentPage.items, [rentals[5]]);
+  assert.equal(paginateInventory(rentals.filter(row => rentalRole(row, 'store_005') === 'incoming'), 1).totalPages, 1);
+});
+
+test('스마트 재고 페이지: 원본·행 참조·가용 및 예약 수량을 변경하지 않고 별도 페이지 배열만 생성한다', () => {
+  const rows = Object.freeze(Array.from({ length: 6 }, (_, index) => Object.freeze({ ...dbRow, model_id: `product_${index + 1}` })));
+  const before = structuredClone(rows);
+  const page = paginateInventory(rows, 2);
+  assert.notEqual(page.items, rows);
+  assert.equal(page.items[0], rows[5]);
+  assert.equal(availableOf(page.items[0]), 2);
+  assert.equal(stockQtyOf(page.items[0]), 5);
+  assert.equal(lockedOf(page.items[0]), 3);
+  page.items.pop();
+  assert.equal(rows.length, 6);
+  assert.deepEqual(rows, before);
+});
+
+test('스마트 재고 페이지: 대여의 역할·상태·다음 처리 조건은 페이지 이동과 무관하게 유지한다', () => {
+  const rows = Object.freeze([
+    rental({ rental_id: 'stock_001', role: 'sent', status: 'requested' }),
+    rental({ rental_id: 'stock_002', role: 'incoming', status: 'requested' }),
+    rental({ rental_id: 'stock_003', role: 'lending', status: 'approved' }),
+    rental({ rental_id: 'stock_004', role: 'sent', status: 'shipping' }),
+    rental({ rental_id: 'stock_005', role: 'lending', status: 'shipping' }),
+    rental({ rental_id: 'stock_006', role: 'lending', status: 'delivered' }),
+    rental({ rental_id: 'stock_007', role: 'lending', status: 'returned' }),
+  ].map(row => Object.freeze(row)));
+  const before = structuredClone(rows);
+  const expected = ['cancel', 'approve', 'ship', 'deliver', null, 'return', null];
+  const pagedRows = [paginateInventory(rows, 1), paginateInventory(rows, 2)].flatMap(page => page.items);
+  pagedRows.forEach((row, index) => {
+    assert.equal(row, rows[index]);
+    assert.equal(nextRentalAction(row, rentalRole(row, 'store_005'))?.name ?? null, expected[index]);
+  });
+  assert.deepEqual(rows, before);
 });
