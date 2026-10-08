@@ -1,4 +1,17 @@
 import type { LiveCall } from './types.js';
+import { calculateCallRisk } from '../lib/riskPolicy.js';
+
+/** Read-only estimate from received signals. Never finalizes or stores a call score. */
+export function liveRiskEstimate(call: LiveCall) {
+  const analysis = call.risk_analysis, audio = call.audio_signal;
+  if ((call.status !== 'live' && call.status !== 'connecting') || !analysis || analysis.analyzedUserTurns === 0 || !audio?.available) return null;
+  try {
+    const explicitHarmThreat = Object.values(analysis.analysisByTurn).some(turn =>
+      turn.signals.some(signal => signal.type === 'threat' && signal.explicitHarm === true));
+    return calculateCallRisk({ profanity_count: analysis.profanityCount, threat_count: analysis.threatCount,
+      blame_count: analysis.blameCount, sexual_count: analysis.sexualCount, shouting_count: audio.shouting_count }, { explicitHarmThreat });
+  } catch { return null; } // Missing/invalid counts must not become a normal zero score.
+}
 
 /** Read-only grouping: unknown identities remain separate calls, never one customer. */
 export function liveCustomerHistory(calls: readonly LiveCall[]) {

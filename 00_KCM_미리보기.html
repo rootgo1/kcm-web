@@ -6904,8 +6904,24 @@ function liveFinalizationNotice(reason) {
 "src/live/livePresentation":function(module,exports,require){const __React=require('react');
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.liveRiskEstimate = liveRiskEstimate;
 exports.liveCustomerHistory = liveCustomerHistory;
 exports.deliveryLabel = deliveryLabel;
+const riskPolicy_js_1 = require("../lib/riskPolicy.js");
+/** Read-only estimate from received signals. Never finalizes or stores a call score. */
+function liveRiskEstimate(call) {
+    const analysis = call.risk_analysis, audio = call.audio_signal;
+    if ((call.status !== 'live' && call.status !== 'connecting') || !analysis || analysis.analyzedUserTurns === 0 || !audio?.available)
+        return null;
+    try {
+        const explicitHarmThreat = Object.values(analysis.analysisByTurn).some(turn => turn.signals.some(signal => signal.type === 'threat' && signal.explicitHarm === true));
+        return (0, riskPolicy_js_1.calculateCallRisk)({ profanity_count: analysis.profanityCount, threat_count: analysis.threatCount,
+            blame_count: analysis.blameCount, sexual_count: analysis.sexualCount, shouting_count: audio.shouting_count }, { explicitHarmThreat });
+    }
+    catch {
+        return null;
+    } // Missing/invalid counts must not become a normal zero score.
+}
 /** Read-only grouping: unknown identities remain separate calls, never one customer. */
 function liveCustomerHistory(calls) {
     const groups = new Map();
@@ -6943,9 +6959,10 @@ exports.LiveTurnBadges = LiveTurnBadges;
 const riskScoring_1 = require("../lib/riskScoring");
 const livePresentation_1 = require("./livePresentation");
 const liveNotices_1 = require("./liveNotices");
-/** Server results only. No combined numeric score is presented during a live call. */
+/** Shared policy for the live estimate; only the server result is final. */
 function LiveRiskSignals({ call }) {
     const analysis = call.risk_analysis, audio = call.audio_signal, final = call.final_result;
+    const estimate = (0, livePresentation_1.liveRiskEstimate)(call);
     return __React.createElement("section", { className: "live-risk-signals", "aria-label": "\uD604\uC7AC \uAC10\uC9C0 \uC2E0\uD638" },
         __React.createElement("div", { className: "live-risk-heading" },
             __React.createElement("h3", null, call.status === 'ended' ? '통화 종료 신호' : '현재 감지 신호')),
@@ -6968,8 +6985,8 @@ function LiveRiskSignals({ call }) {
                     audio?.available ? audio.shouting_count + '회' : '— / 측정 대기',
                     audio?.is_shouting && __React.createElement("span", { className: "live-signal-badge threat" }, "\uD604\uC7AC \uACE0\uC131")))),
         analysis?.threatDetected && call.status !== 'ended' && __React.createElement("div", { className: "live-threat-warning", role: "alert" },
-            __React.createElement("span", null, "\uD604\uC7AC \uD1B5\uD654 \uB300\uC751 \uACBD\uACE0"),
-            __React.createElement("strong", null, "\uB9E4\uC6B0 \uC704\uD5D8 / 5\uB2E8\uACC4")),
+            __React.createElement("span", null, estimate ? '현재 감지 기준 · 확정 전' : '현재 통화 대응 경고'),
+            __React.createElement("strong", null, estimate ? (0, riskScoring_1.formatRiskScore)(estimate.risk_score) : '위협 발언 감지 · 점수 확인 대기')),
         !analysis && __React.createElement("p", { className: "live-risk-note", role: "status" }, "\uBD84\uC11D \uC815\uBCF4\uB97C \uAE30\uB2E4\uB9AC\uACE0 \uC788\uC2B5\uB2C8\uB2E4. \uB300\uD654\uB294 \uACC4\uC18D \uD45C\uC2DC\uB429\uB2C8\uB2E4."),
         audio && !audio.coverage_complete && __React.createElement("p", { className: "live-risk-note" }, "\uC77C\uBD80 \uC74C\uC131 \uAD6C\uAC04 \uBBF8\uCE21\uC815 \u00B7 \uACE0\uC131\uC740 \uAD00\uCE21\uB41C \uAD6C\uAC04\uB9CC \uBC18\uC601\uD558\uBA70 \uCD5C\uC885 \uC810\uC218\uB294 \uBCF4\uB958\uD569\uB2C8\uB2E4."),
         call.status === 'ended' ? final ? __React.createElement("div", { className: "live-final-risk" },

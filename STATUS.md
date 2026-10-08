@@ -1230,3 +1230,13 @@ npm.cmd run dev
 - 신규100개 테스트를 포함해 전체 `npm.cmd run check` **1,122/1,122 통과**, 실패·skip·취소0입니다. 프런트 `tsc --noEmit`, 서버 `tsc -p tsconfig.server.json`, Vite production build 통과. 기존 Retell SDK chunk500kB 경고만 남습니다. 기존 테스트는 삭제·약화하지 않았으며 통합 테스트의 텍스트 규칙 버전 기대값만 v8로 맞췄습니다.
 - 독립 읽기 검토에서 추가 blocker를 발견하지 못했습니다. `npm.cmd run preview:standalone` 재생성 완료(기존 HTML과 내용 차이 없음), `git diff --check` 통과. 검증 로그는 Git 제외 `.cache/filming-readiness/threat-coverage-check.log`에 보관합니다.
 - 이번 검증은 격리 자동 테스트입니다. 실제 Retell 음성·Production 화면·외부 저장은 재검증하지 않았고 main 병합·Render 배포·환경변수·n8n workflow·DB 데이터 변경은 하지 않습니다. ASR이 발화를 다른 의미로 변환하거나 등록되지 않은 표현·기존 문맥 범위를 벗어난 분절은 여전히 놓칠 수 있으므로 배포 후 실제 음성 확인이 필요합니다.
+
+## 2026-10-08 — 실시간·종료 위험 등급 표시 기준 통일
+
+- 최신 origin/main `cac6b9fe29ace7b7b57f6cb6b8243a4d05e1679c`에서 `fix/live-risk-grade-consistency`로 분기했습니다. 사용자 영상에서 종료 직전/직후 욕설5회·위협2회가 동일한데 진행 중 고정5단계가 종료 후60점/4단계로 표시되는 것을 확인했습니다. 종료 시 감점이 아니라 실시간 고정 경고와 최종 계산 등급의 표시 기준 차이였습니다.
+- `LiveRiskSignals`의 고정 ‘매우 위험 / 5단계’를 제거했습니다. `livePresentation.liveRiskEstimate`가 현재 검증된 USER 신호·관측 고성 횟수·명확한 위해 근거를 기존 공통 `calculateCallRisk`에 전달하고 ‘현재 감지 기준 · 확정 전’으로 표시합니다. 최종 서버 결과는 기존 경로로만 표시하며 고객 점수나 통화 상태·전송 상태를 변경하지 않습니다.
+- 초기 분석/음성 미수신·미측정·잘못된 횟수는 점수를 만들지 않습니다. 음성 일부 미측정은 관측된 횟수의 잠정값이며 기존 최종 보류 안내를 유지합니다. 종료 후 final_result가 없으면 기존 보류 안내를 유지하며 잠정값으로 대체하지 않습니다. ASR 정정은 최신 snapshot으로 다시 계산하고 과거 최고값을 고정하거나 누적하지 않습니다.
+- 점수 정책 `call-risk-v5`, 텍스트 탐지 `local-text-rules-v8`, Retell·Monitor·SSE·고성/RMS·최종화·n8n payload/전송·스마트재고·DB·접근 제한·기존 화면용 상담은 변경하지 않습니다. 현재5단계는80~99점이며 서로 다른 위협3건 이상 또는 기존 항목 합계80점 이상에서 적용됩니다. 명확한 위해 위협1건/일반 위협2건의 최소60점 정책은 유지합니다.
+- 신규 회귀13개를 포함해 전체 `npm.cmd run check` **1,135/1,135 통과**, 실패·skip·취소0입니다. 프런트 `tsc --noEmit`, 백엔드 `tsc -p tsconfig.server.json`, Vite production build 통과. 기존 Retell SDK chunk500kB 경고만 남습니다. 기존 테스트 삭제·약화와 의존성 변경은 없습니다.
+- 격리된 production 빌드 브라우저에서 같은 열린 패널에 합성 SSE snapshot을 전달해60점 실시간/종료 모두4단계,80점 모두5단계를 확인했습니다. 음성 미측정 시 숫자 없는 위협 경고와 종료 후 최종 점수·전송 보류도 확인했고 마지막 브라우저 error/warn 로그0건입니다. 검증 도중 로컬 fixture의 누락 파일 응답 오류를 원인 확인 후 고쳤으며 제품 서버 코드는 바꾸지 않았습니다. fixture·로그·캡처는 Git 제외 `.cache/filming-readiness/`에만 보관합니다.
+- 독립 읽기 리뷰에서 중요한 회귀를 발견하지 못했습니다. 독립 HTML 재생성·inline JavaScript 문법 검사와 localhost 직접 실행(홈 제목/본문, error 로그0건)을 확인했습니다. 파일 더블클릭 실행은 별도 미검증입니다. 수정은 작업 브랜치 로컬 커밋으로 보관하며 main 병합·GitHub push·Render 배포는 하지 않았습니다. 실제 Retell 음성·Production 재검증·외부 저장은 미실행이며, 공개 화면에는 아직 이번 표시 변경이 반영되지 않았습니다.

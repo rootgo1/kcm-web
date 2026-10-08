@@ -1,11 +1,12 @@
 import type { LiveCall, LiveTextRisk } from './types';
 import { formatRiskScore, RISK_RULE } from '../lib/riskScoring';
-import { deliveryLabel } from './livePresentation';
+import { deliveryLabel, liveRiskEstimate } from './livePresentation';
 import { liveFinalizationNotice } from './liveNotices';
 
-/** Server results only. No combined numeric score is presented during a live call. */
+/** Shared policy for the live estimate; only the server result is final. */
 export function LiveRiskSignals({ call }: { call: LiveCall }) {
   const analysis = call.risk_analysis, audio = call.audio_signal, final = call.final_result;
+  const estimate = liveRiskEstimate(call);
   return <section className="live-risk-signals" aria-label="현재 감지 신호">
     <div className="live-risk-heading"><h3>{call.status === 'ended' ? '통화 종료 신호' : '현재 감지 신호'}</h3></div>
     <dl className="live-risk-counts">
@@ -15,7 +16,7 @@ export function LiveRiskSignals({ call }: { call: LiveCall }) {
       <div><dt>선정적 표현</dt><dd>{analysis ? analysis.sexualCount + '회' : '—'}</dd></div>
       <div><dt>고성</dt><dd>{audio?.available ? audio.shouting_count + '회' : '— / 측정 대기'}{audio?.is_shouting && <span className="live-signal-badge threat">현재 고성</span>}</dd></div>
     </dl>
-    {analysis?.threatDetected && call.status !== 'ended' && <div className="live-threat-warning" role="alert"><span>현재 통화 대응 경고</span><strong>매우 위험 / 5단계</strong></div>}
+    {analysis?.threatDetected && call.status !== 'ended' && <div className="live-threat-warning" role="alert"><span>{estimate ? '현재 감지 기준 · 확정 전' : '현재 통화 대응 경고'}</span><strong>{estimate ? formatRiskScore(estimate.risk_score) : '위협 발언 감지 · 점수 확인 대기'}</strong></div>}
     {!analysis && <p className="live-risk-note" role="status">분석 정보를 기다리고 있습니다. 대화는 계속 표시됩니다.</p>}
     {audio && !audio.coverage_complete && <p className="live-risk-note">일부 음성 구간 미측정 · 고성은 관측된 구간만 반영하며 최종 점수는 보류합니다.</p>}
     {call.status === 'ended' ? final ? <div className="live-final-risk">
