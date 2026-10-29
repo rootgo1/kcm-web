@@ -35,7 +35,7 @@ KT플라자 매장 전화를 AI가 먼저 응대하고, 통화 중 유해 발화
 - 역할과 일정 조율, 최종 산출물 관리, 최종 발표
 - 백엔드와 웹 화면을 직접 개발해 Render에 배포
 - 유해 발화 판정 기준과 고객정보 마스킹 설계·구현
-- 실제 통화에서 발생한 n8n 재고 조회 오류(UNSUPPORTED_SQL_SHAPE) 수정 → [수리 기록](docs/n8n-repair/README.md)
+- 실제 통화에서 발생한 n8n 재고 조회 오류(UNSUPPORTED_SQL_SHAPE) 수정 → [수리 기록](https://github.com/rootgo1/kcm-web/blob/fix/retell-inventory-query-compatibility/docs/n8n-repair/README.md)
 
 팀은 5인으로 서비스 기획, 데이터 분석, n8n 설계·연동, 영상 제작을 나눠 맡았습니다.
 
